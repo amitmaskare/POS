@@ -52,7 +52,7 @@ export const AuthController = {
 
   Profile: async (req, resp) => {
     try {
-      const userId = 1;
+      const userId = req.user.userId;
       if (!userId) {
         return sendResponse(resp, false, 400, "userId field is required");
       }
@@ -82,7 +82,7 @@ export const AuthController = {
       if (!email) {
         return sendResponse(resp, false, 400, "email field is required");
       }
-      const userId = 1;
+      const userId = req.user.userId;
       if (!userId) {
         return sendResponse(resp, false, 400, "userId field is required");
       }
@@ -123,7 +123,7 @@ export const AuthController = {
           "confirmPassword field is required"
         );
       }
-      const userId = 1;
+      const userId = req.user.userId;
       const user = await AuthService.resetPassword(
         userId,
         currentPassword,
