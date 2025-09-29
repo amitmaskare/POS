@@ -1,10 +1,14 @@
 import { AuthController } from "../controllers/AuthController.js";
 
-import express from "express"
+import express from "express";
+import AuthMiddleware from "../middleware/AuthMiddleware.js";
+const route = express.Router();
 
-const route=express.Router()
-
-route.post('/login',AuthController.login)
-
-
-export default route
+route.post("/login", AuthController.login);
+route.use(AuthMiddleware);
+route.get("/logout", AuthController.logout);
+route.get("/profile", AuthController.Profile);
+route.post("/update-profile", AuthController.updateprofile);
+route.post("/reset-password", AuthController.resetPassword);
+route.post("/forgot-password", AuthController.forgotPassword);
+export default route;
