@@ -6,6 +6,7 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export const AuthController = {
+
   login: async (req, resp) => {
     try {
       if (!req.body) {
@@ -138,7 +139,7 @@ export const AuthController = {
     }
   },
 
-  forgotPassword: async (req, resp) => {
+  sendEmailForgotPassword: async (req, resp) => {
     try {
       if (!req.body) {
         return sendResponse(resp, false, 400, "email field is required");
@@ -148,14 +149,14 @@ export const AuthController = {
         return sendResponse(resp, false, 400, "email field is required");
       }
       const user = await AuthService.forgotPassword(email);
-      const data = {
-        password: 123456,
-      };
+    const data={
+      email:user.email
+    }
       return sendResponse(
         resp,
         false,
-        201,
-        "Please check Email. Forgot Password successful",
+        200,
+        "Please check Email.",
         data
       );
     } catch (error) {
@@ -165,4 +166,7 @@ export const AuthController = {
       return sendResponse(resp, false, 500, error.message);
     }
   },
-};
+
+
+
+  };

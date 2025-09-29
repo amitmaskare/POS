@@ -70,22 +70,16 @@ export const AuthService = {
     }
   },
 
-  forgotPassword: async (email) => {
+  sendEmailForgotPassword: async (email) => {
     const user = await AuthModel.getByEmail(email);
     if (!user) {
       throw new Error("checkEmail");
     }
-    const password = await bcrypt.hash("123456", 10);
-    try {
-      const sql = "UPDATE users SET password=? WHERE email=?";
-      const result = await pool.promise().query(sql, [password, email]);
-      if (result.affectedRows === 0) {
-        throw new Error("Something went Wrong");
-      }
-      return user;
-    } catch (err) {
-      console.log("Error :", err);
-      throw err;
-    }
+    return user;
   },
+
+  forgotPassword:async(newPassword,confirmPassword)=>{
+      
+  }
+
 };
