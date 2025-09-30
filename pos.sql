@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 29, 2025 at 08:26 PM
+-- Generation Time: Sep 30, 2025 at 01:57 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -53,9 +53,10 @@ CREATE TABLE `stores` (
 
 CREATE TABLE `users` (
   `userId` int(11) NOT NULL,
-  `name` varchar(200) DEFAULT NULL,
+  `name` varchar(100) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
+  `role` int(11) NOT NULL DEFAULT 1 COMMENT '1-Admin,2-cashier,3-manager',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -64,18 +65,13 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`userId`, `name`, `email`, `password`, `created_at`, `updated_at`) VALUES
-(1, 'Admin', 'admin@gmail.com', '$2b$10$TXYGNrNxOZ9TIsaiRQhYmOxKCAhSiNnlkIcFG2hjhAbid5rEWRTVm', '2025-09-29 16:13:01', '2025-09-29 16:13:02');
+INSERT INTO `users` (`userId`, `name`, `email`, `password`, `role`, `created_at`, `updated_at`) VALUES
+(1, 'Admin', 'admin@gmail.com', '$2b$10$h4kfSRzQfhxyVp/tZpJhVOapskDBh2Ut.jw/qa6WxoGC9kTB2qEku', 1, '2025-09-29 05:11:57', '2025-09-30 08:13:44'),
+(3, 'Suresh', 'suresh@gmail.com', '$2b$10$0Bvsqae3H/.0K6rMQNJUceiD9pC9WGZA5w2xtJ4o/NR1YV8c8RfmC', 2, '2025-09-30 10:27:30', '2025-09-30 10:27:30');
 
 --
 -- Indexes for dumped tables
 --
-
---
--- Indexes for table `stores`
---
-ALTER TABLE `stores`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `users`
@@ -88,16 +84,10 @@ ALTER TABLE `users`
 --
 
 --
--- AUTO_INCREMENT for table `stores`
---
-ALTER TABLE `stores`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `userId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `userId` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -193,7 +193,64 @@
 				"auth": {
 					"type": "bearer",
 					"bearer": {
-						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AZ21haWwuY29tIiwibmFtZSI6IkFkbWluIiwiaWF0IjoxNzU5MjE3MzczLCJleHAiOjE3NTkzMDM3NzN9.BFbINMFNJ-o0PAvFgKuChwX6duv_TOQGvUvOV5XHH8k"
+					}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "token",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsImlhdCI6MTc1OTIxOTMzNSwiZXhwIjoxNzU5MjIwMjM1fQ.UH2paaTtb2zasRvaSEGJLvStDSsbCHgufZnFfIm4QW4",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"newPassword\":\"123456\",\r\n    \"confirmPassword\":\"123456\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/forgot-password?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsImlhdCI6MTc1OTIxOTMzNSwiZXhwIjoxNzU5MjIwMjM1fQ.UH2paaTtb2zasRvaSEGJLvStDSsbCHgufZnFfIm4QW4",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"forgot-password"
+					],
+					"query": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsImlhdCI6MTc1OTIxOTMzNSwiZXhwIjoxNzU5MjIwMjM1fQ.UH2paaTtb2zasRvaSEGJLvStDSsbCHgufZnFfIm4QW4"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "generate forgot password link",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AZ21haWwuY29tIiwibmFtZSI6IkFkbWluIiwiaWF0IjoxNzU5MTQ4OTY3LCJleHAiOjE3NTkyMzUzNjd9.AOC5CGcKOjStgj4ENjgaHbO-xwzYV--fWWP075w8_Cg"
 					}
 				},
 				"method": "POST",
@@ -218,7 +275,115 @@
 						}
 					}
 				},
-				"url": "http://localhost:5000/api/forgot-password"
+				"url": "http://localhost:5000/api/generate-forgot-password-link"
+			},
+			"response": []
+		},
+		{
+			"name": "Signup",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AZ21haWwuY29tIiwibmFtZSI6IkFkbWluIiwiaWF0IjoxNzU5MTQ4OTY3LCJleHAiOjE3NTkyMzUzNjd9.AOC5CGcKOjStgj4ENjgaHbO-xwzYV--fWWP075w8_Cg"
+					}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "default"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"Suresh\",\r\n    \"email\":\"suresh@gmail.com\",\r\n    \"password\":\"123456\",\r\n    \"role\":2\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/signup"
+			},
+			"response": []
+		},
+		{
+			"name": "Store List",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AZ21haWwuY29tIiwibmFtZSI6IkFkbWluIiwiaWF0IjoxNzU5MTQ4OTY3LCJleHAiOjE3NTkyMzUzNjd9.AOC5CGcKOjStgj4ENjgaHbO-xwzYV--fWWP075w8_Cg"
+					}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "default"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/stores/list"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Store",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AZ21haWwuY29tIiwibmFtZSI6IkFkbWluIiwiaWF0IjoxNzU5MTQ4OTY3LCJleHAiOjE3NTkyMzUzNjd9.AOC5CGcKOjStgj4ENjgaHbO-xwzYV--fWWP075w8_Cg"
+					}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "default"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/stores/add"
 			},
 			"response": []
 		}
