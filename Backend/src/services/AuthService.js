@@ -1,7 +1,33 @@
 import { AuthModel } from "../models/AuthModel.js";
+import { CommonModel } from "../models/CommonModel.js";
 import bcrypt from "bcrypt";
 import pool from "../config.js";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
+const JWT_SECRET = process.env.JWT_SECRET;
 export const AuthService = {
+  signup: async (userData) => {
+    try {
+      const { name, email, password, role } = userData;
+      const hashPassword = await bcrypt.hash(password, 10);
+      const data = {
+        name: name,
+        email: email,
+        password: hashPassword,
+        role: role,
+        created_at: new Date(),
+      };
+      const result = await CommonModel.insertData({
+        table: "users",
+        data: data,
+      });
+      return result;
+    } catch (err) {
+      throw new Error(`Error : ${err.message}`);
+    }
+  },
+
   loginByPassword: async (password) => {
     const users = await AuthModel.findByPassword();
     for (let user of users) {
@@ -70,16 +96,37 @@ export const AuthService = {
     }
   },
 
-  sendEmailForgotPassword: async (email) => {
+  generateForgotPasswordLink: async (email) => {
     const user = await AuthModel.getByEmail(email);
     if (!user) {
       throw new Error("checkEmail");
     }
-    return user;
+    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "15m" });
+    const link = `http://localhost:5000/api/forgot-password?token=${token}`;
+    return link;
   },
 
-  forgotPassword:async(newPassword,confirmPassword)=>{
-      
-  }
-
+  forgotPassword: async (token, newPassword, confirmPassword) => {
+    try {
+      const decode = jwt.verify(token, JWT_SECRET);
+      const email = decode.email;
+      if (newPassword.length < 6) {
+        throw new Error("Password must be at least 6 characters long");
+      }
+      if (newPassword !== confirmPassword) {
+        throw new Error("Password does not match");
+      }
+      const new_password = await bcrypt.hash(newPassword, 10);
+      const result = await CommonModel.updateData({
+        table: "users",
+        data: { password: new_password },
+        conditions: { email },
+      });
+      if (result === 0) {
+        throw new Error("Something went wrong");
+      }
+    } catch (err) {
+      throw new Error("Error : " + err.message);
+    }
+  },
 };

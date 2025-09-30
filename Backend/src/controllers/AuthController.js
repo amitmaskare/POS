@@ -6,6 +6,46 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export const AuthController = {
+  signup: async (req, resp) => {
+    try {
+      if (!req.body) {
+        return sendResponse(
+          resp,
+          false,
+          400,
+          "name,email,password field is required"
+        );
+      }
+      const { name, email, password, role } = req.body;
+      if (!name) {
+        return sendResponse(resp, false, 400, "name field is required");
+      }
+      if (!email) {
+        return sendResponse(resp, false, 400, "email field is required");
+      }
+      if (!password) {
+        return sendResponse(resp, false, 400, "password field is required");
+      }
+      if (password.length < 6) {
+        return sendResponse(
+          resp,
+          false,
+          400,
+          "Password must be at least 6 characters long"
+        );
+      }
+      if (!role) {
+        return sendResponse(resp, false, 400, "role field is required");
+      }
+      const result = await AuthService.signup(req.body);
+      if (!result) {
+        return sendResponse(resp, false, 400, "Something went wrong");
+      }
+      return sendResponse(resp, true, 201, "Signup Successful");
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error : ${error.message}`);
+    }
+  },
 
   login: async (req, resp) => {
     try {
@@ -139,7 +179,7 @@ export const AuthController = {
     }
   },
 
-  sendEmailForgotPassword: async (req, resp) => {
+  generateForgotPasswordLink: async (req, resp) => {
     try {
       if (!req.body) {
         return sendResponse(resp, false, 400, "email field is required");
@@ -148,17 +188,11 @@ export const AuthController = {
       if (!email) {
         return sendResponse(resp, false, 400, "email field is required");
       }
-      const user = await AuthService.forgotPassword(email);
-    const data={
-      email:user.email
-    }
-      return sendResponse(
-        resp,
-        false,
-        200,
-        "Please check Email.",
-        data
-      );
+      const link = await AuthService.generateForgotPasswordLink(email);
+      const data = {
+        email: link,
+      };
+      return sendResponse(resp, false, 200, "Please check Email.", data);
     } catch (error) {
       if (error.message === "checkEmail") {
         return sendResponse(resp, false, 400, "Invalid Email Id");
@@ -167,6 +201,39 @@ export const AuthController = {
     }
   },
 
+  forgotPassword: async (req, resp) => {
+    try {
+      // throw new Error(resp.send(req.get("token")));
+      if (!req.body) {
+        return sendResponse(
+          resp,
+          false,
+          400,
+          "newPassword,confirmPasswsowrd field is required"
+        );
+      }
+      const { newPassword, confirmPassword } = req.body;
+      if (!newPassword) {
+        return sendResponse(resp, false, 400, "newPassword field is required");
+      }
+      if (!confirmPassword) {
+        return sendResponse(
+          resp,
+          false,
+          400,
+          "confirmPassword field is required"
+        );
+      }
+      const token = req.get("token");
 
-
-  };
+      const result = await AuthService.forgotPassword(
+        token,
+        newPassword,
+        confirmPassword
+      );
+      return sendResponse(resp, true, 200, "Change password successfully");
+    } catch (error) {
+      return sendResponse(resp, false, 500, error.message);
+    }
+  },
+};

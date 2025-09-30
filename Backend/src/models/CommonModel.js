@@ -31,7 +31,7 @@ export const CommonModel = {
     if (limit) {
       sql += " LIMIT " + limit;
     }
-    const [rows] = await pool.query(sql, values);
+    const [rows] = await pool.promise().query(sql, values);
     return rows;
   },
 
