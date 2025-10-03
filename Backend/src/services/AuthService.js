@@ -7,11 +7,19 @@ import dotenv from "dotenv";
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 export const AuthService = {
+
+  getNextUserId:async()=> {
+  const [rows] = await pool.promise().query("SELECT MAX(user_id) as maxId FROM users");
+  return (rows[0].maxId || 999) + 1; // start from 1000
+  },
+
   signup: async (userData) => {
-    try {
-      const { name, email, password, role } = userData;
+  
+      const {name, email, password, role } = userData;
       const hashPassword = await bcrypt.hash(password, 10);
+      const user_id= await AuthService.getNextUserId();
       const data = {
+        user_id: user_id,
         name: name,
         email: email,
         password: hashPassword,
@@ -23,22 +31,22 @@ export const AuthService = {
         data: data,
       });
       return result;
-    } catch (err) {
-      throw new Error(`Error : ${err.message}`);
-    }
   },
 
-  loginByPassword: async (password) => {
-    const users = await AuthModel.findByPassword();
-    for (let user of users) {
-      const match = await bcrypt.compare(password, user.password);
-      if (match) {
-        const { password: _, ...safeUser } = user;
-        return safeUser;
-      }
-    }
+  loginByPassword: async (loginData) => {
 
-    throw new Error("checkPassword");
+    const{user_id,password}=loginData
+    const user= await CommonModel.getSingle({table:'users',conditions:{user_id},})
+    if(!user)
+    {
+      throw new Error("Invalid User Id")
+    }
+    const checkPassword=await bcrypt.compare(password,user.password)
+    if(!checkPassword)
+    {
+      throw new Error("Invalid Password")
+    }
+    return user
   },
 
   Profile: async (userId) => {

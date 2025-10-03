@@ -12,6 +12,7 @@ const pool = mysql.createPool({
 });
 
 const name = "Admin";
+const user_id = 1000;
 const email = "admin@gmail.com";
 const password = "123456";
 const created_at = new Date();
@@ -40,8 +41,8 @@ pool.query("SELECT COUNT(*) AS count FROM users", (err, results) => {
     }
 
     const sql =
-      "INSERT INTO users (name, email, password, created_at) VALUES (?, ?, ?, ?)";
-    const values = [name, email, hashedPassword, created_at];
+      "INSERT INTO users (user_id,name, email, password,role, created_at) VALUES (?,?, ?, ?, ?,?)";
+    const values = [user_id,name, email, hashedPassword,1, created_at];
 
     pool.query(sql, values, (err, result) => {
       if (err) {

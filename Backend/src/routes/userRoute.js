@@ -7,6 +7,7 @@ const route = express.Router();
 route.post("/login", AuthController.login);
 
 route.use(AuthMiddleware);
+
 route.post("/signup", AuthController.signup);
 route.get("/logout", AuthController.logout);
 route.get("/profile", AuthController.Profile);

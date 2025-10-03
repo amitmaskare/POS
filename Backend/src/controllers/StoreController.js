@@ -69,10 +69,28 @@ export const StoreController = {
         return sendResponse(resp, false, 400, "type field is required");
       }
       const result = await StoreService.add(req.body);
-
+      if(result===0)
+      {
+      return sendResponse(resp, false, 400, "Something went wrong");
+      }
       return sendResponse(resp, true, 201, "Store added successful");
     } catch (error) {
       return sendResponse(resp, false, 500, `Error : ${error.message}`);
     }
   },
+  
+  getById:async(req,resp)=>{
+    try{
+
+      const result= await StoreService.getById(id)
+      const data={
+
+      }
+      return sendResponse(resp,true,200,"Fetch get by id",data)
+    }catch(error)
+    {
+     return sendResponse(resp, false, 500, `Error : ${error.message}`);
+
+    }
+  }
 };
