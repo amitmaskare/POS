@@ -2,6 +2,7 @@ import { AuthService } from "../services/AuthService.js";
 import { sendResponse } from "../utils/sendResponse.js";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import transporter from '../utils/mailer.js'
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -173,14 +174,22 @@ export const AuthController = {
 
   generateForgotPasswordLink: async (req, resp) => {
     try {
-      if (!req.body) {
-        return sendResponse(resp, false, 400, "email field is required");
-      }
       const { email } = req.body;
       if (!email) {
         return sendResponse(resp, false, 400, "email field is required");
       }
       const link = await AuthService.generateForgotPasswordLink(email);
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Forgot Password",
+        html: `
+          <h2>Hi User,</h2>
+          <p>Click the link below to reset your password:</p>
+          <a href="${link}" target="_blank">Forgot Password</a>
+          <p>This link is valid for 15 minutes.</p>
+        `,
+      });
       const data = {
         email: link,
       };
@@ -195,15 +204,7 @@ export const AuthController = {
 
   forgotPassword: async (req, resp) => {
     try {
-      // throw new Error(resp.send(req.get("token")));
-      if (!req.body) {
-        return sendResponse(
-          resp,
-          false,
-          400,
-          "newPassword,confirmPasswsowrd field is required"
-        );
-      }
+     
       const { newPassword, confirmPassword } = req.body;
       if (!newPassword) {
         return sendResponse(resp, false, 400, "newPassword field is required");
@@ -216,14 +217,14 @@ export const AuthController = {
           "confirmPassword field is required"
         );
       }
-      const token = req.get("token");
-
+      const token = req.query.email;
+     
       const result = await AuthService.forgotPassword(
         token,
         newPassword,
         confirmPassword
       );
-      return sendResponse(resp, true, 200, "Change password successfully");
+      return sendResponse(resp, true, 200, "Update password successfully");
     } catch (error) {
       return sendResponse(resp, false, 500, error.message);
     }

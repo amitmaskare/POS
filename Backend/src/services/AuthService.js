@@ -10,12 +10,13 @@ export const AuthService = {
 
   getNextUserId:async()=> {
   const [rows] = await pool.promise().query("SELECT MAX(user_id) as maxId FROM users");
-  return (rows[0].maxId || 999) + 1; // start from 1000
+  return (rows[0].maxId || 999) + 1; 
   },
 
   signup: async (userData) => {
   
       const {name, email, password, role } = userData;
+      const checkDuplicateEmail="email.ocom"
       const hashPassword = await bcrypt.hash(password, 10);
       const user_id= await AuthService.getNextUserId();
       const data = {
@@ -109,15 +110,17 @@ export const AuthService = {
     if (!user) {
       throw new Error("checkEmail");
     }
-    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "15m" });
-    const link = `http://localhost:5000/api/forgot-password?token=${token}`;
+   // const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "15m" });
+   const encodedEmail = encodeURIComponent(email);
+    const link = `${process.env.CLIENT_URL}/forgot-password?email=${encodedEmail}`;
     return link;
   },
 
   forgotPassword: async (token, newPassword, confirmPassword) => {
     try {
-      const decode = jwt.verify(token, JWT_SECRET);
-      const email = decode.email;
+      // const decode = jwt.verify(token, JWT_SECRET);
+      // const email = decode.email;
+       const email =token;
       if (newPassword.length < 6) {
         throw new Error("Password must be at least 6 characters long");
       }
