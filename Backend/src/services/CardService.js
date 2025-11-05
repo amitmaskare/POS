@@ -1,5 +1,6 @@
 import { table } from "console"
 import {CommonModel} from "../models/CommonModel.js"
+import { json } from "stream/consumers"
 
 export const CardService={
 
@@ -22,8 +23,12 @@ export const CardService={
 
     update:async(data)=>
     {
-        const {id,type}=data
-        const result=await CommonModel.updateData({table:"cards",data:data,conditions:{id}})
+        const {id,type,items}=data
+        const updatedata={
+            type:type,
+            items:JSON.stringify(items),
+        }
+        const result=await CommonModel.updateData({table:"cards",data:updatedata,conditions:{id}})
         return result
     },
 

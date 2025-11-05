@@ -16,7 +16,7 @@ import ProductRoute from "../src/routes/ProductRoute.js"
 import PurchaseRoute from "../src/routes/PurchaseRoute.js"
 import CardRoute from "../src/routes/CardRoute.js"
 import RationcardRoute from "../src/routes/RationcardRoute.js"
-
+import OfferRoute from "../src/routes/OfferRoute.js"
 dotenv.config();
 const app = express();
 app.use(express.json());
@@ -37,6 +37,7 @@ app.use("/api",ProductRoute)
 app.use("/api",PurchaseRoute)
 app.use("/api",RationcardRoute)
 app.use("/api",CardRoute)
+app.use("/api",OfferRoute)
 app.use('/public/uploads', express.static('public/uploads'));
 
 export default app;

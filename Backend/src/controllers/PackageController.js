@@ -36,7 +36,7 @@ export const PackageController={
     },
     getById:async(req,resp)=>{
         try{
-            const {id}=req.body
+            const {id}=req.params
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
@@ -77,7 +77,7 @@ export const PackageController={
     },
     deleteData:async(req,resp)=>{
         try{
-            const {id}=req.body
+            const {id}=req.params
             const result=await PackageService.deleteData(id)
             if(!result || result.length===0)
             {

@@ -1,14 +1,15 @@
-import { CustomerService } from "../services/CustomerService.js";
+import { RationcardService } from "../services/RationcardService.js";
 import {sendResponse} from "../utils/sendResponse.js"
 
 
 export const RationcardController={
+
     list:async(req,resp)=>{
         try{
-            const result=await CustomerService.list()
+            const result=await RationcardService.list()
             if(!result || result.length===0)
             {
-                return sendResponse(reportError,false,400,"No Data Found")
+                return sendResponse(resp,false,400,"No Data Found")
             }
             return sendResponse(resp,true,200,"Fetch data successful",result)
         }catch(error)
@@ -19,10 +20,12 @@ export const RationcardController={
     add:async(req,resp)=>{
         try{
            const requiredFields = [
-        "name",
-        "email",
-        "phone",
+        "card_type_id",
+        "card_number",
+        "card_holder_name",
+        "mobile",
         "address",
+        "family_member",
       ];
 
        for (let field of requiredFields) {
@@ -30,7 +33,8 @@ export const RationcardController={
           return sendResponse(resp, false, 400, `${field} is required`);
         }
       }
-            const result= await CustomerService.add(req.body)
+
+            const result= await RationcardService.add(req.body)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
@@ -43,12 +47,12 @@ export const RationcardController={
     },
     getById:async(req,resp)=>{
         try{
-            const {id}=req.body
+            const {id}=req.params
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
             }
-            const result=await CustomerService.getById(id)
+            const result=await RationcardService.getById(id)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -61,12 +65,13 @@ export const RationcardController={
     },
     update:async(req,resp)=>{
         try{
-             const requiredFields = [
-                "id",
-        "name",
-        "email",
-        "phone",
+              const requiredFields = [
+        "card_type_id",
+        "card_number",
+        "card_holder_name",
+        "mobile",
         "address",
+        "family_member",
       ];
 
        for (let field of requiredFields) {
@@ -74,7 +79,7 @@ export const RationcardController={
           return sendResponse(resp, false, 400, `${field} is required`);
         }
       }
-                        const result= await CustomerService.update(req.body)
+                        const result= await RationcardService.update(req.body)
                         if(!result)
                         {
                             return sendResponse(resp,false,400,"Something went wrong")
@@ -88,8 +93,8 @@ export const RationcardController={
     },
     deleteData:async(req,resp)=>{
         try{
-            const {id}=req.body
-            const result=await CustomerService.deleteData(id)
+            const {id}=req.params
+            const result=await RationcardService.deleteData(id)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"ID not found")

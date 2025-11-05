@@ -18,5 +18,6 @@ route.get("/logout", AuthController.logout);
 route.get("/profile", AuthController.Profile);
 route.post("/update-profile", AuthController.updateprofile);
 route.post("/reset-password", AuthController.resetPassword);
+route.post("/verify-aadhaarnumber", AuthController.verifyAadhaarNumber);
 
 export default route;

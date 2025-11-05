@@ -229,4 +229,22 @@ export const AuthController = {
       return sendResponse(resp, false, 500, error.message);
     }
   },
+
+  verifyAadhaarNumber:async(req,resp)=>{
+    try{
+      const {aadhaar}=req.body
+      if(!aadhaar)
+      {
+        return sendResponse(resp,false,400,"aadhaar is required")
+      }
+       if (aadhaar.length !== 12) {
+              return sendResponse(resp,false,400,"aadhar number 12 digit")
+       }
+       
+    }catch(error)
+    {
+      return sendResponse(resp,false,500,`Error : ${error.message}`)
+    }
+  },
+
 };

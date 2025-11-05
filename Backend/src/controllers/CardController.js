@@ -1,6 +1,6 @@
 import { CardService } from "../services/CardService.js";
 import {sendResponse} from "../utils/sendResponse.js"
-
+import { CommonModel } from "../models/CommonModel.js";
 
 export const CardController={
     list:async(req,resp)=>{
@@ -21,13 +21,22 @@ export const CardController={
     },
     add:async(req,resp)=>{
         try{
-            const{type}=req.body
+            const{type,items}=req.body
             if(!type)
             {
                 return sendResponse(resp,false,400,"type field is required")
             }
+            if (!items || !Array.isArray(items)) {
+      return sendResponse(resp, false, 400, "Items must be a JSON array");
+    }
+        const checkCardType= await CommonModel.getSingle({table:"cards"})
+        if(!checkCardType || checkCardType.length===0)
+        {
+            return sendResponse(resp,false,400,"Card name already exits")
+        }
             const saveData={
                 type:type,
+                 items: JSON.stringify(items),
                 created_at:new Date(),
             }
             const result= await CardService.add(saveData)
@@ -63,7 +72,7 @@ export const CardController={
     },
     update:async(req,resp)=>{
         try{
-             const {id,type}=req.body
+             const {id,type,items}=req.body
                         if(!id)
                         {
                             return sendResponse(resp,false,400,"id field is reuired")
@@ -72,6 +81,10 @@ export const CardController={
                         {
                             return sendResponse(resp,false,400,"type field is required")
                         }
+                         if (!items || !Array.isArray(items)) {
+      return sendResponse(resp, false, 400, "Items must be a JSON array");
+    }
+    
                         const result= await CardService.update(req.body)
                         if(!result)
                         {
