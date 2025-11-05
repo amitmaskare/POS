@@ -3,6 +3,7 @@ import { sendResponse } from "../utils/sendResponse.js";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import transporter from '../utils/mailer.js'
+import {isValidNumber} from "aadhaar-validator"
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -232,15 +233,22 @@ export const AuthController = {
 
   verifyAadhaarNumber:async(req,resp)=>{
     try{
-      const {aadhaar}=req.body
-      if(!aadhaar)
+      const {aadhaarNumber}=req.body
+      if(!aadhaarNumber)
       {
-        return sendResponse(resp,false,400,"aadhaar is required")
+        return sendResponse(resp,false,400,"aadhaarNumber is required")
       }
-       if (aadhaar.length !== 12) {
+       if (aadhaarNumber.length !== 12) {
               return sendResponse(resp,false,400,"aadhar number 12 digit")
        }
-       
+       const checkAadhaarNumber = aadhaarNumber.replace(/\s+/g, "");
+
+  if (isValidNumber(checkAadhaarNumber)) {
+    return sendResponse(resp,true,200,"Aadhaar Number is Valid")
+  }else{
+    return sendResponse(resp,false,400,"Invalid Aadhaar Number")
+
+  }
     }catch(error)
     {
       return sendResponse(resp,false,500,`Error : ${error.message}`)
