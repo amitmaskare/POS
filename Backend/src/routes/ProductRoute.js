@@ -11,5 +11,6 @@ route.post("/product/add",ProductController.add)
 route.get("/product/getById/:id",ProductController.getById)
 route.post("/product/update",ProductController.update)
 route.delete("/product/delete/:id",ProductController.deleteData)
+route.post("/product/searchProduct",ProductController.searchProduct)
 
 export default route

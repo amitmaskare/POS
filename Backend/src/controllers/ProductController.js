@@ -120,4 +120,26 @@ export const ProductController = {
       return sendResponse(resp, false, 500, `Error : ${error.message}`);
     }
   },
+
+  searchProduct:async(req,resp)=>{
+    try{
+      const {search}=req.body
+      if(!search)
+      {
+        return sendResponse(resp,false,400,"search field is required")
+      }
+      const result=await ProductService.searchProduct(search)
+     
+      if(!result || result.length===0)
+      {
+        return sendResponse(resp,false,400,"No Data Found")
+      }
+      return sendResponse(resp,true,200,"Fetch Data Successful",result)
+    }catch(error)
+    {
+      return sendResponse(resp,false,500,`Error : ${error.message}`)
+    }
+  }
+
+
 };

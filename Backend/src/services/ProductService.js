@@ -43,4 +43,11 @@ export const ProductService = {
     });
     return result;
   },
+
+  searchProduct:async(search)=>{
+    const result=await CommonModel.getAllData({table:"products", fields: ["id,product_name,sku,category_id,unit_price,unit_per_package,min_stock,max_stock,status,unit"],conditions:{product_name :`%${search}%`},orderBy: "product_name ASC"})
+    return result
+  }
+
+
 };

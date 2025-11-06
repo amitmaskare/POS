@@ -12,15 +12,33 @@ export const CommonModel = {
     let sql = `SELECT ${fields.join(", ")} FROM ${table}`;
     const values = [];
 
-    // Add WHERE conditions dynamically
-    const conditionKeys = Object.keys(conditions);
-    if (conditionKeys.length) {
-      const whereClauses = conditionKeys.map((key) => {
-        values.push(conditions[key]);
-        return `${key} = ?`;
-      });
-      sql += " WHERE " + whereClauses.join(" AND ");
+    const whereClauses = [];
+
+  for (let key in conditions) {
+    const condition = conditions[key];
+
+    // ✅ LIKE Condition
+    if (typeof condition === "string" && condition.includes("%")) {
+      whereClauses.push(`${key} LIKE ?`);
+      values.push(condition);
     }
+
+    // ✅ Date Range Condition
+    else if (typeof condition === "object" && condition.from && condition.to) {
+      whereClauses.push(`${key} BETWEEN ? AND ?`);
+      values.push(condition.from, condition.to);
+    }
+
+    // ✅ Exact Match
+    else {
+      whereClauses.push(`${key} = ?`);
+      values.push(condition);
+    }
+  }
+
+  if (whereClauses.length) {
+    sql += " WHERE " + whereClauses.join(" AND ");
+  }
     if (groupBy) {
       sql += " GROUP BY " + groupBy;
     }
