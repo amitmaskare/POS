@@ -23,6 +23,7 @@ export const CategoryController={
             {
                 return sendResponse(resp,false,400,"category_name field is required")
             }
+            
             const result= await CategoryService.add(req.body)
             if(!result || result.length===0)
             {
