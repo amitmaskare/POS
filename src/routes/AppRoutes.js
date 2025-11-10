@@ -6,13 +6,13 @@ import Manage from "../layouts/Manage";
 import Dashboard from '../pages/Dashboard'
 const AppRoutes=()=>{
     return(
-      
         <Routes>   
-             <Route path="/" element={<Manage />}>
+            <Route path="/" element={<Login />} />
+             {/* <Route path="/" element={<Manage />}>
             <Route path="/dashboard" element={<Dashboard />} />
-             </Route>    
+             </Route>     */}
        
-         <Route path="/login" element={<Login />} />
+         {/* <Route path="/login" element={<Login />} /> */}
          <Route path="/forgot-password" element={<ForgotPassword />} />
         </Routes>
      

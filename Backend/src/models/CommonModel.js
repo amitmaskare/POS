@@ -29,11 +29,18 @@ export const CommonModel = {
       values.push(condition.from, condition.to);
     }
 
+     else if (key.endsWith("_not")) {
+    const realKey = key.replace("_not", "");
+    values.push(conditions[key])
+    return `${realKey} != ?`;
+  }
+
     // ✅ Exact Match
     else {
       whereClauses.push(`${key} = ?`);
       values.push(condition);
     }
+    
   }
 
   if (whereClauses.length) {
