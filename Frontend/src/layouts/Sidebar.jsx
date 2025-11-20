@@ -36,126 +36,205 @@ const menuItems = [
   { title: "Ration Cards", icon: <InventoryIcon />, path: "/rationcards" },
 ];
 
-export default function Sidebar({ isCollapsed, setIsCollapsed }) {
+export default function Sidebar({ sidebarState, setSidebarState }) {
   const location = useLocation();
 
+  const toggleSidebar = () => {
+    if (sidebarState === "expanded") setSidebarState("collapsed");
+    else if (sidebarState === "collapsed") setSidebarState("hidden");
+    else setSidebarState("expanded");
+  };
+
   return (
-    <Box
-      sx={{
-        width: isCollapsed ? 80 : 265,
-        height: "100vh",
-        backgroundColor: "#fff",
-        borderRight: "1px solid #e6e8ef",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        transition: "0.25s ease",
-        position: "fixed",
-        left: 0,
-        top: 0,
-        zIndex: 1000,
-      }}
-    >
-      {/* Top Section */}
+    <>
+      {sidebarState === "hidden" && (
+        <MenuIcon
+          onClick={toggleSidebar}
+          style={{
+            position: "fixed",
+            top: 18,
+            left: 18,
+            cursor: "pointer",
+            zIndex: 2000,
+            color: "#5A8DEE",
+          }}
+        />
+      )}
+
       <Box
         sx={{
-          p: isCollapsed ? 1.5 : 2,
-          pb: 1,
-          borderBottom: "1px solid #eef1f7",
+          width:
+            sidebarState === "expanded"
+              ? 265
+              : sidebarState === "collapsed"
+              ? 80
+              : 0,
+          height: "100vh",
+          backgroundColor: "#fff",
+          borderRight:
+            sidebarState === "hidden" ? "none" : "1px solid #e6e8ef",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          transition: "0.3s ease",
+          position: "fixed",
+          left: 0,
+          top: 0,
+          zIndex: 1500,
         }}
       >
-        <Box display="flex" alignItems="center">
-          <LuStore size={32} color="#5A8DEE" />
+        {sidebarState !== "hidden" && (
+  <Box
+    sx={{
+      p: sidebarState === "collapsed" ? 1.5 : 2,
+      pb: 1,
+      borderBottom: "1px solid #eef1f7",
+    }}
+  >
+    <Box
+      display="flex"
+      alignItems="center"
+      flexDirection={sidebarState === "collapsed" ? "column" : "row"}
+      justifyContent={
+        sidebarState === "collapsed" ? "center" : "flex-start"
+      }
+      textAlign={sidebarState === "collapsed" ? "center" : "left"}
+      gap={sidebarState === "collapsed" ? 1.2 : 0}
+    >
+      {sidebarState === "collapsed" && (
+        <MenuIcon
+          sx={{ cursor: "pointer", color: "#5A8DEE" }}
+          onClick={toggleSidebar}
+        />
+      )}
 
-          {!isCollapsed && (
-            <Box ml={2}>
-              <Typography variant="h6" fontWeight="bold">
-                My Store
-              </Typography>
-              <Typography fontSize="14px" color="gray">
-                Admin • Admin User
-              </Typography>
-            </Box>
-          )}
+      <LuStore size={32} color="#5A8DEE" />
 
-          <MenuIcon
-            sx={{
-              marginLeft: "auto",
-              cursor: "pointer",
-              color: "#333",
-            }}
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          />
+      {sidebarState === "expanded" && (
+        <Box ml={2}>
+          <Typography variant="h6" fontWeight="bold" color="#5A8DEE">
+            My Store
+          </Typography>
+          <Typography fontSize="14px" color="black">
+            Admin • Admin User
+          </Typography>
         </Box>
-      </Box>
+      )}
 
-      {/* Menu Items */}
-      <Box sx={{ flexGrow: 1, p: 2 }}>
-        <List>
-          {menuItems.map((item, index) => {
-            const isActive = location.pathname === item.path;
-
-            return (
-              <ListItemButton
-                key={index}
-                component={Link}
-                to={item.path}
-                sx={{
-                  mb: 1,
-                  borderRadius: "10px",
-                  backgroundColor: isActive ? "#5A8DEE" : "transparent",
-                  color: isActive ? "#fff" : "#556070",
-                  justifyContent: isCollapsed ? "center" : "flex-start",
-                  px: isCollapsed ? 1.5 : 2,
-                  "&:hover": {
-                    backgroundColor: isActive ? "#5A8DEE" : "#e9efff",
-                  },
-                }}
-              >
-               <ListItemIcon
-  sx={{
-    color: isActive ? "#fff" : "#5A8DEE",
-    minWidth: isCollapsed ? "0px" : "40px",
-  }}
->
-  {item.icon}
-</ListItemIcon>
-
-                {!isCollapsed && <ListItemText primary={item.title} />}
-              </ListItemButton>
-            );
-          })}
-        </List>
-      </Box>
-
-      {/* Bottom Section */}
-      <Box sx={{ p: 2 }}>
-        <Divider sx={{ mb: 1 }} />
-
-        <ListItemButton sx={{ borderRadius: "10px" }}>
-          <ListItemIcon sx={{ minWidth: isCollapsed ? "0px" : "40px", color: "#556070" }}>
-            <NightlightIcon />
-          </ListItemIcon>
-
-          {!isCollapsed && <ListItemText primary="Dark Mode" />}
-          {!isCollapsed && <Switch size="small" />}
-        </ListItemButton>
-
-        <ListItemButton
+      {sidebarState === "expanded" && (
+        <MenuIcon
           sx={{
-            mt: 1,
-            borderRadius: "10px",
-            color: "#e53935",
-            justifyContent: isCollapsed ? "center" : "flex-start",
+            marginLeft: "auto",
+            cursor: "pointer",
+            color: "#5A8DEE",
           }}
-        >
-          <ListItemIcon sx={{ minWidth: isCollapsed ? "0px" : "40px", color: "#e53935" }}>
-            <ExitToAppIcon />
-          </ListItemIcon>
-
-          {!isCollapsed && <ListItemText primary="Logout" />}
-        </ListItemButton>
-      </Box>
+          onClick={toggleSidebar}
+        />
+      )}
     </Box>
+  </Box>
+)}
+
+        {/* Menu Items */}
+        {sidebarState !== "hidden" && (
+          <Box sx={{ flexGrow: 1, p: 2 }}>
+            <List>
+              {menuItems.map((item, index) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <ListItemButton
+                    key={index}
+                    component={Link}
+                    to={item.path}
+                    sx={{
+                      mb: 1,
+                      borderRadius: "10px",
+                      backgroundColor: isActive ? "#5A8DEE" : "transparent",
+                      color: isActive ? "#fff" : "black",
+                      justifyContent:
+                        sidebarState === "collapsed"
+                          ? "center"
+                          : "flex-start",
+                      px: sidebarState === "collapsed" ? 1.5 : 2,
+                      "&:hover": {
+                        backgroundColor: isActive
+                          ? "#5A8DEE"
+                          : "#e9efff",
+                      },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        color: isActive ? "#fff" : "#5A8DEE",
+                        minWidth: sidebarState === "collapsed" ? "0px" : "40px",
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+
+                    {sidebarState === "expanded" && (
+                      <ListItemText primary={item.title} />
+                    )}
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          </Box>
+        )}
+
+        {/* Bottom section */}
+        {/* Bottom section */}
+{sidebarState !== "hidden" && (
+  <Box sx={{ p: 2 }}>
+    <Divider sx={{ mb: 1 }} />
+
+    {/* Dark Mode */}
+    <ListItemButton sx={{ borderRadius: "10px", mb: 1 }}>
+      <ListItemIcon
+        sx={{
+          minWidth: sidebarState === "collapsed" ? "0px" : "40px",
+          color: "#556070",
+        }}
+      >
+        <NightlightIcon />
+      </ListItemIcon>
+
+      {sidebarState === "expanded" && (
+        <>
+          <ListItemText primary="Dark Mode" />
+          <Switch size="small" />
+        </>
+      )}
+    </ListItemButton>
+
+    {/* Logout Button */}
+    <ListItemButton
+      sx={{
+        borderRadius: "10px",
+        backgroundColor: "transparent",
+        color: "red",
+        "&:hover": {
+          backgroundColor: "#ffe5e5",
+        },
+      }}
+    >
+      <ListItemIcon
+        sx={{
+          minWidth: sidebarState === "collapsed" ? "0px" : "40px",
+          color: "red",
+        }}
+      >
+        <ExitToAppIcon />
+      </ListItemIcon>
+
+      {sidebarState === "expanded" && (
+        <ListItemText primary="Logout" sx={{ color: "red", fontWeight: "bold" }} />
+      )}
+    </ListItemButton>
+  </Box>
+)}
+
+      </Box>
+    </>
   );
 }

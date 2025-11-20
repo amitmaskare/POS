@@ -19,7 +19,7 @@ import {
 } from "@mui/material";
 import { FaUserTie, FaCashRegister, FaUserCog } from "react-icons/fa";
 import axios from "axios";
-import { login } from "../services/authService";
+import { login } from "../../services/authService";
 
 
 export default function Login({ onLogin }) {

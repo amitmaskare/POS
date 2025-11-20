@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import Cart from "./Cart";
+import Cart from "../pages/PosSystem/Cart";
 import { Box } from "@mui/material";
 
 const HEADER_HEIGHT = 70;
@@ -11,28 +11,24 @@ const Manage = () => {
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const SIDEBAR_WIDTH = isCollapsed ? 80 : 260;
+  // receives: "expanded", "collapsed", "hidden"
+  const [sidebarState, setSidebarState] = useState("expanded");
+
+  const getSidebarWidth = () => {
+    if (sidebarState === "expanded") return 265;
+    if (sidebarState === "collapsed") return 80;
+    return 0; // hidden
+  };
+
+  const SIDEBAR_WIDTH = getSidebarWidth();
 
   return (
     <Box sx={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
 
-      {/* FIXED SIDEBAR */}
-      <Box
-        sx={{
-          width: SIDEBAR_WIDTH,
-          position: "fixed",
-          left: 0,
-          top: 0,
-          height: "100vh",
-          bgcolor: "#fff",
-          zIndex: 2000,
-          borderRight: "1px solid #eee",
-          transition: "0.25s ease",
-        }}
-      >
-        <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-      </Box>
+      {/* Sidebar */}
+      <Sidebar sidebarState={sidebarState} setSidebarState={setSidebarState} />
+
+      {/* Right Content */}
       <Box
         sx={{
           marginLeft: `${SIDEBAR_WIDTH}px`,
@@ -40,11 +36,11 @@ const Manage = () => {
           height: "100vh",
           display: "flex",
           flexDirection: "column",
-          transition: "0.25s ease",
+          transition: "0.3s ease",
         }}
       >
 
-        {/* FIXED HEADER */}
+        {/* Header */}
         <Box
           sx={{
             height: `${HEADER_HEIGHT}px`,
@@ -55,21 +51,19 @@ const Manage = () => {
             bgcolor: "#fff",
             zIndex: 1500,
             borderBottom: "1px solid #eee",
-            transition: "0.25s ease",
+            transition: "0.3s ease",
           }}
         >
-          <Header />
+          <Header sidebarState={sidebarState}/>
         </Box>
 
-
-        {/* SCROLLABLE CONTENT */}
+        {/* Page Content */}
         <Box
           sx={{
             marginTop: `${HEADER_HEIGHT}px`,
             height: `calc(100vh - ${HEADER_HEIGHT}px)`,
             overflowY: "auto",
             p: 3,
-            
           }}
         >
           <Outlet />

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import SearchIcon from '@mui/icons-material/Search';
+import SearchFilter from "../../components/MainContentComponents/SearchFilter";
 export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState("All");
 
@@ -17,21 +18,12 @@ export default function Dashboard() {
       >
      <div className="row">
       <div className="col-12 col-md-6 col-lg-8">
-        <div className="input-group mb-3">
-          <span className="input-group-text bg-white border-end-0">
-            <SearchIcon />
-          </span>
-          <input
-            type="text"
-            className="form-control form-control border-start-0"
-            placeholder="Search products..."
-          />
-        </div>
+      <SearchFilter />
       </div>
     </div>
 
 
-        <div className="btn-group gap-2 mb-3">
+        <div className="btn-group gap-2 mb-3 mt-3">
           {filters.map((item) => (
             <button
               key={item}

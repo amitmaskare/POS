@@ -19,7 +19,8 @@ import RationCardSelection from "../components/HeaderComponents/RationCard";
 import CashierCheckoutModal from "../components/HeaderComponents/CheckOut";
 import SalesHistoryModal from "../components/HeaderComponents/SalesHistory";
 
-export default function Header() {
+export default function Header({ sidebarState }) {
+
   const [anchorEl, setAnchorEl] = useState(null);
   const [openAadhaar, setOpenAadhaar] = useState(false);
   const [openRationCard, setOpenRationCard] = useState(false);
@@ -36,17 +37,21 @@ export default function Header() {
   
   return (
     <Box
-      sx={{
-        height: "70px",
-        width: "100%",
-        backgroundColor: "#fff",
-        borderBottom: "1px solid #eee",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        px: 2,
-      }}
-    >
+  sx={{
+    height: "70px",
+    width: "100%",
+    backgroundColor: "#fff",
+    borderBottom: "1px solid #eee",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    px: 2,
+    pl: sidebarState === "hidden" ? "70px" : "16px", // 👈 shift right only when sidebar hidden
+    transition: "0.25s ease",
+  }}
+>
+
+
       {/* LEFT SIDE - Admin Dropdown */}
       <Box>
         <Button
@@ -130,7 +135,11 @@ export default function Header() {
         onClose={() => setopenCheckout(false)}
       />
 
-     <SalesHistoryModal open={openSalesHistory} onClose={setopenSalesHistory} />
+<SalesHistoryModal 
+  open={openSalesHistory} 
+  onClose={() => setopenSalesHistory(false)} 
+/>
+
     </Box>
   );
 }

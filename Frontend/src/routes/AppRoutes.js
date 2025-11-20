@@ -3,18 +3,18 @@
 import React from "react";
 import { Routes,Route } from "react-router-dom";
 // Pages
-import Dashboard from "../pages/Dashboard";
-import Products from "../pages/Products";
-import Login from "../pages/Login";
+import Dashboard from "../pages/PosSystem/Dashboard";
+import Products from "../pages/Products/Products";
+import Login from "../pages/Login/Login";
 import ForgotPassword from "../pages/ForgotPassword";
 import Manage from "../layouts/Manage";
-import Purchases from "../pages/Purchases";
-import Transactions from "../pages/Transactions";
-import Inventory from "../pages/Inventory";
-import Reports from "../pages/Reports";
-import Customers from "../pages/Customers";
-import Users from "../pages/Users";
-import RationCards from "../pages/RationCards";
+import Purchases from "../pages/Purchases/Purchases";
+import Transactions from "../pages/Transactions/Transactions";
+import Inventory from "../pages/Inventory/Inventory";
+import Reports from "../pages/Reports/Reports";
+import Customers from "../pages/Customers/Customers";
+import Users from "../pages/Users/Users";
+import RationCards from "../pages/RationCards/RationCards";
 
 const AppRoutes = () => {
   return (
