@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { Box } from "@mui/material";
 
 import Header from "../components/Products/ProductHeader";
@@ -9,7 +9,7 @@ import ProductTable from "../components/Products/ProductTable";
 
 const Products = () => {
   const [open, setOpen] = useState(false);
-
+ 
   return (
     <Box sx={{ p: 3, minHeight: "100vh" }}>
       <Header onAddClick={() => setOpen(true)} />

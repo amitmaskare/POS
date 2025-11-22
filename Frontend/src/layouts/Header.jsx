@@ -18,7 +18,7 @@ import Aadhaar from "../components/HeaderComponents/Aadhaar";
 import RationCardSelection from "../components/HeaderComponents/RationCard";
 import CashierCheckoutModal from "../components/HeaderComponents/CheckOut";
 import SalesHistoryModal from "../components/HeaderComponents/SalesHistory";
-
+import { useNavigate } from "react-router-dom";
 export default function Header() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [openAadhaar, setOpenAadhaar] = useState(false);
@@ -32,7 +32,9 @@ export default function Header() {
   const handleCloseMenu = () => setAnchorEl(null);
   const handleOpenAadhaar = () => setOpenAadhaar(true); // open modal
   const handleCloseAadhaar = () => setOpenAadhaar(false); // close modal
+ 
 
+  
   
   return (
     <Box

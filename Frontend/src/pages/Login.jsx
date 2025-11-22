@@ -19,7 +19,7 @@ import {
 } from "@mui/material";
 import { FaUserTie, FaCashRegister, FaUserCog } from "react-icons/fa";
 import axios from "axios";
-import { login } from "../services/authService";
+import { login,forgot_password } from "../services/authService.js";
 
 
 export default function Login({ onLogin }) {
@@ -29,7 +29,7 @@ export default function Login({ onLogin }) {
   const[email,setEmail]=useState("")
   const [success,setSuccess]=useState("")
   const[error,setError]=useState("")
-
+  const navigate = useNavigate();
  const apiUrl = process.env.REACT_APP_API_URL;
  
  const roles = [
@@ -48,7 +48,8 @@ export default function Login({ onLogin }) {
         setSuccess(result.message);
         const token = result.data.token;
         sessionStorage.setItem("token", token);
-        // onLogin();
+         onLogin();
+        navigate('dashboard');
       } else {
         setError(result.message);
       }
@@ -62,11 +63,9 @@ export default function Login({ onLogin }) {
     setError(null);
    const emailData={email}
     try{
-      const response=await axios.post(`${apiUrl}/generate-forgot-password-link`,emailData)
-       const result=response.data
+      const result=await forgot_password(emailData)
       if (result.status === true) {
         setSuccess(result.message)
-        
       } else {
         setError(result.message);
       }

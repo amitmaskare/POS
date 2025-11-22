@@ -1,8 +1,5 @@
-
-
-import React from "react";
-import { Routes,Route } from "react-router-dom";
-// Pages
+import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
 import Dashboard from "../pages/Dashboard";
 import Products from "../pages/Products";
 import Login from "../pages/Login";
@@ -15,12 +12,30 @@ import Reports from "../pages/Reports";
 import Customers from "../pages/Customers";
 import Users from "../pages/Users";
 import RationCards from "../pages/RationCards";
+import ProtectedRoute from "./ProtectedRoute";
 
 const AppRoutes = () => {
+ const [auth, setAuth] = useState(sessionStorage.getItem('token'));
+
   return (
     <Routes>
-      {/* ALL PAGES THAT NEED SIDEBAR + HEADER */}
-      <Route path="/" element={<Manage />}>
+
+      {/* LOGIN PAGE (public) */}
+      <Route path="/" element={<Login onLogin={() =>  setAuth(sessionStorage.getItem('token'))}/>} />
+      <Route path="/login" element={<Login onLogin={() =>  setAuth(sessionStorage.getItem('token'))}/>} />
+
+      {/* FORGOT PASSWORD PAGE (public) */}
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+
+      {/* PROTECTED PAGES */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Manage />
+          </ProtectedRoute>
+        }
+      >
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="products" element={<Products />} />
         <Route path="purchases" element={<Purchases />} />
@@ -32,9 +47,6 @@ const AppRoutes = () => {
         <Route path="rationcards" element={<RationCards />} />
       </Route>
 
-      {/* PUBLIC ROUTES (WITHOUT SIDEBAR) */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
     </Routes>
   );
 };

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -11,29 +11,58 @@ import {
   TableSortLabel,
   TablePagination,
 } from "@mui/material";
+import { productList } from "../../services/productService";
 
-const products = [
-  { sku: "P001", name: "Apple", category: "Fruits", units: "1 Kg", price: 100, stock: 20, supplier: "Fresh Farm", status: "Active" },
-  { sku: "P002", name: "Banana", category: "Fruits", units: "1 Dozen", price: 60, stock: 5, supplier: "Tropical", status: "Low Stock" },
-  { sku: "P003", name: "Milk", category: "Dairy", units: "1 Litre", price: 50, stock: 50, supplier: "Amul", status: "Active" },
-  { sku: "P001", name: "Apple", category: "Fruits", units: "1 Kg", price: 100, stock: 20, supplier: "Fresh Farm", status: "Active" },
-  { sku: "P002", name: "Banana", category: "Fruits", units: "1 Dozen", price: 60, stock: 5, supplier: "Tropical", status: "Low Stock" },
-  { sku: "P003", name: "Milk", category: "Dairy", units: "1 Litre", price: 50, stock: 50, supplier: "Amul", status: "Active" },
-  { sku: "P001", name: "Apple", category: "Fruits", units: "1 Kg", price: 100, stock: 20, supplier: "Fresh Farm", status: "Active" },
-  { sku: "P002", name: "Banana", category: "Fruits", units: "1 Dozen", price: 60, stock: 5, supplier: "Tropical", status: "Low Stock" },
-  { sku: "P003", name: "Milk", category: "Dairy", units: "1 Litre", price: 50, stock: 50, supplier: "Amul", status: "Active" },
-  { sku: "P001", name: "Apple", category: "Fruits", units: "1 Kg", price: 100, stock: 20, supplier: "Fresh Farm", status: "Active" },
-  { sku: "P002", name: "Banana", category: "Fruits", units: "1 Dozen", price: 60, stock: 5, supplier: "Tropical", status: "Low Stock" },
-  { sku: "P003", name: "Milk", category: "Dairy", units: "1 Litre", price: 50, stock: 50, supplier: "Amul", status: "Active" },
-  
-];
-
+ 
 const ProductTable = () => {
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("name");
-  const [page, setPage] = useState(0);               // ⭐ page state
-  const [rowsPerPage, setRowsPerPage] = useState(5); // ⭐ rows per page
+  const [page, setPage] = useState(0);               
+  const [rowsPerPage, setRowsPerPage] = useState(5); 
+  const[data,setData]=useState([])
+  const[success,setSuccess]=useState('')
+  const[error,setError]=useState('')
+  const[loading,setLoading]=useState(false)
 
+  useEffect(()=>{
+fetchProductList()
+},[])
+
+  const fetchProductList =async()=>{
+    setSuccess(null)
+    setError(null)
+    try{
+      const result=await productList()
+      if(result.status===true)
+      {
+        setSuccess(result.message)
+        setData(result.data)
+      }else{
+        setError(result.message)
+      }
+    }catch(error)
+    {
+        setError(error.response?.data?.message || error.message);
+    }
+  }
+
+  //console.log(data); return false;
+
+//   const products = [
+//   { sku: "P001", name: "Apple", category: "Fruits", units: "1 Kg", price: 100, stock: 20, supplier: "Fresh Farm", status: "Active" },
+//   { sku: "P002", name: "Banana", category: "Fruits", units: "1 Dozen", price: 60, stock: 5, supplier: "Tropical", status: "Low Stock" },
+//   { sku: "P003", name: "Milk", category: "Dairy", units: "1 Litre", price: 50, stock: 50, supplier: "Amul", status: "Active" },
+//   { sku: "P001", name: "Apple", category: "Fruits", units: "1 Kg", price: 100, stock: 20, supplier: "Fresh Farm", status: "Active" },
+//   { sku: "P002", name: "Banana", category: "Fruits", units: "1 Dozen", price: 60, stock: 5, supplier: "Tropical", status: "Low Stock" },
+//   { sku: "P003", name: "Milk", category: "Dairy", units: "1 Litre", price: 50, stock: 50, supplier: "Amul", status: "Active" },
+//   { sku: "P001", name: "Apple", category: "Fruits", units: "1 Kg", price: 100, stock: 20, supplier: "Fresh Farm", status: "Active" },
+//   { sku: "P002", name: "Banana", category: "Fruits", units: "1 Dozen", price: 60, stock: 5, supplier: "Tropical", status: "Low Stock" },
+//   { sku: "P003", name: "Milk", category: "Dairy", units: "1 Litre", price: 50, stock: 50, supplier: "Amul", status: "Active" },
+//   { sku: "P001", name: "Apple", category: "Fruits", units: "1 Kg", price: 100, stock: 20, supplier: "Fresh Farm", status: "Active" },
+//   { sku: "P002", name: "Banana", category: "Fruits", units: "1 Dozen", price: 60, stock: 5, supplier: "Tropical", status: "Low Stock" },
+//   { sku: "P003", name: "Milk", category: "Dairy", units: "1 Litre", price: 50, stock: 50, supplier: "Amul", status: "Active" },
+  
+// ];
   // Handle pagination
   const handlePageChange = (event, newPage) => {
     setPage(newPage);
@@ -44,8 +73,8 @@ const ProductTable = () => {
     setPage(0);
   };
 
-  // ⭐ Correct slicing (MUI style pagination)
-  const paginatedData = products.slice(
+  
+  const paginatedData = data.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -88,16 +117,16 @@ const ProductTable = () => {
 
           {/* TABLE BODY */}
           <TableBody>
-            {paginatedData.map((product, index) => (
+            {paginatedData.map((item, index) => (
               <TableRow hover key={index}>
-                <TableCell>{product.sku}</TableCell>
-                <TableCell>{product.name}</TableCell>
-                <TableCell>{product.category}</TableCell>
-                <TableCell>{product.units}</TableCell>
-                <TableCell>₹{product.price}</TableCell>
-                <TableCell>{product.stock}</TableCell>
-                <TableCell>{product.supplier}</TableCell>
-                <TableCell>{product.status}</TableCell>
+                <TableCell>{item.sku}</TableCell>
+                <TableCell>{item.product_name}</TableCell>
+                <TableCell>{item.category_id}</TableCell>
+                <TableCell>{item.unit}</TableCell>
+                <TableCell>₹{item.cost_price}</TableCell>
+                <TableCell>{item.min_stock}</TableCell>
+                <TableCell>{item.supplier_id}</TableCell>
+                <TableCell>{item.status}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -108,7 +137,7 @@ const ProductTable = () => {
       {/* ⭐ MUI PAGINATION */}
       <TablePagination
         component="div"
-        count={products.length}
+        count={data.length}
         page={page}
         rowsPerPage={rowsPerPage}
         rowsPerPageOptions={[5, 10, 25]}
