@@ -1,0 +1,51 @@
+
+
+body {
+      overflow: hidden;
+      background: #f5f6fb;
+    }
+    .sidebar {
+      width: 250px;
+      height: calc(100vh - 64px);
+      position: fixed;
+      top: 64px;
+      left: 0;
+      background: #fff;
+      overflow-y: auto;
+      padding-top: 15px;
+    }
+    .header {
+      height: 64px;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+    .content {
+      margin-left: 250px;
+      margin-top: 64px;
+      padding: 20px;
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+      margin-right: 350px;
+    }
+    .cart {
+      width: 350px;
+      height: calc(100vh - 64px);
+      background: #fff;
+      position: fixed;
+      top: 64px;
+      right: 0;
+      border-left: 1px solid #ddd;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .nav-item:hover {
+      background: #e9f1ff;
+      border-radius: 6px;
+    }
