@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation ,useNavigate} from "react-router-dom";
+import { Link, useLocation,useNavigate } from "react-router-dom";
 import { LuStore } from "react-icons/lu";
 import {
   Box,
@@ -38,7 +38,18 @@ const menuItems = [
 
 export default function Sidebar({ sidebarState, setSidebarState }) {
   const location = useLocation();
+  const navigate=useNavigate();
 
+  const toggleSidebar = () => {
+    if (sidebarState === "expanded") setSidebarState("collapsed");
+    else if (sidebarState === "collapsed") setSidebarState("hidden");
+    else setSidebarState("expanded");
+  };
+const logOut=async()=>{
+    
+    sessionStorage.clear()
+    navigate('/')
+  }
   return (
     <>
       {sidebarState === "hidden" && (
@@ -221,8 +232,13 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
         <ExitToAppIcon />
       </ListItemIcon>
 
-          {!isCollapsed && <ListItemText primary="Logout" />}
-        </ListItemButton>
+      {sidebarState === "expanded" && (
+        <ListItemText primary="Logout" sx={{ color: "red", fontWeight: "bold" }} />
+      )}
+    </ListItemButton>
+  </Box>
+)}
+
       </Box>
     </>
   );

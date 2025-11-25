@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { Box } from "@mui/material";
 import { FaRegSquarePlus } from "react-icons/fa6";
 import { AiOutlineCloudDownload, AiOutlineCloudUpload } from "react-icons/ai";
@@ -11,14 +11,41 @@ import TableLayout from "../../components/MainContentComponents/Table";
 import Stats from "../../components/MainContentComponents/Stats";
 import { statsData } from "./StatsData";
 import { columns } from "./columns";
-import { rows } from "./rows";
-
+//import { rows } from "./rows";
+import {productList} from "../../services/productService"
 
 
 
 const Products = () => {
   const [open, setOpen] = useState(false);
+  const[data,setData]=useState([])
+  const[success,setSuccess]=useState('')
+  const[error,setError]=useState('')
+  const[loading,setLoading]=useState(false)
 
+   useEffect(()=>{
+fetchProductList()
+},[])
+
+  const fetchProductList =async()=>{
+    setSuccess(null)
+    setError(null)
+    try{
+      const result=await productList()
+      if(result.status===true)
+      {
+        setSuccess(result.message)
+        setData(result.data)
+      }else{
+        setError(result.message)
+      }
+    }catch(error)
+    {
+        setError(error.response?.data?.message || error.message);
+    }
+  }
+  const rows = data
+  
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Title

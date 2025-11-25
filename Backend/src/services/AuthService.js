@@ -140,4 +140,10 @@ export const AuthService = {
       throw new Error("Error : " + err.message);
     }
   },
+
+  userList:async()=>{
+    const result=await CommonModel.getAllData({table:'users'})
+    return result
+  }
+
 };

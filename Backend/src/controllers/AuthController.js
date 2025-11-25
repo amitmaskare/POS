@@ -255,4 +255,19 @@ export const AuthController = {
     }
   },
 
+  userList:async(req,resp)=>{
+    try{
+      const result=await AuthService.userList()
+      if(!result || result.length===0)
+      {
+        return sendResponse(resp,false,400,"No Data Found")
+      }
+      return sendResponse(resp,true,200,"Fetch data successful",result)
+    }catch(error)
+    {
+      return sendResponse(resp,false,500,`Error : ${error.message}`)
+    }
+  },
+
+
 };
