@@ -18,8 +18,8 @@ useEffect(() => {
 
   return (
       <>
-      {/* {!auth ? <Login onLogin={() => setAuth(sessionStorage.getItem('token'))} /> : <AppRoutes />} */}
-      <AppRoutes />
+     {!auth ? <Login onLogin={() => setAuth(sessionStorage.getItem('token'))} /> : <AppRoutes />}
+     
       </>
     
   )

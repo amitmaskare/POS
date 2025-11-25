@@ -39,13 +39,26 @@ export const ProductController = {
         "package_id",
         "unit_per_package",
         "supplier_id",
+        "supplier_sku",
+        "unit_type",
+        "display_label",
+        "contain_qunatity",
+        "contain_unit_type",
+        "each_peice_weight",
+        "weightunit",
+        "total_container_weight",
+        "weight_unit",
+        "upc",
+        "ean",
+        "gtin",
+        "custom_barcode",
       ];
+
       for (let field of requiredFields) {
         if (!req.body[field]) {
           return sendResponse(resp, false, 400, `${field} is required`);
         }
       }
-
         const result = await ProductService.add(req.body);
         if (!result) {
           return sendResponse(resp, false, 400, "Something went wrong");
@@ -75,6 +88,7 @@ export const ProductController = {
   update: async (req, resp) => {
     try{
         const requiredFields = [
+          "id",
           "product_name",
           "sku",
           "category_id",
@@ -88,19 +102,55 @@ export const ProductController = {
           "package_id",
           "unit_per_package",
           "supplier_id",
+           "supplier_sku",
+        "unit_type",
+        "display_label",
+        "contain_qunatity",
+        "contain_unit_type",
+        "each_peice_weight",
+        "weightunit",
+        "total_container_weight",
+        "weight_unit",
+        "upc",
+        "ean",
+        "gtin",
+        "custom_barcode",
         ];
         for (let field of requiredFields) {
           if (!req.body[field]) {
             return sendResponse(resp, false, 400, `${field} is required`);
           }
         }
-  
-          const result = await ProductService.add(req.body);
+        const{id,product_name, sku,
+         category_id,
+         subcategory_id,
+         cost_price,
+         unit_price,
+         selling_price,
+         initial_stock,
+         reorder_level,
+         unit,
+         package_id,
+         unit_per_package,
+         supplier_id,
+          supplier_sku,
+       unit_type,
+       display_label,
+       contain_qunatity,
+       contain_unit_type,
+       each_peice_weight,
+       weightunit,
+       total_container_weight,
+       weight_unit,
+       upc,
+       ean,
+       gtin,
+       custom_barcode}=req.body
+          const result = await ProductService.update(id,req.body);
           if (!result) {
             return sendResponse(resp, false, 400, "Something went wrong");
           }
-  
-          return sendResponse(resp, true, 201, "Product added successful");
+          return sendResponse(resp, true, 201, "Product updated successful");
         } catch (error) {
           return sendResponse(
             resp,

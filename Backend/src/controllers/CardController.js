@@ -19,6 +19,7 @@ export const CardController={
             return sendResponse(resp,false,500,`Error : ${error.message}`)
         }
     },
+
     add:async(req,resp)=>{
         try{
             const{type,items}=req.body
@@ -29,15 +30,16 @@ export const CardController={
             if (!items || !Array.isArray(items)) {
       return sendResponse(resp, false, 400, "Items must be a JSON array");
     }
-        const checkCardType= await CommonModel.getSingle({table:"cards"})
-        if(!checkCardType || checkCardType.length===0)
+        const checkCardType= await CommonModel.getSingle({table:"cards",conditions:{type}})
+       // resp.send(checkCardType)
+        if(checkCardType)
         {
             return sendResponse(resp,false,400,"Card name already exits")
         }
             const saveData={
                 type:type,
                  items: JSON.stringify(items),
-                created_at:new Date(),
+                 created_at:new Date(),
             }
             const result= await CardService.add(saveData)
             if(!result || result.length===0)
@@ -84,7 +86,11 @@ export const CardController={
                          if (!items || !Array.isArray(items)) {
       return sendResponse(resp, false, 400, "Items must be a JSON array");
     }
-    
+        const checkCardType= await CommonModel.getSingle({table:"cards",conditions: { type, id:`!=${id}`}})
+        if(checkCardType)
+        {
+            return sendResponse(resp,false,400,"Card name already exits")
+        }
                         const result= await CardService.update(req.body)
                         if(!result)
                         {
