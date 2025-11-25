@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState,useEffect } from "react";
 import {
   Box,
   Typography,
@@ -13,9 +13,38 @@ import TableLayout from "../../components/MainContentComponents/Table";
 import { stats } from "./StatsData";
 import { columns } from "./columns";
 import { rows } from "./rows";
+import {userList} from "../../services/userService"
 
 
 export default function Users() {
+
+    const[data,setData]=useState([])
+    const[success,setSuccess]=useState('')
+    const[error,setError]=useState('')
+    const[loading,setLoading]=useState(false)
+
+     useEffect(()=>{
+    fetchProductList()
+    },[])
+    
+      const fetchProductList =async()=>{
+        setSuccess(null)
+        setError(null)
+        try{
+          const result=await userList()
+          if(result.status===true)
+          {
+            setSuccess(result.message)
+            setData(result.data)
+          }else{
+            setError(result.message)
+          }
+        }catch(error)
+        {
+            setError(error.response?.data?.message || error.message);
+        }
+      }
+      const rows = data
 
   return (
     <Box sx={{ minHeight: "100vh" }}>

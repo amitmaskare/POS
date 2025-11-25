@@ -19,7 +19,7 @@ import {
 } from "@mui/material";
 import { FaUserTie, FaCashRegister, FaUserCog } from "react-icons/fa";
 import axios from "axios";
-import { login } from "../services/authService";
+import { login,forgot_password } from "../../services/authService";
 
 
 export default function Login({ onLogin }) {
@@ -29,9 +29,7 @@ export default function Login({ onLogin }) {
   const[email,setEmail]=useState("")
   const [success,setSuccess]=useState("")
   const[error,setError]=useState("")
-  const navigate = useNavigate();
- const apiUrl = process.env.REACT_APP_API_URL;
- 
+  const navigate=useNavigate()
  const roles = [
   { value: "1", label: "Admin", icon: <FaUserTie color="#5A8DEE" /> },
   { value: "2", label: "Cashier", icon: <FaCashRegister color="#5A8DEE" /> },
@@ -58,22 +56,22 @@ export default function Login({ onLogin }) {
     }
   };
 
-  const generateForgotPasswordLink=async()=>{
-    setSuccess(null);
-    setError(null);
-   const emailData={email}
-    try{
-      const result=await forgot_password(emailData)
-      if (result.status === true) {
-        setSuccess(result.message)
-      } else {
-        setError(result.message);
+   const generateForgotPasswordLink=async()=>{
+      setSuccess(null);
+      setError(null);
+     const emailData={email}
+      try{
+        const result=await forgot_password(emailData)
+        if (result.status === true) {
+          setSuccess(result.message)
+        } else {
+          setError(result.message);
+        }
+      }catch(error)
+      {
+        setError(error.response.data.message || "An unexpected error occured");
       }
-    }catch(error)
-    {
-      setError(error.response.data.message || "An unexpected error occured");
     }
-  }
   return (
     <>
     <div

@@ -3,9 +3,9 @@ const apiUrl= process.env.REACT_APP_API_URL
 
 const token = sessionStorage.getItem("token");
 
-export const productList=async()=>{
+export const userList=async()=>{
     try{
-        const response= await axios.get(`${apiUrl}/product/list`,{
+        const response= await axios.get(`${apiUrl}/user/list`,{
            headers: {
           Authorization: `Bearer ${token}`,
         },

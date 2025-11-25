@@ -19,7 +19,8 @@ import RationCardSelection from "../components/HeaderComponents/RationCard";
 import CashierCheckoutModal from "../components/HeaderComponents/CheckOut";
 import SalesHistoryModal from "../components/HeaderComponents/SalesHistory";
 
-export default function Header() {
+export default function Header({ sidebarState }) {
+
   const [anchorEl, setAnchorEl] = useState(null);
   const [openAadhaar, setOpenAadhaar] = useState(false);
   const [openRationCard, setOpenRationCard] = useState(false);
@@ -32,9 +33,7 @@ export default function Header() {
   const handleCloseMenu = () => setAnchorEl(null);
   const handleOpenAadhaar = () => setOpenAadhaar(true); // open modal
   const handleCloseAadhaar = () => setOpenAadhaar(false); // close modal
- 
 
-  
   
   return (
     <Box
