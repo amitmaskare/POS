@@ -1,5 +1,4 @@
-import { Box, Typography } from "@mui/material";
-
+import { Box, Typography,Button } from "@mui/material";
 export const columns = [
   {
     id: "carddetails",
@@ -105,6 +104,16 @@ export const columns = [
   {
     id: "actions",
     label: "Actions",
-    render: (value) => <Box display="flex" gap={1}>{value}</Box>,
-  },
+    render: (row) => (
+      <Box display="flex" gap={1}>
+        <Button size="small" variant="outlined" color="primary">
+          Edit
+        </Button>
+  
+        <Button size="small" variant="outlined" color="error">
+          Delete
+        </Button>
+      </Box>
+    ),
+  }
 ];

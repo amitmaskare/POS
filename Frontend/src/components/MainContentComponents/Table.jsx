@@ -28,7 +28,6 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(columnId);
   };
-
   /** Filter rows based on search */
   const filteredRows = rows.filter((row) =>
     Object.values(row).some((value) =>

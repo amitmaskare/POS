@@ -1,4 +1,5 @@
 
+import { Button,Box } from "@mui/material";
 import PhoneIcon from '@mui/icons-material/Phone';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
@@ -67,7 +68,17 @@ import {
     {
       id: "actions",
       label: "Actions",
-      render: (value) => value,
-    },
+      render: (row) => (
+        <Box display="flex" gap={1}>
+          <Button size="small" variant="outlined" color="primary">
+            Edit
+          </Button>
+    
+          <Button size="small" variant="outlined" color="error">
+            Delete
+          </Button>
+        </Box>
+      ),
+    }
   ];
   

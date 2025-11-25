@@ -6,7 +6,7 @@ const SearchFilter = ({
   placeholder = "Search...",
   onSearchChange = () => {},
   buttons = [],
-  extraFields = [], // <-- NEW: Dynamic extra form elements
+  extraFields = [],
 }) => {
   return (
     <Box sx={{ p: 1, borderRadius: 2, width: "100%" }}>
@@ -21,13 +21,7 @@ const SearchFilter = ({
           size="small"
           placeholder={placeholder}
           onChange={onSearchChange}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <IoSearch size={18} />
-              </InputAdornment>
-            ),
-          }}
+         
           sx={{ flex: 1, bgcolor: "#fff" }}
         />
 

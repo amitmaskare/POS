@@ -46,7 +46,7 @@ export default function Header({ sidebarState }) {
     alignItems: "center",
     justifyContent: "space-between",
     px: 2,
-    pl: sidebarState === "hidden" ? "70px" : "16px", // 👈 shift right only when sidebar hidden
+    pl: sidebarState === "hidden" ? "70px" : "16px", 
     transition: "0.25s ease",
   }}
 >
