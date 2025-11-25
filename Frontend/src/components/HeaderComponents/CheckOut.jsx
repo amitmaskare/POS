@@ -24,7 +24,7 @@ export default function CashierCheckoutModal({ open, onClose }) {
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       sx={{
         "& .MuiDialog-container": {

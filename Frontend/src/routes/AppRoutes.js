@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { Routes, Route } from "react-router-dom";
+
+
+import React from "react";
+import { Routes,Route } from "react-router-dom";
+// Pages
 import Dashboard from "../pages/Dashboard";
 import Products from "../pages/Products";
 import Login from "../pages/Login";
@@ -12,7 +15,6 @@ import Reports from "../pages/Reports";
 import Customers from "../pages/Customers";
 import Users from "../pages/Users";
 import RationCards from "../pages/RationCards";
-import ProtectedRoute from "./ProtectedRoute";
 
 const AppRoutes = () => {
  const [auth, setAuth] = useState(sessionStorage.getItem('token'));

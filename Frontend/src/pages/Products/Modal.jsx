@@ -12,7 +12,7 @@ import {
   Button,
 } from "@mui/material";
 
-const AddProductModal = ({ open, onClose }) => {
+const ModalLayout = ({ open, onClose }) => {
   const [tab, setTab] = useState(0);
 
   const [form, setForm] = useState({
@@ -173,8 +173,8 @@ const AddProductModal = ({ open, onClose }) => {
 
           {tab === 1 && (
             <>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4} md={4}>
+              <Grid container spacing={2} >
+                <Grid item xs={12} sm={4} md={4} >
                   <TextField
                     fullWidth
                     label="Cost Price"
@@ -184,6 +184,7 @@ const AddProductModal = ({ open, onClose }) => {
                     value={form.costprice}
                     onChange={handleChange}
                     sx={{ width: { xs: "100%", sm: 230, md: 180 } }}
+                    
                   />
                 </Grid>
 
@@ -419,4 +420,4 @@ const AddProductModal = ({ open, onClose }) => {
   );
 };
 
-export default AddProductModal;
+export default ModalLayout;

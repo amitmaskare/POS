@@ -1,6 +1,6 @@
 import {useEffect,useState } from 'react';
 import AppRoutes from './routes/AppRoutes';
-import Login from './pages/Login';
+import Login from './pages/Login/Login';
 
 function App() {
  const [auth, setAuth] = useState(sessionStorage.getItem('token'))
