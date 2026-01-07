@@ -133,7 +133,7 @@ const payload={customer_mobile: mobile}
   // Totals
  const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
 
-const taxRate = 0.05;
+const taxRate = 0.00;
 const tax = subtotal * taxRate;
 const total = subtotal + tax;
 
@@ -272,6 +272,11 @@ const retrieveItem=async(id)=>{
     }
 }
 
+ const handleRefundSave = async () => {
+
+};
+
+
   return (
     <>
     <aside className="cart p-3">
@@ -388,6 +393,25 @@ const retrieveItem=async(id)=>{
         <button className="btn btn-outline-secondary btn-sm w-100 mt-3 d-flex align-items-center text-dark justify-content-center">
           % Apply Discount
         </button>
+
+
+          <div className="d-flex gap-2 mt-3">
+          <button
+            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
+            style={getButtonStyle("cash")} onClick={() => handleRefundSave()}>
+            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Refund
+          </button>
+
+          <button
+            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
+            style={getButtonStyle("credit")}
+            onClick={() => setActive("credit")}
+          >
+            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Exchange
+          </button>
+        </div>
 
         {/* Payment Buttons */}
         <div className="d-flex gap-2 mt-3">

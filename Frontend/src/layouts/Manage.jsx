@@ -20,43 +20,31 @@ const Manage = () => {
   setCart((prev) => {
     const exists = prev.find((item) => item.id === product.id);
 
-    // ✅ PRODUCT ALREADY IN CART
     if (exists) {
       return prev.map((item) => {
         if (item.id !== product.id) return item;
 
         const newQty = item.qty + 1;
-
-        let newPrice = item.selling_price;
-
-        // 🔥 OFFER MATCH
-        if (
-          item.min_qty &&
-          item.offer_price &&
-          newQty >= item.min_qty
-        ) {
-          newPrice = item.offer_price / item.min_qty;
-        }
+        const basePrice = item.selling_price ?? item.price;
 
         return {
           ...item,
           qty: newQty,
-          price: newPrice,
+          price: basePrice,
         };
       });
     }
 
-    // ✅ FIRST TIME ADD
     return [
       ...prev,
       {
         ...product,
-        qty: 1,
-        price: product.selling_price,
+        price: product.selling_price ?? product.price,
       },
     ];
   });
 };
+
 
   const getSidebarWidth = () => {
     if (sidebarState === "expanded") return 265;

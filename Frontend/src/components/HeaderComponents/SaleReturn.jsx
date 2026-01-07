@@ -133,35 +133,6 @@ useEffect(() => {
 }, [saleItems, exchangeItems]);
 
 
- const handleRefundSave = async () => {
- const payload = {
-  sale_id: invoice.id,
-  return_type: "refund", // or "exchange"
-  items: saleItems
-    .filter(i => i.returned_qty > 0)
-    .map(i => ({
-      sale_item_id: i.sale_item_id,
-      product_id: i.product_id,
-      product_name: i.product_name,
-      image: i.image,
-      qty: i.returned_qty
-    }))
-};
-try {
-    const res = await confirmReturn(payload);
-    if (res.status === true) {
-      alert(`Success! Refund ₹${res.data.refundAmount}`);
-      setInvoice(null)
-      setSaleItems([])
-      setBarcodeItem(null)
-      onClose();
-    } else {
-      alert(res.message);
-    }
-  } catch (err) {
-    alert("Return failed");
-  }
-};
 
 const handleConfirmExchange = async () => {
   const payload = {
@@ -328,19 +299,8 @@ const returnItem=async(id)=>{
   try{
     const result= await saleReturnById(id);
     if(result.status===true)
-    {
-      console.log(result.data.price);
-      addToCart(result.data)
-      //const { items } = result.data;
-      //   setCart(
-      // items.map(item => ({
-      //   id: item.product_id,
-      //   product_name: item.product_name,
-      //   qty: item.qty,
-      //   price: item.price,
-      //   image: item.image
-      // }))
-      //  );
+    {  
+      addToCart( result.data)
     }
     }catch(error)
       {
