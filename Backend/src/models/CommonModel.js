@@ -115,4 +115,32 @@ export const CommonModel = {
     const [result] = await pool.promise().query(sql, conditionValues);
     return result.affectedRows;
   },
+
+  findOne: async ({ table, where }) => {
+    const keys = Object.keys(where);
+    const values = Object.values(where);
+  
+    const conditions = keys.map(key => `${key} = ?`).join(" AND ");
+  
+    const sql = `SELECT * FROM ${table} WHERE ${conditions} LIMIT 1`;
+  
+    const [rows] = await db.query(sql, values);
+    return rows.length ? rows[0] : null;
+  },
+
+  rawQuery: (query, params = [], trx = null) => {
+    return new Promise((resolve, reject) => {
+      const conn = trx || pool;   // use transaction connection OR normal db
+
+      conn.query(query, params, (err, result) => {
+        if (err) {
+          console.error("SQL ERROR →", err.sqlMessage || err);
+          return reject(err);
+        }
+        resolve(result);
+      });
+    });
+  },
+
+
 };

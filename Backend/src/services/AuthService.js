@@ -144,6 +144,43 @@ export const AuthService = {
   userList:async()=>{
     const result=await CommonModel.getAllData({table:'users'})
     return result
-  }
+  },
+
+  add:async(userData)=>{
+    const {name, email, role } = userData;
+    const hashPassword = await bcrypt.hash('123456', 10);
+    const user_id= await AuthService.getNextUserId();
+    const data = {
+      user_id: user_id,
+      name: name,
+      email: email,
+      password: hashPassword,
+      role: role,
+      created_at: new Date(),
+    };
+    const result = await CommonModel.insertData({
+      table: "users",
+      data: data,
+    });
+    return result;
+   
+},
+
+getById:async(userId)=>{
+    const result=await CommonModel.getSingle({table:"users",conditions:{userId}})
+    return result
+},
+
+update:async(data)=>
+{
+    const {userId,name,email,role}=data
+    const result=await CommonModel.updateData({table:"users",data:data,conditions:{userId}})
+    return result
+},
+
+deleteData:async(userId)=>{
+  const result=await CommonModel.deleteData({table:"users",conditions:{userId}})  
+  return result
+},
 
 };

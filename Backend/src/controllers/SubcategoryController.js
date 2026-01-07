@@ -18,10 +18,10 @@ export const SubcategoryController={
     },
     add:async(req,resp)=>{
         try{
-            const{category_id,subcategory_name}=req.body
-             if(!category_id)
+            const{categoryId,subcategory_name}=req.body
+             if(!categoryId)
             {
-                return sendResponse(resp,false,400,"category_id field is required")
+                return sendResponse(resp,false,400,"categoryId field is required")
             }
             if(!subcategory_name)
             {
@@ -58,14 +58,14 @@ export const SubcategoryController={
     },
     update:async(req,resp)=>{
         try{
-             const {id,category_id,subcategory_name}=req.body
+             const {id,categoryId,subcategory_name}=req.body
                         if(!id)
                         {
                             return sendResponse(resp,false,400,"id field is reuired")
                         }
-                         if(!category_id)
+                         if(!categoryId)
                         {
-                            return sendResponse(resp,false,400,"category_id field is reuired")
+                            return sendResponse(resp,false,400,"categoryId field is reuired")
                         }
                         if(!subcategory_name)
                         {

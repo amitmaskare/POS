@@ -21,9 +21,13 @@ export const OfferController={
         try{
            const requiredFields = [
         "offer_name",
-        "discount",
-        "description",
-        
+        "product_id",
+        "min_qty",
+        "offer_price",
+        "offer_qty_price",
+        "start_date",
+        "end_date",
+        "status"    
       ];
 
        for (let field of requiredFields) {
@@ -64,9 +68,15 @@ export const OfferController={
     update:async(req,resp)=>{
         try{
               const requiredFields = [
-        "offer_name",
-        "discount",
-        "description",
+                  "id",
+                "offer_name",
+                "product_id",
+                "min_qty",
+                "offer_price",
+                "offer_qty_price",
+                "start_date",
+                "end_date",
+                "status"  
       ];
 
        for (let field of requiredFields) {
@@ -100,4 +110,6 @@ export const OfferController={
             return sendResponse(resp,false,500,`Error : ${error.message}`)
         }
     },
+
+   
 }

@@ -28,12 +28,16 @@ const menuItems = [
   { title: "POS System", icon: <ShoppingCartIcon />, path: "/dashboard" },
   { title: "Products", icon: <CategoryIcon />, path: "/products" },
   { title: "Purchases", icon: <ShoppingBagIcon />, path: "/purchases" },
+  { title: "Receiving", icon: <ShoppingBagIcon />, path: "/receiving" },
+  { title: "Sales", icon: <ShoppingBagIcon />, path: "/sales" },
+  { title: "Return Product", icon: <ShoppingBagIcon />, path: "/return-product" },
   { title: "Transactions", icon: <ReceiptLongIcon />, path: "/transactions" },
   { title: "Inventory", icon: <InventoryIcon />, path: "/inventory" },
   { title: "Reports", icon: <AssessmentIcon />, path: "/reports" },
   { title: "Customers", icon: <PeopleIcon />, path: "/customers" },
   { title: "Users", icon: <PersonIcon />, path: "/users" },
   { title: "Ration Cards", icon: <InventoryIcon />, path: "/rationcards" },
+  { title: "Offers", icon: <InventoryIcon />, path: "/offers" },
 ];
 
 export default function Sidebar({ sidebarState, setSidebarState }) {
@@ -222,6 +226,7 @@ const logOut=async()=>{
           backgroundColor: "#ffe5e5",
         },
       }}
+      onClick={logOut}
     >
       <ListItemIcon
         sx={{

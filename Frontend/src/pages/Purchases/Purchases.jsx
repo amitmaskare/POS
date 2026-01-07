@@ -1,4 +1,4 @@
-import React from "react";
+import React,{useState,useEffect} from "react";
 import {
   Box,
   Typography,
@@ -17,13 +17,61 @@ import NewPurchaseOrderModal from "./Modal";
 import { FaRegSquarePlus } from "react-icons/fa6";
 import { rows } from "./rows";
 import { columns } from "./columns";
-
-
+import {purchaseList,getById} from "../../services/purchaseService"
 
 
 export default function Purchases() {
-  const [openModal, setOpenModal] = React.useState(false);
 
+  const [openModal, setOpenModal] = React.useState(false);
+   const[data,setData]=useState([])
+    const[success,setSuccess]=useState('')
+    const[error,setError]=useState('')
+    const[loading,setLoading]=useState(false)
+  const [editData, setEditData] = useState(null);
+     useEffect(()=>{
+      fetchPurchaseList()
+      },[])
+      
+        const fetchPurchaseList =async()=>{
+          setSuccess(null)
+          setError(null)
+          try{
+            const result=await purchaseList()
+            if(result.status===true)
+            {
+              setSuccess(result.message)
+              setData(result.data)
+            }else{
+              setError(result.message)
+            }
+          }catch(error)
+          {
+              setError(error.response?.data?.message || error.message);
+          }
+        }
+      const rows = data
+
+       const handleEdit =async(id) => {
+                         setSuccess('')
+                          setError('')
+                        try{
+                          
+                          const result=await getById(id)
+                           //console.log(result.data.purchase); return false;
+                          if(result.status===true)
+                          {
+                            setSuccess(result.message)
+                           setEditData(result.data);
+                           setOpenModal(true);
+                          }else{
+                            setError(result.message)
+                          }
+                        }
+                      catch(error)
+                        {
+                          setError(error.response?.data?.message || error.message)
+                        }
+                  };
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Title
@@ -54,7 +102,7 @@ export default function Purchases() {
             Purchase Orders
           </Typography>
         </Box>
-        <TableLayout columns={columns} rows={rows} actionButtons={[
+        <TableLayout columns={columns} rows={rows} extra={{ edit: handleEdit }} actionButtons={[
           {
             label: "Filter",
             icon: <FilterListIcon />,
@@ -79,7 +127,7 @@ export default function Purchases() {
         </Box>
 
       </Paper>
-      <NewPurchaseOrderModal open={openModal} onClose={() => setOpenModal(false)} />
+      <NewPurchaseOrderModal open={openModal} onClose={() => setOpenModal(false)} onSaved={fetchPurchaseList} editData={editData}/>
 
     </Box>
   );

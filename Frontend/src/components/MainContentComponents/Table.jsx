@@ -15,7 +15,7 @@ import {
   Button
 } from "@mui/material";
 
-const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." ,actionButtons = null  }) => {
+const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." ,actionButtons = null,extra = {}  }) => {
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState(columns[0]?.id || "");
   const [page, setPage] = useState(0);
@@ -135,13 +135,17 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
             {paginatedData.map((row, index) => (
               <TableRow hover key={index}>
                 {columns.map((col) => (
-                  <TableCell key={col.id}>
-                    {/* custom renderer support */}
-                    {col.render ? col.render(row[col.id], row) : row[col.id]
-}
+//                   <TableCell key={col.id}>
+                  
+//                     {col.render ? col.render(row[col.id], row) : row[col.id]
+// }
                     
 
+//                   </TableCell>
+<TableCell key={col.id}>
+                     {col.render ? col.render(row, extra) : row[col.id]}
                   </TableCell>
+              
                 ))}
               </TableRow>
             ))}

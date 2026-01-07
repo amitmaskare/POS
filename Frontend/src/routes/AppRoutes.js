@@ -23,14 +23,18 @@ import Login from "../pages/Login/Login";
 import ForgotPassword from "../pages/ForgotPassword";
 import Manage from "../layouts/Manage";
 import Purchases from "../pages/Purchases/Purchases";
+import Receiving from "../pages/Receiving/Receiving";
+import Sales from "../pages/Sales/Sales";
+import Return from "../pages/Returns/Return";
 import Transactions from "../pages/Transactions/Transactions";
 import Inventory from "../pages/Inventory/Inventory";
 import Reports from "../pages/Reports/Reports";
 import Customers from "../pages/Customers/Customers";
 import Users from "../pages/Users/Users";
 import RationCards from "../pages/RationCards/RationCards";
+import Offer from "../pages/Offer/Offer";
 import ProtectedRoute from "./ProtectedRoute";
-
+import SaleReturn from "../pages/SaleReturn/Dashboard"
 
 const AppRoutes = () => {
  const [auth, setAuth] = useState(sessionStorage.getItem('token'));
@@ -56,12 +60,17 @@ const AppRoutes = () => {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="products" element={<Products />} />
         <Route path="purchases" element={<Purchases />} />
+        <Route path="receiving" element={<Receiving />} />
+        <Route path="sales" element={<Sales />} />
+        <Route path="return-product" element={<Return />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="reports" element={<Reports />} />
         <Route path="customers" element={<Customers />} />
         <Route path="users" element={<Users />} />
         <Route path="rationcards" element={<RationCards />} />
+        <Route path="offers" element={<Offer />} />
+        <Route path="salereturn" element={<SaleReturn />} />
       </Route>
 
       {/* PUBLIC ROUTES (WITHOUT SIDEBAR) */}

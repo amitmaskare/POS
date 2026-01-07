@@ -13,21 +13,22 @@ import TableLayout from "../../components/MainContentComponents/Table";
 import { stats } from "./StatsData";
 import { columns } from "./columns";
 import { rows } from "./rows";
-import {userList} from "../../services/userService"
+import {userList,getById,deleteItem} from "../../services/userService"
+import ModalLayout from "./Modal";
 
 
 export default function Users() {
-
+    const [open, setOpen] = useState(false);
     const[data,setData]=useState([])
     const[success,setSuccess]=useState('')
     const[error,setError]=useState('')
     const[loading,setLoading]=useState(false)
-
+  const [editData, setEditData] = useState(null);
      useEffect(()=>{
-    fetchProductList()
+    fetchUserList()
     },[])
     
-      const fetchProductList =async()=>{
+      const fetchUserList =async()=>{
         setSuccess(null)
         setError(null)
         try{
@@ -45,7 +46,51 @@ export default function Users() {
         }
       }
       const rows = data
+      const handleDelete = async(id) => {
+                setSuccess('')
+                setError('')
+              try{
+                 const deleteData=window.confirm('Are you sure you want to delete this item?')
+          if(deleteData)
+          {
+                const result=await deleteItem(id)
+                
+                if(result.status===true)
+                {
+                  setSuccess(result.message)
+                  fetchUserList()
+                }else{
+                  setError(result.message)
+                }
+              }
+            }catch(error)
+              {
+                setError(error.response?.data?.message || error.message)
+              }
+            };
 
+            const handleEdit =async(id) => {
+               setSuccess('')
+                setError('')
+              try{
+                
+                const result=await getById(id)
+                
+                if(result.status===true)
+                {
+                  setSuccess(result.message)
+                setEditData(result.data);
+                 setOpen(true);
+                }else{
+                  setError(result.message)
+                }
+              }
+            catch(error)
+              {
+                setError(error.response?.data?.message || error.message)
+              }
+
+        };
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Title
@@ -57,12 +102,17 @@ export default function Users() {
             icon: <FaRegSquarePlus />,
             variant: "contained",
             bgcolor: "#5A8DEE",
-
+             onClick: () => {
+      setEditData(null);   // ← RESET edit data
+      setOpen(true);       // ← OPEN modal
+    },
           },
         ]}
       />
 
       {/* TOP STATS + ADD USER */}
+     <ModalLayout open={open} onClose={() => setOpen(false)} onSaved={fetchUserList} editData={editData}/>
+
       <Box mt={2}>
         <Stats stats={stats} />
       </Box>
@@ -74,7 +124,7 @@ export default function Users() {
           System Users
         </Typography>
       </Box>
-      <TableLayout columns={columns} rows={rows} actionButtons={[
+      <TableLayout columns={columns} rows={rows}  extra={{ deleteItem: handleDelete, edit: handleEdit }}  actionButtons={[
             {
               label: "Filter",
               icon: <FilterListIcon />,

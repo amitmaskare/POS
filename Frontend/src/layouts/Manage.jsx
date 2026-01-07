@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import Cart from "../pages/PosSystem/Cart";
+import SaleReturnCart from "../pages/SaleReturn/Cart";
 import { Box } from "@mui/material";
 
 const HEADER_HEIGHT = 70;
@@ -10,9 +11,52 @@ const HEADER_HEIGHT = 70;
 const Manage = () => {
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
+  const isSaleReturnDashboard = location.pathname === "/salereturn";
 
   // receives: "expanded", "collapsed", "hidden"
   const [sidebarState, setSidebarState] = useState("expanded");
+  const [cart, setCart] = useState([]);
+  const addToCart = (product) => {
+  setCart((prev) => {
+    const exists = prev.find((item) => item.id === product.id);
+
+    // ✅ PRODUCT ALREADY IN CART
+    if (exists) {
+      return prev.map((item) => {
+        if (item.id !== product.id) return item;
+
+        const newQty = item.qty + 1;
+
+        let newPrice = item.selling_price;
+
+        // 🔥 OFFER MATCH
+        if (
+          item.min_qty &&
+          item.offer_price &&
+          newQty >= item.min_qty
+        ) {
+          newPrice = item.offer_price / item.min_qty;
+        }
+
+        return {
+          ...item,
+          qty: newQty,
+          price: newPrice,
+        };
+      });
+    }
+
+    // ✅ FIRST TIME ADD
+    return [
+      ...prev,
+      {
+        ...product,
+        qty: 1,
+        price: product.selling_price,
+      },
+    ];
+  });
+};
 
   const getSidebarWidth = () => {
     if (sidebarState === "expanded") return 265;
@@ -66,10 +110,11 @@ const Manage = () => {
             p: 3,
           }}
         >
-          <Outlet />
+         <Outlet context={{ addToCart }} />
         </Box>
 
-        {isDashboard && <Cart />}
+        {isDashboard && <Cart cart={cart} setCart={setCart} />}
+        {isSaleReturnDashboard && <SaleReturnCart cart={cart} setCart={setCart} />}
       </Box>
     </Box>
   );

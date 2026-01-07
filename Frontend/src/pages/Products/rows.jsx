@@ -1,9 +1,6 @@
 
 import {productList} from "../../services/productService"
 
-
-
-
 export const rows = [
     { sku: "P001", name: "Apple", category: "Fruits", units: "1 Kg", price: 100, stock: 20, supplier: "Fresh Farm", status: "Active" },
     { sku: "P002", name: "Banana", category: "Fruits", units: "1 Dozen", price: 60, stock: 5, supplier: "Tropical", status: "Low Stock" },

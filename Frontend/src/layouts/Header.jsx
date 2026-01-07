@@ -6,6 +6,10 @@ import {
   Menu,
   MenuItem,
   Button,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ShoppingCartCheckoutIcon from "@mui/icons-material/ShoppingCartCheckout";
@@ -18,7 +22,8 @@ import Aadhaar from "../components/HeaderComponents/Aadhaar";
 import RationCardSelection from "../components/HeaderComponents/RationCard";
 import CashierCheckoutModal from "../components/HeaderComponents/CheckOut";
 import SalesHistoryModal from "../components/HeaderComponents/SalesHistory";
-
+import CheckPriceModal from "../components/HeaderComponents/CheckPrice";
+import SaleReturnModal from "../components/HeaderComponents/SaleReturn"
 export default function Header({ sidebarState }) {
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -26,6 +31,8 @@ export default function Header({ sidebarState }) {
   const [openRationCard, setOpenRationCard] = useState(false);
   const [openCheckOut, setopenCheckout] = useState(false);
   const [openSalesHistory, setopenSalesHistory] = useState(false);
+  const [openCheckPrice, setopenCheckPrice] = useState(false);
+  const [openSaleReturn, setopenSaleReturn] = useState(false);
 
   const open = Boolean(anchorEl);
 
@@ -97,6 +104,11 @@ export default function Header({ sidebarState }) {
           Check Out
         </Button>
 
+         <Button variant="outlined" size="small" onClick={() => setopenCheckPrice(true)} startIcon={<HistoryIcon />}>
+          Check Price
+        </Button>
+        
+
         <Button
           variant="outlined"
           size="small"
@@ -119,10 +131,15 @@ export default function Header({ sidebarState }) {
         <Button variant="outlined"  size="small" startIcon={<LocalOfferIcon />}>
           Offers
         </Button>
-
-        <Button variant="outlined"  size="small" onClick={() => setopenSalesHistory(true)} startIcon={<HistoryIcon />}>
+             {/* <Button variant="outlined" size="small" onClick={() => setopenSaleReturn(true)} startIcon={<HistoryIcon />}>
+          Sale Return
+        </Button> */}
+          <ListItemButton to="/salereturn" variant="outlined" startIcon={<HistoryIcon />}>
+          <ListItemText primary="Sale Return" />
+        </ListItemButton>
+        {/* <Button variant="outlined"  size="small" onClick={() => setopenSalesHistory(true)} startIcon={<HistoryIcon />}>
           Sales History
-        </Button>
+        </Button> */}
       </Box>
       <Aadhaar open={openAadhaar} onClose={handleCloseAadhaar} />
 
@@ -138,6 +155,14 @@ export default function Header({ sidebarState }) {
 <SalesHistoryModal 
   open={openSalesHistory} 
   onClose={() => setopenSalesHistory(false)} 
+/>
+<CheckPriceModal 
+  open={openCheckPrice} 
+  onClose={() => setopenCheckPrice(false)} 
+/>
+<SaleReturnModal 
+  open={openSaleReturn} 
+  onClose={() => setopenSaleReturn(false)} 
 />
 
     </Box>

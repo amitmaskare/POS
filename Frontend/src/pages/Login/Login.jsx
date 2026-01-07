@@ -169,6 +169,7 @@ export default function Login({ onLogin }) {
             Password
             </Typography>
             <TextField
+            type="password"
               id="password"
               label="Enter Your Password"
               variant="outlined"  

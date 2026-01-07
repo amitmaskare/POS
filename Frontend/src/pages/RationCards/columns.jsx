@@ -1,119 +1,23 @@
-import { Box, Typography,Button } from "@mui/material";
+import { Button,Box } from "@mui/material";
+
 export const columns = [
-  {
-    id: "carddetails",
-    label: "Card Details",
-    render: (value) => (
-      <Box display="flex" alignItems="center" gap={1.5}>
-        <Box
-          sx={{
-            width: 40,
-            height: 40,
-            borderRadius: "10px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: "bold",
-            fontSize: "14px",
-          }}
-        >
-          {value.icon}
+    { id: "card_number", label: "Card Details" },
+    { id: "card_holder_name", label: "Holder Info" },
+    { id: "family_member", label: "Limits" },
+    { id: "status", label: "Status" },
+    {
+      id: "actions",
+      label: "Actions",
+      render: (row,extra) => (
+        <Box display="flex" gap={1}>
+          <Button size="small" variant="outlined" color="primary" onClick={() => extra?.edit(row?.id)}>
+            Edit
+          </Button>
+    
+          <Button size="small" variant="outlined" color="error" onClick={() => extra?.deleteItem(row?.id)}>
+            Delete
+          </Button>
         </Box>
-
-        <Box>
-          <Typography fontWeight={600}>{value.type}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {value.number}
-          </Typography>
-        </Box>
-      </Box>
-    ),
-  },
-
-  {
-    id: "holderinfo",
-    label: "Holder Info",
-    render: (value) => (
-      <Box>
-        <Typography fontWeight={600}>{value.name}</Typography>
-        <Typography fontSize="0.875rem">{value.phone}</Typography>
-        <Typography fontSize="0.875rem">
-          {value.members} members
-        </Typography>
-      </Box>
-    ),
-  },
-
-  {
-    id: "limits",
-    label: "Limits",
-    render: (value) => {
-      if (!value) {
-        return <Typography fontSize="0.875rem">N/A</Typography>;
-      }
-  
-      // If it's already an array
-      if (Array.isArray(value)) {
-        return (
-          <Box>
-            {value.map((item, i) => (
-              <Typography key={i} fontSize="0.875rem">
-                {item}
-              </Typography>
-            ))}
-          </Box>
-        );
-      }
-  
-      // If it's a string → split normally
-      if (typeof value === "string") {
-        return (
-          <Box>
-            {value.split(",").map((item, i) => (
-              <Typography key={i} fontSize="0.875rem">
-                {item.trim()}
-              </Typography>
-            ))}
-          </Box>
-        );
-      }
-  
-      // If object → convert safely
-      return (
-        <Typography fontSize="0.875rem">
-          {JSON.stringify(value)}
-        </Typography>
-      );
-    },
-  },
-  
-
-  {
-    id: "status",
-    label: "Status",
-    render: (value) => (
-      <Typography
-        fontWeight={600}
-        color={value === "Active" ? "green" : "red"}
-      >
-        {value}
-      </Typography>
-    ),
-  },
-
-  {
-    id: "actions",
-    label: "Actions",
-    render: (row) => (
-      <Box display="flex" gap={1}>
-        <Button size="small" variant="outlined" color="primary">
-          Edit
-        </Button>
-  
-        <Button size="small" variant="outlined" color="error">
-          Delete
-        </Button>
-      </Box>
-    ),
-  }
-];
+      ),
+    }
+  ];

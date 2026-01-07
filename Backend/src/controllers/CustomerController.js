@@ -8,7 +8,7 @@ export const CustomerController={
             const result=await CustomerService.list()
             if(!result || result.length===0)
             {
-                return sendResponse(reportError,false,400,"No Data Found")
+                return sendResponse(resp,false,400,"No Data Found")
             }
             return sendResponse(resp,true,200,"Fetch data successful",result)
         }catch(error)
@@ -30,12 +30,23 @@ export const CustomerController={
           return sendResponse(resp, false, 400, `${field} is required`);
         }
       }
+       // Check if email already exists
+    const emailExists = await CustomerService.checkEmail(req.body.email);
+    if (emailExists) {
+      return sendResponse(resp, false, 400, "Email already exists");
+    }
+
+    // Check if phone already exists
+    const phoneExists = await CustomerService.checkPhone(req.body.phone);
+    if (phoneExists) {
+      return sendResponse(resp, false, 400, "Phone number already exists");
+    }
             const result= await CustomerService.add(req.body)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
             }
-            return sendResponse(resp,true,201,"Category added successful",result)
+            return sendResponse(resp,true,201,"Customer added successful",result)
         }catch(error)
         {
             return sendResponse(resp,false,500,`Error : ${error.message}`)

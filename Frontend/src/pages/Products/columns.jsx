@@ -1,4 +1,5 @@
 import { Button,Box } from "@mui/material";
+
 export const columns = [
     { id: "sku", label: "SKU" },
     { id: "product_name", label: "Product Name" },
@@ -11,13 +12,13 @@ export const columns = [
     {
       id: "actions",
       label: "Actions",
-      render: (row) => (
+      render: (row,extra) => (
         <Box display="flex" gap={1}>
-          <Button size="small" variant="outlined" color="primary">
+          <Button size="small" variant="outlined" color="primary" onClick={() => extra?.edit(row?.id)}>
             Edit
           </Button>
     
-          <Button size="small" variant="outlined" color="error">
+          <Button size="small" variant="outlined" color="error" onClick={() => extra?.deleteItem(row?.id)}>
             Delete
           </Button>
         </Box>

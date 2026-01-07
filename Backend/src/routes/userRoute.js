@@ -20,5 +20,11 @@ route.post("/update-profile", AuthController.updateprofile);
 route.post("/reset-password", AuthController.resetPassword);
 route.post("/verify-aadhaarnumber", AuthController.verifyAadhaarNumber);
 
-route.get("user/list",AuthController.userList)
+route.get("/user/list",AuthController.userList)
+route.post("/user/add",AuthController.add)
+route.get("/user/getById/:id",AuthController.getById)
+route.post("/user/update",AuthController.update)
+route.delete("/user/delete/:id",AuthController.deleteData)
+
+
 export default route;

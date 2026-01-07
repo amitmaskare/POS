@@ -20,6 +20,9 @@ import OfferRoute from "../src/routes/OfferRoute.js"
 import CuponRoute from "../src/routes/CuponRoute.js"
 import AddtocartRoute from "../src/routes/AddtocartRoute.js"
 import PaymentRoute from "../src/routes/PaymentRoute.js"
+import HoldAndRetrieveRoute from "../src/routes/HoldAndRetrieveRoute.js"
+import SaleRoute from "../src/routes/SaleRoute.js"
+import ReturnRoute from "../src/routes/ReturnRoute.js"
 dotenv.config();
 const app = express();
 app.use(express.json());
@@ -44,6 +47,9 @@ app.use("/api",OfferRoute)
 app.use("/api",CuponRoute)
 app.use("/api",AddtocartRoute)
 app.use("/api",PaymentRoute)
+app.use("/api",HoldAndRetrieveRoute)
+app.use("/api",SaleRoute)
+app.use("/api",ReturnRoute)
 app.use('/public/uploads', express.static('public/uploads'));
 
 export default app;

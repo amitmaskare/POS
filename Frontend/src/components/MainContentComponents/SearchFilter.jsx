@@ -3,8 +3,9 @@ import { Box, Stack, Button, TextField, InputAdornment } from "@mui/material";
 import { IoSearch } from "react-icons/io5";
 
 const SearchFilter = ({
-  placeholder = "Search...",
+  placeholder = "Search Barcode...",
   onSearchChange = () => {},
+  value,
   buttons = [],
   extraFields = [],
 }) => {
@@ -21,7 +22,7 @@ const SearchFilter = ({
           size="small"
           placeholder={placeholder}
           onChange={onSearchChange}
-         
+          value={value}
           sx={{ flex: 1, bgcolor: "#fff" }}
         />
 

@@ -269,5 +269,84 @@ export const AuthController = {
     }
   },
 
+  add:async(req,resp)=>{
+    try {
+      const { name, email, role } = req.body;
+      if (!name) {
+        return sendResponse(resp, false, 400, "name field is required");
+      }
+      if (!email) {
+        return sendResponse(resp, false, 400, "email field is required");
+      }
+      if (!role) {
+        return sendResponse(resp, false, 400, "role field is required");
+      }
+      const result = await AuthService.add(req.body);
+      if (!result) {
+        return sendResponse(resp, false, 400, "Something went wrong");
+      }
+      return sendResponse(resp, true, 201, "User added Successful");
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error : ${error.message}`);
+    }
+},
+getById:async(req,resp)=>{
+    try{
+        const {id}=req.params
+        if(!id)
+        {
+        return sendResponse(resp,false,400,"userId not found")
+        }
+        const result=await AuthService.getById(id)
+        if(!result || result.length===0)
+        {
+            return sendResponse(resp,false,400,"No Data Found")
+        }
+        return sendResponse(resp,true,200,"get by id data",result)
+    }catch(error)
+    {
+        return sendResponse(resp,false,500,`Error : ${error.message}`)
+    }
+},
+update:async(req,resp)=>{
+  try {
+    const {userId, name, email, role } = req.body;
+    if(!userId)
+    {
+        return sendResponse(resp,false,400,"userId field is reuired")
+    }
+    if (!name) {
+      return sendResponse(resp, false, 400, "name field is required");
+    }
+    if (!email) {
+      return sendResponse(resp, false, 400, "email field is required");
+    }
+    if (!role) {
+      return sendResponse(resp, false, 400, "role field is required");
+    }
+    const result = await AuthService.update(req.body);
+    if (!result) {
+      return sendResponse(resp, false, 400, "Something went wrong");
+    }
+    return sendResponse(resp, true, 201, "User updated Successful");
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error : ${error.message}`);
+  }
+},
+deleteData:async(req,resp)=>{
+    try{
+        const {id}=req.params
+        const result=await AuthService.deleteData(id)
+        if(!result || result.length===0)
+        {
+            return sendResponse(resp,false,400,"userId not found")
+        }
+        return sendResponse(resp,true,200,"Item deleted successful")
+    }catch(error)
+    {
+        return sendResponse(resp,false,500,`Error : ${error.message}`)
+    }
+},
+
 
 };

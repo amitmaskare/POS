@@ -8,7 +8,7 @@ export const CategoryController={
             const result=await CategoryService.list()
             if(!result || result.length===0)
             {
-                return sendResponse(reportError,false,400,"No Data Found")
+                return sendResponse(resp,false,400,"No Data Found")
             }
             return sendResponse(resp,true,200,"Fetch data successful",result)
         }catch(error)

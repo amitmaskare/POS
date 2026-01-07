@@ -12,5 +12,8 @@ route.get("/product/getById/:id",ProductController.getById)
 route.post("/product/update",ProductController.update)
 route.delete("/product/delete/:id",ProductController.deleteData)
 route.post("/product/searchProduct",ProductController.searchProduct)
+route.get("/subcategory/by-category/:categoryId",ProductController.categoryWiseSubcategoryData)
+route.post("/product/addProduct",ProductController.addProduct)
+route.get("/product/favouriteList",ProductController.favouriteList)
 
 export default route

@@ -4,7 +4,7 @@ import {CommonModel} from "../models/CommonModel.js"
 export const CustomerService={
 
     list:async()=>{
-        const result=await CommonModel.getAllData({table:"customers",fields:["name,email,phone,address,created_at"]})
+        const result=await CommonModel.getAllData({table:"customers",fields:["id,name,email,phone,address,status,created_at"]})
         return result      
     },
 
@@ -28,5 +28,19 @@ export const CustomerService={
     deleteData:async(id)=>{
       const result=await CommonModel.deleteData({table:"customers",conditions:{id}})  
       return result
-    }
+    },
+
+    checkEmail: async (email) => {
+        return await CommonModel.findOne({
+          table: "customers",
+          where: { email }
+        });
+      },
+      
+      checkPhone: async (phone) => {
+        return await CommonModel.findOne({
+          table: "customers",
+          where: { phone }
+        });
+      },
 }

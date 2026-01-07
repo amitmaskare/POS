@@ -12,7 +12,7 @@ import Stats from "../../components/MainContentComponents/Stats";
 import { statsData } from "./StatsData";
 import { columns } from "./columns";
 //import { rows } from "./rows";
-import {productList} from "../../services/productService"
+import {productList,getById,deleteProduct} from "../../services/productService"
 
 
 
@@ -22,6 +22,7 @@ const Products = () => {
   const[success,setSuccess]=useState('')
   const[error,setError]=useState('')
   const[loading,setLoading]=useState(false)
+  const [editData, setEditData] = useState(null);
 
    useEffect(()=>{
 fetchProductList()
@@ -45,7 +46,47 @@ fetchProductList()
     }
   }
   const rows = data
-  
+
+    const handleDelete = async(id) => {
+      
+      setSuccess('')
+      setError('')
+    try{
+      const result=await deleteProduct(id)
+      if(result.status===true)
+      {
+        setSuccess(result.message)
+        fetchProductList()
+      }else{
+        setError(result.message)
+      }
+    }catch(error)
+    {
+      setError(error.response?.data?.message || error.message)
+    }
+  };
+
+  const handleEdit =async(id) => {
+                     setSuccess('')
+                      setError('')
+                    try{
+                      
+                      const result=await getById(id)
+                      
+                      if(result.status===true)
+                      {
+                        setSuccess(result.message)
+                      setEditData(result.data);
+                       setOpen(true);
+                      }else{
+                        setError(result.message)
+                      }
+                    }
+                  catch(error)
+                    {
+                      setError(error.response?.data?.message || error.message)
+                    }
+              };
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Title
@@ -57,27 +98,25 @@ fetchProductList()
             icon: <FaRegSquarePlus />,
             variant: "contained",
             bgcolor: "#5A8DEE",
-            onClick: () => setOpen(true),
+             onClick: () => {
+      setEditData(null);   // ← RESET edit data
+      setOpen(true);       // ← OPEN modal
+    },
           },
         ]}
       />
 
-      <ModalLayout open={open} onClose={() => setOpen(false)} />
-
-
+      <ModalLayout open={open} onClose={() => setOpen(false)} onSaved={fetchProductList}  editData={editData}/>
       <Box sx={{ width: "100%", px: 3, py: 2 }}>
         <Stats stats={statsData} />
       </Box>
-
-
      
-      <TableLayout columns={columns} rows={rows} actionButtons={
+      <TableLayout columns={columns} rows={rows}  extra={{ deleteItem: handleDelete, edit: handleEdit }} actionButtons={
       [
         {
           label: "Filter",
           icon: <CiFilter />,
           variant: "outlined",
-
         },
         {
           label: "Export",

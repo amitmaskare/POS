@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Grid,
@@ -10,7 +10,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  IconButton
+  IconButton,
 } from "@mui/material";
 
 import HomeIcon from "@mui/icons-material/Home";
@@ -18,90 +18,98 @@ import ShieldIcon from "@mui/icons-material/Shield";
 import PersonIcon from "@mui/icons-material/Person";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import CloseIcon from "@mui/icons-material/Close";
-const cardTypes = [
-  {
-    title: "APL",
-    subtitle: "Above Poverty Line",
-    icon: <HomeIcon sx={{ fontSize: 32, color: "#5A8DEE" }} />,
-    rice: "10 kg",
-    wheat: "10 kg",
-    sugar: "2 kg",
-    kerosene: "5 L",
-  },
-  {
-    title: "BPL",
-    subtitle: "Below Poverty Line",
-    icon: <ShieldIcon sx={{ fontSize: 32, color: "#5A8DEE" }} />,
-    rice: "15 kg",
-    wheat: "15 kg",
-    sugar: "3 kg",
-    kerosene: "8 L",
-  },
-  {
-    title: "AAY",
-    subtitle: "Antyodaya Anna Yojana",
-    icon: <PersonIcon sx={{ fontSize: 32, color: "#5A8DEE" }} />,
-    rice: "35 kg",
-    wheat: "35 kg",
-    sugar: "5 kg",
-    kerosene: "10 L",
-  },
-  {
-    title: "PHH",
-    subtitle: "Priority Household",
-    icon: <CreditCardIcon sx={{ fontSize: 32, color: "#5A8DEE" }} />,
-    rice: "25 kg",
-    wheat: "25 kg",
-    sugar: "4 kg",
-    kerosene: "8 L",
-  },
-];
+import { cardTypeList } from "../../services/rationcardService";
 
 export default function RationCardSelection({ open, onClose }) {
+  const [cardTypes, setCardTypes] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
 
+  useEffect(() => {
+    getCardType();
+  }, []);
+
+  const getCardType = async () => {
+    try {
+      const result = await cardTypeList();
+
+      if (result.status === true) {
+        const formattedData = result.data.map((card) => {
+          const parsedItems = JSON.parse(card.items);
+
+          // Convert array → object: { Rice: "15kg", Wheat: "10kg", ... }
+          const itemObject = parsedItems.reduce((acc, item) => {
+            acc[item.item_name] = item.quantity;
+            return acc;
+          }, {});
+
+          return {
+            id: card.id,
+            title: card.type,
+            icon: getCardIcon(card.type),
+            items: itemObject,
+          };
+        });
+
+        setCardTypes(formattedData);
+      }
+    } catch (error) {
+      console.log("Error loading card types", error);
+    }
+  };
+
+  // Attach icons based on card type
+  const getCardIcon = (type) => {
+    switch (type) {
+      case "APL":
+        return <HomeIcon sx={{ fontSize: 32, color: "#5A8DEE" }} />;
+      case "BPL":
+        return <ShieldIcon sx={{ fontSize: 32, color: "#5A8DEE" }} />;
+      case "AAY":
+        return <PersonIcon sx={{ fontSize: 32, color: "#5A8DEE" }} />;
+      case "PHH":
+        return <CreditCardIcon sx={{ fontSize: 32, color: "#5A8DEE" }} />;
+      default:
+        return <HomeIcon sx={{ fontSize: 32, color: "#5A8DEE" }} />;
+    }
+  };
+
   return (
-    
     <Dialog
-  open={open}
-  onClose={onClose}
-  maxWidth="md"
-  fullWidth
-  sx={{
-    "& .MuiDialog-container": {
-        mt: 5, 
-        ml:20
-    },
-  }}
->
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      sx={{
+        "& .MuiDialog-container": {
+          mt: 5,
+          ml: 20,
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          fontWeight: "bold",
+          color: "#5A8DEE",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        Select Ration Card Type
 
-<DialogTitle
-  sx={{
-    fontWeight: "bold",
-    color:"#5A8DEE",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
-
-  }}
->
-  Select Ration Card Type
-
-  {/* Close Icon */}
-  <IconButton
-    onClick={onClose}
-    sx={{
-      color: "#475569",
-      "&:hover": {
-        background: "transparent",
-        color: "#1e293b",
-      },
-    }}
-  >
-    <CloseIcon />
-  </IconButton>
-</DialogTitle>
-
+        <IconButton
+          onClick={onClose}
+          sx={{
+            color: "#475569",
+            "&:hover": {
+              background: "transparent",
+              color: "#1e293b",
+            },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
 
       <DialogContent sx={{ background: "#fff", color: "#000" }}>
         <Typography
@@ -112,14 +120,13 @@ export default function RationCardSelection({ open, onClose }) {
         </Typography>
 
         <Grid container spacing={2}>
-          {cardTypes.map((card, index) => (
-           <Grid item xs={12} sm={6} md={6} key={index}>
-
+          {cardTypes.map((card) => (
+            <Grid item xs={12} sm={6} md={6} key={card.id}>
               <Card
                 onClick={() => setSelectedCard(card.title)}
                 sx={{
                   p: 3,
-                  width:415,
+                  width: 415,
                   background: "#fff",
                   border:
                     selectedCard === card.title
@@ -127,15 +134,15 @@ export default function RationCardSelection({ open, onClose }) {
                       : "1px solid #ddd",
                   borderRadius: 3,
                   cursor: "pointer",
-                  "&:hover": {
-                    border: "2px solid #5A8DEE",
-                  },
+                  "&:hover": { border: "2px solid #5A8DEE" },
                   transition: "0.3s",
                 }}
               >
                 <CardContent>
+                  {/* Header (Icon + Title) */}
                   <Stack direction="row" spacing={2} alignItems="center" mb={1}>
                     {card.icon}
+
                     <Box>
                       <Typography
                         variant="h6"
@@ -147,28 +154,16 @@ export default function RationCardSelection({ open, onClose }) {
                       >
                         {card.title}
                       </Typography>
-                      <Typography variant="body2" color="#555">
-                        {card.subtitle}
-                      </Typography>
                     </Box>
                   </Stack>
 
+                  {/* Items Dynamically Rendered */}
                   <Box mt={2} sx={{ color: "#333" }}>
-                    <Typography>
-                      Rice: <span style={{ float: "right" }}>{card.rice}</span>
-                    </Typography>
-                    <Typography>
-                      Wheat:{" "}
-                      <span style={{ float: "right" }}>{card.wheat}</span>
-                    </Typography>
-                    <Typography>
-                      Sugar:{" "}
-                      <span style={{ float: "right" }}>{card.sugar}</span>
-                    </Typography>
-                    <Typography>
-                      Kerosene:{" "}
-                      <span style={{ float: "right" }}>{card.kerosene}</span>
-                    </Typography>
+                    {Object.entries(card.items).map(([name, qty], i) => (
+                      <Typography key={i}>
+                        {name}: <span style={{ float: "right" }}>{qty}</span>
+                      </Typography>
+                    ))}
                   </Box>
                 </CardContent>
               </Card>
@@ -176,7 +171,7 @@ export default function RationCardSelection({ open, onClose }) {
           ))}
         </Grid>
 
-        {/* Footer Buttons */}
+        {/* Footer */}
         <Stack direction="row" justifyContent="flex-end" spacing={2} mt={4}>
           <Button
             variant="outlined"

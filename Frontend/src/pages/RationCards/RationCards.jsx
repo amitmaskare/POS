@@ -1,4 +1,4 @@
-import React from 'react';
+import {useState,useEffect} from 'react';
 import {
   Box,  Typography,
   MenuItem, Select, InputLabel, FormControl
@@ -9,14 +9,87 @@ import SearchFilter from '../../components/MainContentComponents/SearchFilter';
 import TableLayout from '../../components/MainContentComponents/Table';
 import { columns } from './columns';
 import { rows } from './rows';
-
-
-
+import {rationcardList,getById,deleteItem} from "../../services/rationcardService"
+import ModalLayout from "./Modal";
 
 export default function RationCards() {
-  const [typeFilter, setTypeFilter] = React.useState('All Types');
-  const [search, setSearch] = React.useState('');
+  const [open, setOpen] = useState(false);
 
+  const [typeFilter, setTypeFilter] = useState('All Types');
+  const [search, setSearch] =useState('');
+  const[data,setData]=useState([])
+    const[success,setSuccess]=useState('')
+    const[error,setError]=useState('')
+    const[loading,setLoading]=useState(false)
+      const [editData, setEditData] = useState(null);
+    
+     useEffect(()=>{
+  fetchrationcardList()
+  },[])
+  
+    const fetchrationcardList =async()=>{
+      setSuccess(null)
+      setError(null)
+      try{
+        const result=await rationcardList()
+        if(result.status===true)
+        {
+          setSuccess(result.message)
+          setData(result.data)
+        }else{
+          setError(result.message)
+        }
+      }catch(error)
+      {
+          setError(error.response?.data?.message || error.message);
+      }
+    }
+  const rows = data
+
+   const handleDelete = async(id) => {
+          
+          setSuccess('')
+          setError('')
+        try{
+           const deleteData=window.confirm('Are you sure you want to delete this item?')
+    if(deleteData)
+    {
+          const result=await deleteItem(id)
+          if(result.status===true)
+          {
+            setSuccess(result.message)
+            fetchrationcardList()
+          }else{
+            setError(result.message)
+          }
+        }
+      }catch(error)
+        {
+          setError(error.response?.data?.message || error.message)
+        }
+      };
+
+      const handleEdit =async(id) => {
+                         setSuccess('')
+                          setError('')
+                        try{
+                          
+                          const result=await getById(id)
+                          
+                          if(result.status===true)
+                          {
+                            setSuccess(result.message)
+                          setEditData(result.data);
+                           setOpen(true);
+                          }else{
+                            setError(result.message)
+                          }
+                        }
+                      catch(error)
+                        {
+                          setError(error.response?.data?.message || error.message)
+                        }
+                  };
   return (
 /*header*/
     <Box sx={{ minHeight: "100vh" }}>
@@ -29,10 +102,15 @@ export default function RationCards() {
             icon: <FaRegSquarePlus />,
             variant: "contained",
             bgcolor: "#5A8DEE",
-
+             onClick: () => {
+      setEditData(null);   // ← RESET edit data
+      setOpen(true);       // ← OPEN modal
+    },
           },
         ]}
       />
+     <ModalLayout open={open} onClose={() => setOpen(false)} onSaved={fetchrationcardList}  editData={editData}/>
+
       <Box sx={{ mt: 3 }}>
         <SearchFilter
           placeholder="Search by card number, name, or mobile..."
@@ -60,7 +138,7 @@ export default function RationCards() {
           Registered Ration Cards (2)
         </Typography>
       </Box>
-      <TableLayout columns={columns} rows={rows} />
+      <TableLayout columns={columns} rows={rows}  extra={{ deleteItem: handleDelete, edit: handleEdit }}/>
     </Box>
   );
 }
