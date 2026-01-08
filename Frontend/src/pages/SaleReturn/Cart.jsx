@@ -26,7 +26,8 @@ import { Box,
   DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
 import { checkout_sale } from "../../services/saleService";
-//import { useOutletContext } from "react-router-dom";
+import {confirmReturn,confirmExchange} from "../../services/ReturnService";
+
 export default function SaleReturnCart({ cart, setCart }) {
 
   const [active, setActive] = useState(""); 
@@ -67,8 +68,6 @@ const [holdItem, setHoldItem] = useState(0);
     })
   );
 };
-
-
 
   // Delete Item
   const deleteItem = (id) => {
@@ -130,10 +129,37 @@ const payload={customer_mobile: mobile}
     )
   );
 };
-  // Totals
- const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
+//   // Totals
+//  const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
 
-const taxRate = 0.00;
+// const taxRate = 0.00;
+// const tax = subtotal * taxRate;
+// const total = subtotal + tax;
+const mode = cart.some(item => item.cart_type === "exchange")
+  ? "exchange"
+  : "refund";
+
+const subtotal = cart.reduce((sum, item) => {
+  const qty = item.qty || 1;
+  const price = Number(item.price);
+
+  // 🔁 REFUND MODE → sab ADD hoga
+  if (mode === "refund") {
+    return sum + price * qty;
+  }
+
+  // 🔄 EXCHANGE MODE
+  if (mode === "exchange") {
+    if (item.cart_type === "refund") {
+      return sum - price * qty;   // 🔴 old item
+    }
+    return sum + price * qty;     // 🟢 new item
+  }
+
+  return sum;
+}, 0);
+
+const taxRate = 0.0;
 const tax = subtotal * taxRate;
 const total = subtotal + tax;
 
@@ -179,48 +205,158 @@ const total = subtotal + tax;
  
 };
 
-const printReceipt=()=>{
-   const printContent = document.getElementById("receipt").innerHTML;
-  const win = window.open("", "", "width=350,height=600");
+const buildExchangeInvoice = (apiResult) => {
+  return {
+    shop_name: "My Super Store",
+    invoice_no: apiResult.invoice_no,
+    date: new Date().toLocaleString(),
+    items: cart.map(item => ({
+      name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      type: item.cart_type, // refund / exchange
+      total:
+        item.cart_type === "refund"
+          ? -item.price * item.qty
+          : item.price * item.qty
+    })),
+    subtotal,
+    total,
+    difference: apiResult.difference
+  };
+};
+
+
+const printInvoice = (invoice) => {
+  const win = window.open("", "", "width=350");
 
   win.document.write(`
     <html>
-      <head><title>Invoice</title></head>
-      <body>${printContent}</body>
+      <head>
+        <title>Exchange Invoice</title>
+        <style>
+          body { font-family: monospace; font-size: 12px; }
+          h3, h4 { text-align: center; }
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 4px 0; }
+          .right { text-align: right; }
+          .line { border-top: 1px dashed #000; margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        <h3>${invoice.shop_name}</h3>
+        <h4>Exchange Invoice</h4>
+        <p>
+          Invoice: ${invoice.invoice_no}<br/>
+          Date: ${invoice.date}
+        </p>
+
+        <div class="line"></div>
+
+        <table>
+          ${invoice.items
+            .map(
+              i => `
+              <tr>
+                <td>${i.name} (${i.qty})</td>
+                <td class="right">${i.total.toFixed(2)}</td>
+              </tr>
+            `
+            )
+            .join("")}
+        </table>
+
+        <div class="line"></div>
+
+        <table>
+          <tr>
+            <td>Subtotal</td>
+            <td class="right">${invoice.subtotal.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td><b>Total</b></td>
+            <td class="right"><b>${invoice.total.toFixed(2)}</b></td>
+          </tr>
+        </table>
+
+        <div class="line"></div>
+
+        <p style="text-align:center;">
+          ${
+            invoice.difference > 0
+              ? `Customer Pays ₹${invoice.difference}`
+              : invoice.difference < 0
+              ? `Refund ₹${Math.abs(invoice.difference)}`
+              : "Even Exchange"
+          }
+        </p>
+
+        <p style="text-align:center;">Thank You!</p>
+
+        <script>
+          window.print();
+          window.close();
+        </script>
+      </body>
     </html>
   `);
 
   win.document.close();
-  win.focus();
-  win.print();
-  win.close();
-}
+};
+
 const checkoutSale = async () => {
   try{
-  const payload = {
-    payment_type: active,
-    subtotal,
-    tax,
-    total,
-    cart: cart.map(item => ({
-      product_id: item.id,
-      product_name: item.product_name,
-      qty: item.qty,
-      price: item.price,
-      total:item.price,
-      image: item.image
-    }))
-  };
+      if (!saleId) {
+      alert("Sale ID missing");
+      return;
+    }
+     const return_items = cart
+      .filter(i => i.cart_type === "refund")
+      .map(i => ({
+        sale_item_id: i.id,
+        product_id: i.product_id,
+        product_name: i.product_name,
+        image: i.image,
+        qty: i.qty,
+      }));
 
-  const result= await checkout_sale(payload)
+    const exchange_items = cart
+      .filter(i => i.cart_type === "exchange")
+      .map(i => ({
+        product_id: i.id,
+        product_name: i.product_name,
+        image: i.image,
+        qty: i.qty,
+        price: i.price,
+      }));
+
+    if (!return_items.length || !exchange_items.length) {
+      alert("Return & Exchange items required");
+      return;
+    }
+   const payload = {
+      sale_id: saleId,
+      return_items,
+      exchange_items,
+    };
+  const result= await confirmExchange(payload)
   if(result.status===true)
   {
-  alert("Sale completed");
+   const diff = result.data.difference;
+      if (diff > 0) {
+        alert(`Customer pays ₹${diff}`);
+      } else if (diff < 0) {
+        alert(`Refund ₹${Math.abs(diff)}`);
+      } else {
+        alert("Even exchange – no payment");
+      }
+      const invoice = buildExchangeInvoice(result);
+      printInvoice(invoice);
   setCashOpen(false);
       setCart([]);
       setReceivedAmount("");
       setReturnAmount(0);
-     printReceipt()
+     
   }
 }catch(error)
 {
@@ -271,16 +407,40 @@ const retrieveItem=async(id)=>{
       console.log(error.message)
     }
 }
-
+const saleId = cart.length > 0 ? cart[0].sale_id : null;
  const handleRefundSave = async () => {
-   
+   try{
+    const payload = {
+    sale_id: saleId,
+    return_type: "refund",
+    items: cart.map(item => ({
+      sale_item_id: item.id,
+      product_id: item.product_id,
+      product_name: item.product_name,
+      image: item.image,
+      qty: Number(item.return_qty),   // 👈 backend expects this
+      price: item.price
+    }))
+  };
+
+  const result= await confirmReturn(payload);
+    if(result.status===true)
+    {
+      alert(`Refund Amount ₹${result.data.refundAmount}`);
+      setCart([])
+    }
+   }catch(error)
+   {
+    console.log(error.message)
+   }
 };
+
 
 
   return (
     <>
     <aside className="cart p-3">
-      <h3 className="fw-bold mb-4" style={{color:"#5A8DEE"}}>Sale Return</h3>
+      <h3 className="fw-bold mb-4" style={{color:"#5A8DEE"}}>Sale Return </h3>
 
       {/* Product List */}
       <div className="mt-1">
@@ -306,7 +466,7 @@ const retrieveItem=async(id)=>{
               <div className="d-flex justify-content-between align-items-start">
                 <div>
                   <h6 className="fw-semibold mb-1" style={{ fontSize: "15px" }}>
-                    {item.product_name}
+                    {item.product_name} 
                   </h6>
                   {/* <span className="text-muted" style={{ fontSize: "12px" }}>
                     {item.category} • SKU: {item.sku}
@@ -329,15 +489,24 @@ const retrieveItem=async(id)=>{
                     height: "32px",
                   }}
                 >
+                   {!item.return_qty ? (
+                    <>
                   <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
                     −
                   </button>
                   <span className="fw-bold" style={{ fontSize: "14px" }}>
-                    {item.qty}
+                    {item.return_qty}
                   </span>
                   <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
                     +
                   </button>
+                  </>
+                  ):(
+                    <span className="fw-bold" style={{ fontSize: "14px" }}>
+                    {item.qty}
+                  </span> 
+
+                  )}
                 </div>
 
                 {/* Price */}
@@ -403,14 +572,6 @@ const retrieveItem=async(id)=>{
             Refund
           </button>
 
-          <button
-            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
-            style={getButtonStyle("credit")}
-            onClick={() => setActive("credit")}
-          >
-            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Exchange
-          </button>
         </div>
 
         {/* Payment Buttons */}
@@ -424,7 +585,7 @@ const retrieveItem=async(id)=>{
   }}
           >
             <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Cash
+           Exchange Cash
           </button>
 
           <button

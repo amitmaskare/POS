@@ -17,7 +17,7 @@ export const ReturnController={
         });
        
         const saleData=await CommonModel.getAllData({
-          table: "sales_items", fields:["id as sale_item_id,qty,returned_qty,product_id,price,product_name,image"],
+          table: "sales_items", fields:["id as sale_item_id,qty,returned_qty,product_id,price,product_name,image,is_returned"],
           conditions: { sale_id:sale.id }
         });
       
@@ -346,6 +346,7 @@ await CommonModel.updateData({
       // });
       return sendResponse(res, true, 200, "Exchange processed successfully", {
         return_id: returnId,
+        invoice_no: `RET-${returnId}`,
         returnAmount,
         exchangeAmount,
         difference
@@ -375,7 +376,7 @@ getReturnById: async (req, res) => {
     const { id } = req.params;
       if(!id)
       {
-          return sendResponse(resp,false,400,"id not found")
+          return sendResponse(res,false,400,"id not found")
       }
     const getValue = await ReturnService.getReturnById(id);
       const returns=getValue[0]

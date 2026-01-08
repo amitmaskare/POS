@@ -119,7 +119,13 @@ const handleBarcodeChange  = async (value) => {
     
     const result = await searchProduct({ search: value });
     if (result.status===true) {
-       addToCart(result.data);
+      
+       addToCart({
+        ...result.data,
+         qty: 1,
+        cart_type: "exchange"
+      });
+      // addToCart(result.data);
       setConfirmAdd(false); 
       setError("");
        setBarcode("");
@@ -146,7 +152,12 @@ const addProduct=async()=>{
     const result=await add_product(data)
    if (result.status === true) {
       setSuccess("Product added successfully");
-       addToCart(result.data);
+       addToCart({
+        ...result.data,
+         qty: 1,
+        cart_type: "exchange"
+      });
+       //addToCart(result.data);
       setBarcode("");
       setProduct_name("");
       setSelling_price("");
@@ -159,12 +170,23 @@ const addProduct=async()=>{
   }
 }
 
-const returnItem=async(id)=>{
+const returnItem=async(item)=>{
   try{
-    const result= await saleReturnById(id);
+     if (!item.returned_qty || item.returned_qty <= 0) {
+      alert("Please select return quantity");
+      return;
+    }
+    const result= await saleReturnById(item.sale_item_id);
     if(result.status===true)
     {  
-      addToCart( result.data)
+       const backendItem = result.data; 
+      // addToCart( result.data)
+      addToCart({
+        ...backendItem,
+        qty: item.returned_qty,  
+        return_qty: item.returned_qty, 
+        cart_type: "refund"
+      });
     }
     }catch(error)
       {
@@ -172,9 +194,7 @@ const returnItem=async(id)=>{
       }
  
 }
-// useEffect(() => {
-//   setOpenSaleReturn(true);
-// }, []);
+
 const updateReturnedQty = (sale_item_id, type) => {
   setSaleItems(prev =>
     prev.map(item => {
@@ -275,7 +295,7 @@ const updateReturnedQty = (sale_item_id, type) => {
           </TableCell>
     
           <TableCell align="center">
-            {mode !== "exchange" ? (
+            {mode !== "exchange" && item.is_returned !== 'yes' ? (
               <>
                 <IconButton
                   onClick={() =>
@@ -304,9 +324,15 @@ const updateReturnedQty = (sale_item_id, type) => {
           </TableCell>
     
           <TableCell align="center">
-             <Button size="small" variant="outlined" color="success" onClick={() =>returnItem(item.sale_item_id)}>
+             {item.is_returned !== 'yes' ? (
+             <Button size="small" variant="outlined" color="success" onClick={() =>returnItem(item)}>
                 Return
               </Button>
+             ):(
+               <Button size="small" variant="outlined" color="success" disabled>
+                Refund
+              </Button>
+             )}
           </TableCell>
         </TableRow>
       ))}
@@ -381,8 +407,6 @@ const updateReturnedQty = (sale_item_id, type) => {
     </Button>
   </DialogActions>
 </Dialog>
-
-
 
       </main>
 
