@@ -114,7 +114,7 @@ const handleBarcodeChange  = async (value) => {
   setBarcode(value);
   setError("")
   
- if (value.length !== 12) return;
+
   try {
     
     const result = await searchProduct({ search: value });

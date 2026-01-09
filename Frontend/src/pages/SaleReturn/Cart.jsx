@@ -350,7 +350,7 @@ const checkoutSale = async () => {
       } else {
         alert("Even exchange – no payment");
       }
-      const invoice = buildExchangeInvoice(result);
+      const invoice = buildExchangeInvoice(result.invoice_no);
       printInvoice(invoice);
   setCashOpen(false);
       setCart([]);
@@ -427,6 +427,8 @@ const saleId = cart.length > 0 ? cart[0].sale_id : null;
     if(result.status===true)
     {
       alert(`Refund Amount ₹${result.data.refundAmount}`);
+       const invoice = buildExchangeInvoice(result.invoice_no);
+      printInvoice(invoice);
       setCart([])
     }
    }catch(error)

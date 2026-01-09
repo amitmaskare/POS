@@ -178,22 +178,104 @@ const total = subtotal + tax;
  
 };
 
-const printReceipt=()=>{
-   const printContent = document.getElementById("receipt").innerHTML;
-  const win = window.open("", "", "width=350,height=600");
+const buildExchangeInvoice = (apiResult) => {
+  return {
+    shop_name: "My Super Store",
+    invoice_no: apiResult.invoice_no,
+    date: new Date().toLocaleString(),
+    items: cart.map(item => ({
+      name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      type: item.cart_type, // refund / exchange
+      total:
+        item.cart_type === "refund"
+          ? -item.price * item.qty
+          : item.price * item.qty
+    })),
+    subtotal,
+    total,
+    difference: apiResult.difference
+  };
+};
+
+
+const printInvoice = (invoice) => {
+  const win = window.open("", "", "width=350");
 
   win.document.write(`
     <html>
-      <head><title>Invoice</title></head>
-      <body>${printContent}</body>
+      <head>
+        <title>Exchange Invoice</title>
+        <style>
+          body { font-family: monospace; font-size: 12px; }
+          h3, h4 { text-align: center; }
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 4px 0; }
+          .right { text-align: right; }
+          .line { border-top: 1px dashed #000; margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        <h3>${invoice.shop_name}</h3>
+        <h4>Exchange Invoice</h4>
+        <p>
+          Invoice: ${invoice.invoice_no}<br/>
+          Date: ${invoice.date}
+        </p>
+
+        <div class="line"></div>
+
+        <table>
+          ${invoice.items
+            .map(
+              i => `
+              <tr>
+                <td>${i.name} (${i.qty})</td>
+                <td class="right">${i.total.toFixed(2)}</td>
+              </tr>
+            `
+            )
+            .join("")}
+        </table>
+
+        <div class="line"></div>
+
+        <table>
+          <tr>
+            <td>Subtotal</td>
+            <td class="right">${invoice.subtotal.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td><b>Total</b></td>
+            <td class="right"><b>${invoice.total.toFixed(2)}</b></td>
+          </tr>
+        </table>
+
+        <div class="line"></div>
+
+        <p style="text-align:center;">
+          ${
+            invoice.difference > 0
+              ? `Customer Pays ₹${invoice.difference}`
+              : invoice.difference < 0
+              ? `Refund ₹${Math.abs(invoice.difference)}`
+              : "Even Exchange"
+          }
+        </p>
+
+        <p style="text-align:center;">Thank You!</p>
+
+        <script>
+          window.print();
+          window.close();
+        </script>
+      </body>
     </html>
   `);
 
   win.document.close();
-  win.focus();
-  win.print();
-  win.close();
-}
+};
 const checkoutSale = async () => {
   try{
   const payload = {
@@ -215,11 +297,12 @@ const checkoutSale = async () => {
   if(result.status===true)
   {
   alert("Sale completed");
+  const invoice = buildExchangeInvoice('Invoice-0001');
+    printInvoice(invoice);
   setCashOpen(false);
       setCart([]);
       setReceivedAmount("");
       setReturnAmount(0);
-     printReceipt()
   }
 }catch(error)
 {

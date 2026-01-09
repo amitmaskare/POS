@@ -40,34 +40,26 @@ const [product_name, setProduct_name] = useState("");
 const [selling_price, setSelling_price] = useState("");
 const [favourites, setFavourites] = useState([]); 
 
-const handleBarcodeChange  = async (value) => {
-  if (!value) {
-    setData([]);
-     setConfirmAdd(false);
-    return;
-  }
-  setBarcode(value);
-  setError("")
- if (value.length !== 12) return;
+const handleBarcodeChange = async (value) => {
+  
   try {
-    
+    setBarcode(value);
+
     const result = await searchProduct({ search: value });
-    if (result.status===true) {
-       addToCart(result.data);
-      setConfirmAdd(false); 
-      setError("");
-       setBarcode("");
+
+    if (result?.status===true && result?.data) {
+      addToCart(result.data);
+      setConfirmAdd(false);
     } else {
-      setData([]);
-      setConfirmAdd(true);
-      setError("No product found");
-       setBarcode("");
+      setConfirmAdd(true); 
     }
-  } catch (err) {
-    setConfirmAdd(true);
-    setError("Something went wrong");
-  } 
+  } catch (error) {
+    console.error(error);
+    setConfirmAdd(true); 
+  }
 };
+
+
 
 const handleSelectItem =(row)=>{
   addToCart(row);
@@ -131,7 +123,12 @@ const filteredProducts = () => {
       >
      <div className="row">
       <div className="col-12 col-md-6 col-lg-8">
-      <SearchFilter  value={barcode} onSearchChange={(e) => handleBarcodeChange(e.target.value)}/>
+      <SearchFilter  value={barcode} onSearchChange={(e) => handleBarcodeChange(e.target.value)}  onKeyDown={(e) => {
+    if (e.key === "Enter" && e.target.value.trim() !== "") {
+      handleBarcodeChange(e.target.value);
+    }
+  }}
+  autoFocus/>
       </div>
     </div>
    
@@ -185,7 +182,10 @@ const filteredProducts = () => {
   </DialogContent>
 
   <DialogActions>
-    <Button onClick={() => setConfirmAdd(false)} color="error">
+    <Button onClick={() => {
+    setConfirmAdd(false); // modal close
+    setBarcode("");      // ✅ input blank
+  }} color="error" >
       No
     </Button>
 

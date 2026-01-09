@@ -188,6 +188,7 @@ await CommonModel.updateData({
       /* -------------------- SUCCESS RESPONSE -------------------- */
       return sendResponse(res, true, 200, "Return processed successfully", {
         return_id: returnId,
+        invoice_no:`Invoice-${returnId}`,
         refundAmount,
         return_type
       });

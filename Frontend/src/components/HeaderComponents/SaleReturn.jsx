@@ -177,8 +177,7 @@ const handleBarcodeChange = async (value) => {
     return;
   }
   if (!value || mode !== "exchange") return;
-  if (value.length !== 12) return;
-
+ 
   setBarcodeItem(value);
 
   try {
