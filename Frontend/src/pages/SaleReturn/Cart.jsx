@@ -26,7 +26,7 @@ import { Box,
   DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
 import { checkout_sale } from "../../services/saleService";
-import {confirmReturn,confirmExchange} from "../../services/ReturnService";
+import {confirmReturn,confirmExchange,verifyManagerAuth} from "../../services/ReturnService";
 
 export default function SaleReturnCart({ cart, setCart }) {
 
@@ -411,7 +411,7 @@ const retrieveItem=async(id)=>{
     }
 }
 const saleId = cart.length > 0 ? cart[0].sale_id : null;
- const handleRefundSave = async () => {
+ const handleRefundSave = async (manager_id) => {
   
    try{
     const payload = {
@@ -439,6 +439,19 @@ const saleId = cart.length > 0 ? cart[0].sale_id : null;
    }
 };
 
+const verifyManager = async () => {
+  const result = await verifyManagerAuth({
+    username: managerUser,
+    password: managerPass
+  });
+
+  if (result.status === true) {
+    setShowApproval(false);
+    handleExchangeSave(result.data.manager_id);
+  } else {
+    alert("Invalid manager credentials");
+  }
+};
 
 
   return (
@@ -777,7 +790,7 @@ const saleId = cart.length > 0 ? cart[0].sale_id : null;
    <DialogActions>
     <Button onClick={() => setShowApproval(false)}>Cancel</Button>
 
-    <Button variant="contained" color="primary" onClick={() =>handleRefundSave()}>
+    <Button variant="contained" color="primary" onClick={() =>verifyManager()}>
      Approve
     </Button>
   </DialogActions>

@@ -184,6 +184,26 @@ await CommonModel.updateData({
   conditions: { id: returnId }
 });
 
+await CommonModel.updateData({
+  table: "returns",
+  data: {
+    approved_by: managerId,
+    approved_at: new Date()
+  },
+  conditions: { id: returnId }
+});
+
+  await CommonModel.insertData({
+  table: "return_approvals",
+  data: {
+    return_id: returnId,
+    sale_id,
+    cashier_id: req.user.id,
+    manager_id: managerId,
+    action: 'refund'
+  }
+});
+
 
       /* -------------------- SUCCESS RESPONSE -------------------- */
       return sendResponse(res, true, 200, "Return processed successfully", {
