@@ -39,6 +39,9 @@ const [cashOpen, setCashOpen] = useState(false);
 const [receivedAmount, setReceivedAmount] = useState("");
 const [returnAmount, setReturnAmount] = useState(0);
 const [holdItem, setHoldItem] = useState(0);
+const [showApproval, setShowApproval] = useState(false);
+const[managerUser,setManagerUser]=useState("")
+const[managerPass,setManagerPass]=useState("")
   // Handle Quantity
  const updateQty = (id, type) => {
   setCart((prev) =>
@@ -409,6 +412,7 @@ const retrieveItem=async(id)=>{
 }
 const saleId = cart.length > 0 ? cart[0].sale_id : null;
  const handleRefundSave = async () => {
+  
    try{
     const payload = {
     sale_id: saleId,
@@ -567,7 +571,7 @@ const saleId = cart.length > 0 ? cart[0].sale_id : null;
           <div className="d-flex gap-2 mt-3">
           <button
             className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
-            style={getButtonStyle("cash")} onClick={() => handleRefundSave()}>
+            style={getButtonStyle("cash")} onClick={() =>setShowApproval(true)}>
             <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
             Refund
           </button>
@@ -747,64 +751,38 @@ const saleId = cart.length > 0 ? cart[0].sale_id : null;
   </DialogActions>
 </Dialog>
 
-<div style={{ display: "none" }}>
-<div id="receipt" style={{
-        width: "300px",
-        fontFamily: "Arial, sans-serif",
-        fontSize: "12px",
-        color: "#000",
-        padding: "8px",
-      }}>
-  <center>
-    <h3>ABC STORE</h3>
-    <p>Main Road, Indore</p>
-    <p>Ph: 9876543210</p>
-    <hr/>
-  </center>
 
-  <p>
-    Invoice: <b>INV-1025</b><br/>
-    Date: 28-12-2025<br/>
-    Payment: CASH
-  </p>
 
-  <hr/>
 
-  <table width="100%">
-    <thead>
-      <tr>
-        <th align="left">Item</th>
-        <th>Qty</th>
-        <th align="right">Amt</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Soap</td>
-        <td align="center">1</td>
-        <td align="right">₹60</td>
-      </tr>
-      <tr>
-        <td>Water Bottle</td>
-        <td align="center">1</td>
-        <td align="right">₹30</td>
-      </tr>
-    </tbody>
-  </table>
+      <Dialog open={showApproval} onClose={() => setShowApproval(false)}>
+  <DialogTitle>Manager Approval Required</DialogTitle>
+         <DialogContent>
+     <input
+    type="text"
+    placeholder="Manager Username"
+     className="form-control mt-2"
+    value={managerUser}
+    onChange={e => setManagerUser(e.target.value)}
+  />
+      </DialogContent>
+      <DialogContent>
+     <input
+    type="text"
+    placeholder="Manager Passsword"
+     className="form-control mt-2"
+    value={managerPass}
+    onChange={e => setManagerPass(e.target.value)}
+  />
+      </DialogContent>
+   <DialogActions>
+    <Button onClick={() => setShowApproval(false)}>Cancel</Button>
 
-  <hr/>
-
-  <p>
-    Subtotal: ₹90<br/>
-    Tax (5%): ₹4.50<br/>
-    <b>Total: ₹94.50</b>
-  </p>
-
-  <center>
-    <p>Thank You! Visit Again 🙏</p>
-  </center>
-</div>
-</div>
+    <Button variant="contained" color="primary" onClick={() =>handleRefundSave()}>
+     Approve
+    </Button>
+  </DialogActions>
+   
+</Dialog>
 
     </>
   );

@@ -417,6 +417,30 @@ saleReturnById: async (req, res) => {
   }
 },
 
+verifyManagerAuth: async (req, res) => {
+  try{
+  const { username, password } = req.body;
+
+  const [user] = await CommonModel.rawQuery(
+    `SELECT id, password FROM users WHERE username = ? AND role = '2'`,
+    [username]
+  );
+
+  if (!user)
+    return sendResponse(res, false, 401, "Unauthorized");
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch)
+    return sendResponse(res, false, 401, "Invalid credentials");
+
+  return sendResponse(res, true, 200, "Approved", {
+    manager_id: user.id
+  });
+}catch(error)
+{
+  return sendResponse(res,false,500,`Error : ${error.message}`)
+}
+},
 
   
 

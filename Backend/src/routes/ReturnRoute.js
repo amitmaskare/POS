@@ -13,4 +13,6 @@ route.post("/return/confirmExchange",ReturnController.confirmExchange)
 route.get("/return/list",ReturnController.list)
 route.get("/return/getReturnById/:id",ReturnController.getReturnById)
 route.get("/return/saleReturnById/:id",ReturnController.saleReturnById)
+route.post("/return/verifyManagerAuth/",ReturnController.verifyManagerAuth)
+
 export default route
