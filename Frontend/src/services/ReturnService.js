@@ -106,3 +106,17 @@ export const saleReturnById=async(id)=>{
     }
 }
 
+export const verifyManagerAuth=async(data)=>{
+    try{
+        const response= await axios.post(`${apiUrl}/return/verifyManagerAuth`,data,{
+           headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        })
+        return response.data
+    }catch(error)
+    {
+      throw error
+    }
+}
+

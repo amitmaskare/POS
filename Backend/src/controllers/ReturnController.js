@@ -184,6 +184,26 @@ await CommonModel.updateData({
   conditions: { id: returnId }
 });
 
+await CommonModel.updateData({
+  table: "returns",
+  data: {
+    approved_by: managerId,
+    approved_at: new Date()
+  },
+  conditions: { id: returnId }
+});
+
+  await CommonModel.insertData({
+  table: "return_approvals",
+  data: {
+    return_id: returnId,
+    sale_id,
+    cashier_id: req.user.id,
+    manager_id: managerId,
+    action: 'refund'
+  }
+});
+
 
       /* -------------------- SUCCESS RESPONSE -------------------- */
       return sendResponse(res, true, 200, "Return processed successfully", {
@@ -418,6 +438,30 @@ saleReturnById: async (req, res) => {
   }
 },
 
+verifyManagerAuth: async (req, res) => {
+  try{
+  const { username, password } = req.body;
+
+  const [user] = await CommonModel.rawQuery(
+    `SELECT id, password FROM users WHERE username = ? AND role = '2'`,
+    [username]
+  );
+
+  if (!user)
+    return sendResponse(res, false, 401, "Unauthorized");
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch)
+    return sendResponse(res, false, 401, "Invalid credentials");
+
+  return sendResponse(res, true, 200, "Approved", {
+    manager_id: user.id
+  });
+}catch(error)
+{
+  return sendResponse(res,false,500,`Error : ${error.message}`)
+}
+},
 
   
 
