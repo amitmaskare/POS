@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.0
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 09, 2026 at 01:23 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Generation Time: Jan 11, 2026 at 07:07 PM
+-- Server version: 10.4.27-MariaDB
+-- PHP Version: 8.1.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -107,13 +107,6 @@ CREATE TABLE `hold_sales` (
   `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `hold_sales`
---
-
-INSERT INTO `hold_sales` (`id`, `hold_code`, `user_id`, `customer_mobile`, `subtotal`, `tax`, `total`, `status`, `created_at`) VALUES
-(13, 'Hold-01-01-2026-0001', 1, '7769834632', 90.00, 4.50, 94.50, 'hold', '2026-01-01 08:56:05');
-
 -- --------------------------------------------------------
 
 --
@@ -130,14 +123,6 @@ CREATE TABLE `hold_sale_items` (
   `image` text DEFAULT NULL,
   `total` decimal(10,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `hold_sale_items`
---
-
-INSERT INTO `hold_sale_items` (`id`, `hold_sale_id`, `product_id`, `product_name`, `price`, `qty`, `image`, `total`) VALUES
-(7, 13, 1, 'Soap', 60.00, 1, 'http://localhost:4000/public/uploads/product/soap.jpg', 60.00),
-(8, 13, 2, 'Water Bottle', 30.00, 1, 'http://localhost:4000/public/uploads/product/water.jpg', 30.00);
 
 -- --------------------------------------------------------
 
@@ -163,8 +148,8 @@ CREATE TABLE `offers` (
 --
 
 INSERT INTO `offers` (`id`, `offer_name`, `product_id`, `min_qty`, `offer_price`, `offer_qty_price`, `start_date`, `end_date`, `status`, `created_at`) VALUES
-(1, '3 for 250', 2, 2, 50.00, 'regular', '2025-02-01', '2025-12-31', 'active', '2025-12-17 17:29:38'),
-(2, '3 for 250', 3, 2, 150.00, 'regular', '2025-02-01', '2025-12-31', 'active', '2025-12-17 16:11:17');
+(1, '3 for 250', 2, 2, '50.00', 'regular', '2025-02-01', '2025-12-31', 'active', '2025-12-17 17:29:38'),
+(2, '3 for 250', 3, 2, '150.00', 'regular', '2025-02-01', '2025-12-31', 'active', '2025-12-17 16:11:17');
 
 -- --------------------------------------------------------
 
@@ -366,7 +351,8 @@ INSERT INTO `products` (`id`, `category_id`, `subcategory_id`, `product_name`, `
 (139, 0, 0, 'ABC', NULL, '807545452143', NULL, NULL, 0, 0, 130, 0, 'Active', 0, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, 'no', 'yes', NULL, '2025-12-27 17:22:19'),
 (140, 0, 0, 'ABCD', NULL, '807545452141', NULL, NULL, 0, 0, 450, 0, 'Active', 0, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, 'no', 'yes', NULL, '2025-12-27 17:22:57'),
 (141, 0, 0, 'Saktiman', NULL, '807545452553', NULL, NULL, 0, 0, 145, 0, 'Active', 0, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, 'no', 'yes', NULL, '2025-12-30 20:22:24'),
-(142, 0, 0, 'Haldiram chips', NULL, '807545452554', NULL, NULL, 0, 0, 45, 0, 'Active', 0, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, 'no', 'yes', NULL, '2025-12-30 20:36:48');
+(142, 0, 0, 'Haldiram chips', NULL, '807545452554', NULL, NULL, 0, 0, 45, 0, 'Active', 0, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, 'no', 'yes', NULL, '2025-12-30 20:36:48'),
+(144, 1, 0, 'sabun', 'sabun123', '1234', 'liux', 'Hello product', 10, 0, 12, 2, 'Active', 15, 0, 0, 0, NULL, 0, 0, 1, NULL, NULL, 'no', 'yes', NULL, '2026-01-11 13:34:54');
 
 -- --------------------------------------------------------
 
@@ -403,7 +389,10 @@ INSERT INTO `purchases` (`id`, `po_number`, `userId`, `purchase_date`, `supplier
 (17, 'PO-10-12-2025-0007', 1, '2025-12-10', 9, 320.5, 15, 380.5, 'pending', 'send', '2025-12-10 09:33:02', '2025-12-10 17:33:02'),
 (18, 'PO-10-12-2025-0008', 1, '2025-12-10', 9, 320.5, 15, 380.5, 'pending', 'send', '2025-12-10 09:31:41', '2025-12-10 17:31:41'),
 (19, 'PO-11-12-2025-0009', 1, '2025-12-11', 1, 700, 10, 700, 'pending', 'send', '2025-12-11 03:31:45', '2025-12-11 11:31:45'),
-(20, 'TEMP-11-12-2025-0010', 1, '2025-12-11', 3, 150, 10, 150, 'pending', 'draft', '2025-12-12 05:45:38', '2025-12-12 13:45:38');
+(20, 'TEMP-11-12-2025-0010', 1, '2025-12-11', 3, 150, 10, 150, 'pending', 'draft', '2025-12-12 05:45:38', '2025-12-12 13:45:38'),
+(21, 'TEMP-11-01-2026-0011', 1, '2026-01-11', 1, 20, 10, 20, 'pending', 'draft', '2026-01-11 06:08:47', '2026-01-11 14:08:47'),
+(22, 'TEMP-11-01-2026-0012', 1, '2026-01-11', 1, 20, 10, 20, 'pending', 'draft', '2026-01-11 06:11:35', '2026-01-11 14:11:35'),
+(23, 'PO-11-01-2026-0013', 1, '2026-01-11', 1, 20, 10, 20, 'completed', 'send', '2026-01-11 07:47:33', '2026-01-11 15:47:33');
 
 -- --------------------------------------------------------
 
@@ -418,7 +407,7 @@ CREATE TABLE `purchase_order_items` (
   `product_id` int(11) NOT NULL,
   `quantity` bigint(20) NOT NULL DEFAULT 0,
   `received_qty` bigint(20) NOT NULL DEFAULT 0,
-  `unit_price` float NOT NULL DEFAULT 0,
+  `cost_price` float NOT NULL DEFAULT 0,
   `order_reason` text DEFAULT NULL,
   `received_reason` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -428,7 +417,7 @@ CREATE TABLE `purchase_order_items` (
 -- Dumping data for table `purchase_order_items`
 --
 
-INSERT INTO `purchase_order_items` (`id`, `purchase_id`, `po_number`, `product_id`, `quantity`, `received_qty`, `unit_price`, `order_reason`, `received_reason`, `created_at`) VALUES
+INSERT INTO `purchase_order_items` (`id`, `purchase_id`, `po_number`, `product_id`, `quantity`, `received_qty`, `cost_price`, `order_reason`, `received_reason`, `created_at`) VALUES
 (1, 0, 'PO-08-12-2025-0001', 5, 2, 0, 0, NULL, NULL, '2025-12-11 15:52:12'),
 (2, 0, 'PO-08-12-2025-0001', 3, 3, 0, 0, NULL, NULL, '2025-12-11 15:52:12'),
 (5, 0, 'PO-08-12-2025-0005', 5, 12, 0, 12, NULL, NULL, '2025-12-08 17:59:42'),
@@ -448,7 +437,8 @@ INSERT INTO `purchase_order_items` (`id`, `purchase_id`, `po_number`, `product_i
 (51, 19, 'PO-11-12-2025-0009', 0, 12, 6, 0, NULL, NULL, '2025-12-11 17:20:19'),
 (52, 19, 'PO-11-12-2025-0009', 0, 5, 6, 0, NULL, NULL, '2025-12-11 17:20:19'),
 (53, 20, 'TEMP-11-12-2025-0010', 5, 2, 0, 120, NULL, NULL, '2025-12-12 13:45:38'),
-(54, 20, 'TEMP-11-12-2025-0010', 4, 3, 0, 20, NULL, NULL, '2025-12-12 13:45:38');
+(54, 20, 'TEMP-11-12-2025-0010', 4, 3, 0, 20, NULL, NULL, '2025-12-12 13:45:38'),
+(55, 23, 'PO-11-01-2026-0013', 144, 2, 2, 0, NULL, NULL, '2026-01-11 15:47:33');
 
 -- --------------------------------------------------------
 
@@ -492,18 +482,18 @@ CREATE TABLE `returns` (
 --
 
 INSERT INTO `returns` (`id`, `sale_id`, `invoice_no`, `return_type`, `refund_amount`, `approved_by`, `approved_at`, `reason`, `created_at`) VALUES
-(1, 1, NULL, 'refund', 0.00, 0, NULL, NULL, '2026-01-08 10:21:57'),
-(2, 1, NULL, 'refund', 0.00, 0, NULL, NULL, '2026-01-08 10:27:44'),
-(3, 1, NULL, 'refund', 0.00, 0, NULL, NULL, '2026-01-08 10:54:09'),
-(4, 1, NULL, 'refund', 30.00, 0, NULL, NULL, '2026-01-08 10:58:07'),
-(5, 1, NULL, 'refund', 45.00, 0, NULL, NULL, '2026-01-08 10:59:13'),
-(6, 1, NULL, 'refund', 30.00, 0, NULL, NULL, '2026-01-08 11:04:27'),
-(7, 1, NULL, 'refund', 0.00, 0, NULL, NULL, '2026-01-08 11:05:34'),
-(8, 1, NULL, 'refund', 0.00, 0, NULL, NULL, '2026-01-08 11:05:41'),
-(9, 1, NULL, 'refund', 0.00, 0, NULL, NULL, '2026-01-08 11:06:13'),
-(10, 1, NULL, 'refund', 45.00, 0, NULL, NULL, '2026-01-08 11:06:36'),
-(11, 1, NULL, 'exchange', 30.00, 0, NULL, NULL, '2026-01-08 12:31:29'),
-(12, 1, NULL, 'exchange', 0.00, 0, NULL, NULL, '2026-01-08 12:54:34');
+(1, 1, NULL, 'refund', '0.00', 0, NULL, NULL, '2026-01-08 10:21:57'),
+(2, 1, NULL, 'refund', '0.00', 0, NULL, NULL, '2026-01-08 10:27:44'),
+(3, 1, NULL, 'refund', '0.00', 0, NULL, NULL, '2026-01-08 10:54:09'),
+(4, 1, NULL, 'refund', '30.00', 0, NULL, NULL, '2026-01-08 10:58:07'),
+(5, 1, NULL, 'refund', '45.00', 0, NULL, NULL, '2026-01-08 10:59:13'),
+(6, 1, NULL, 'refund', '30.00', 0, NULL, NULL, '2026-01-08 11:04:27'),
+(7, 1, NULL, 'refund', '0.00', 0, NULL, NULL, '2026-01-08 11:05:34'),
+(8, 1, NULL, 'refund', '0.00', 0, NULL, NULL, '2026-01-08 11:05:41'),
+(9, 1, NULL, 'refund', '0.00', 0, NULL, NULL, '2026-01-08 11:06:13'),
+(10, 1, NULL, 'refund', '45.00', 0, NULL, NULL, '2026-01-08 11:06:36'),
+(11, 1, NULL, 'exchange', '30.00', 0, NULL, NULL, '2026-01-08 12:31:29'),
+(12, 1, NULL, 'exchange', '0.00', 0, NULL, NULL, '2026-01-08 12:54:34');
 
 -- --------------------------------------------------------
 
@@ -545,13 +535,13 @@ CREATE TABLE `return_items` (
 --
 
 INSERT INTO `return_items` (`id`, `return_id`, `sale_item_id`, `product_id`, `product_name`, `image`, `return_qty`, `tax`, `refund_amount`) VALUES
-(1, 4, 5, 2, 'Water Bottle', 'http://localhost:4000/public/uploads/product/water.jpg', 1, 0, 30.00),
-(2, 5, 11, 142, 'Haldiram chips', NULL, 1, 0, 45.00),
-(3, 6, 5, 2, 'Water Bottle', 'http://localhost:4000/public/uploads/product/water.jpg', 1, 0, 30.00),
-(4, 10, 11, 142, 'Haldiram chips', NULL, 1, 0, 45.00),
-(5, 11, 1, 1, 'Soap', 'http://localhost:4000/public/uploads/product/soap.jpg', 1, 0, 60.00),
-(6, 11, 5, 2, 'Water Bottle', 'http://localhost:4000/public/uploads/product/water.jpg', 1, 0, 30.00),
-(7, 12, 7, 11, 'Biscuits', 'http://localhost:4000/public/uploads/product/biscuits.jpg', 1, 0, 30.00);
+(1, 4, 5, 2, 'Water Bottle', 'http://localhost:4000/public/uploads/product/water.jpg', 1, 0, '30.00'),
+(2, 5, 11, 142, 'Haldiram chips', NULL, 1, 0, '45.00'),
+(3, 6, 5, 2, 'Water Bottle', 'http://localhost:4000/public/uploads/product/water.jpg', 1, 0, '30.00'),
+(4, 10, 11, 142, 'Haldiram chips', NULL, 1, 0, '45.00'),
+(5, 11, 1, 1, 'Soap', 'http://localhost:4000/public/uploads/product/soap.jpg', 1, 0, '60.00'),
+(6, 11, 5, 2, 'Water Bottle', 'http://localhost:4000/public/uploads/product/water.jpg', 1, 0, '30.00'),
+(7, 12, 7, 11, 'Biscuits', 'http://localhost:4000/public/uploads/product/biscuits.jpg', 1, 0, '30.00');
 
 -- --------------------------------------------------------
 
@@ -621,9 +611,10 @@ CREATE TABLE `sales` (
 --
 
 INSERT INTO `sales` (`id`, `invoice_no`, `user_id`, `subtotal`, `tax`, `total`, `payment_type`, `status`, `created_at`) VALUES
-(1, 'TXN-30-12-2025-0001', 1, 230.00, 0.16, 230.16, 'cash', 'partially_returned', '2025-12-30 20:32:01'),
-(2, 'TXN-30-12-2025-0002', 1, 210.00, 10.50, 220.50, 'cash', 'completed', '2025-12-30 20:32:54'),
-(3, 'TXN-30-12-2025-0003', 1, 210.00, 10.50, 220.50, 'cash', 'completed', '2025-12-31 05:43:14');
+(1, 'TXN-30-12-2025-0001', 1, '230.00', '0.16', '230.16', 'cash', 'partially_returned', '2025-12-30 20:32:01'),
+(2, 'TXN-30-12-2025-0002', 1, '210.00', '10.50', '220.50', 'cash', 'completed', '2025-12-30 20:32:54'),
+(3, 'TXN-30-12-2025-0003', 1, '210.00', '10.50', '220.50', 'cash', 'completed', '2025-12-31 05:43:14'),
+(4, 'TXN-11-01-2026-0004', 1, '24.00', '1.20', '25.20', 'cash', 'completed', '2026-01-11 14:02:16');
 
 -- --------------------------------------------------------
 
@@ -650,30 +641,42 @@ CREATE TABLE `sales_items` (
 --
 
 INSERT INTO `sales_items` (`id`, `sale_id`, `product_id`, `product_name`, `tax`, `qty`, `price`, `total`, `image`, `returned_qty`, `is_returned`) VALUES
-(1, 1, 1, 'Soap', 0, 1, 60.00, 60.00, 'http://localhost:4000/public/uploads/product/soap.jpg', 1, 'yes'),
-(3, 2, NULL, 'Shampoo', 0, 1, 120.00, 120.00, 'http://localhost:4000/public/uploads/product/shampoo.jpg', 0, 'no'),
-(4, 2, NULL, 'Toothpaste', 0, 1, 90.00, 90.00, 'http://localhost:4000/public/uploads/product/toothpaste.jpg', 0, 'no'),
-(5, 1, 2, 'Water Bottle', 0, 1, 30.00, 30.00, 'http://localhost:4000/public/uploads/product/water.jpg', 1, 'yes'),
-(7, 1, 11, 'Biscuits', 0, 1, 30.00, 30.00, 'http://localhost:4000/public/uploads/product/biscuits.jpg', 1, 'yes'),
-(9, 3, NULL, 'Shampoo', 0, 1, 120.00, 120.00, 'http://localhost:4000/public/uploads/product/shampoo.jpg', 0, 'no'),
-(10, 3, NULL, 'Toothpaste', 0, 1, 90.00, 90.00, 'http://localhost:4000/public/uploads/product/toothpaste.jpg', 0, 'no'),
-(11, 1, 142, 'Haldiram chips', 0, 2, 45.00, 90.00, NULL, 0, 'no'),
-(12, 1, 16, 'Milk', 0, 1, 60.00, 60.00, 'http://localhost:4000/public/uploads/product/milk.jpg', 0, 'no'),
-(13, 1, 14, 'Tea', 0, 1, 220.00, 220.00, 'http://localhost:4000/public/uploads/product/tea.jpg', 0, 'no');
+(1, 1, 1, 'Soap', 0, 1, '60.00', '60.00', 'http://localhost:4000/public/uploads/product/soap.jpg', 1, 'yes'),
+(3, 2, NULL, 'Shampoo', 0, 1, '120.00', '120.00', 'http://localhost:4000/public/uploads/product/shampoo.jpg', 0, 'no'),
+(4, 2, NULL, 'Toothpaste', 0, 1, '90.00', '90.00', 'http://localhost:4000/public/uploads/product/toothpaste.jpg', 0, 'no'),
+(5, 1, 2, 'Water Bottle', 0, 1, '30.00', '30.00', 'http://localhost:4000/public/uploads/product/water.jpg', 1, 'yes'),
+(7, 1, 11, 'Biscuits', 0, 1, '30.00', '30.00', 'http://localhost:4000/public/uploads/product/biscuits.jpg', 1, 'yes'),
+(9, 3, NULL, 'Shampoo', 0, 1, '120.00', '120.00', 'http://localhost:4000/public/uploads/product/shampoo.jpg', 0, 'no'),
+(10, 3, NULL, 'Toothpaste', 0, 1, '90.00', '90.00', 'http://localhost:4000/public/uploads/product/toothpaste.jpg', 0, 'no'),
+(11, 1, 142, 'Haldiram chips', 0, 2, '45.00', '90.00', NULL, 0, 'no'),
+(12, 1, 16, 'Milk', 0, 1, '60.00', '60.00', 'http://localhost:4000/public/uploads/product/milk.jpg', 0, 'no'),
+(13, 1, 14, 'Tea', 0, 1, '220.00', '220.00', 'http://localhost:4000/public/uploads/product/tea.jpg', 0, 'no'),
+(14, 4, 144, 'sabun', 0, 2, '24.00', '48.00', NULL, 0, 'no');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `stock_movements`
+-- Table structure for table `stocks`
 --
 
-CREATE TABLE `stock_movements` (
+CREATE TABLE `stocks` (
   `id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
-  `qty_change` int(11) NOT NULL,
-  `reference_type` int(11) NOT NULL,
-  `reference_id` int(11) NOT NULL
+  `stock` int(11) NOT NULL DEFAULT 0,
+  `type` varchar(10) DEFAULT NULL,
+  `note` varchar(50) DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `stocks`
+--
+
+INSERT INTO `stocks` (`id`, `product_id`, `stock`, `type`, `note`, `created_at`, `updated_at`) VALUES
+(1, 144, 15, 'credit', 'Add Product', '2026-01-11 05:34:54', '2026-01-11 13:34:54'),
+(2, 144, 2, 'debit', 'Sale', '2026-01-11 06:02:16', '2026-01-11 14:02:16'),
+(3, 144, 2, 'credit', 'Purchase Receiving', '2026-01-11 07:47:33', '2026-01-11 15:47:33');
 
 -- --------------------------------------------------------
 
@@ -779,7 +782,7 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`userId`, `user_id`, `name`, `email`, `password`, `role`, `created_at`, `updated_at`) VALUES
 (1, 1000, 'Admin', 'admin@gmail.com', '$2b$10$ogYlnn2R2nLOWn8sYr/QTeTpaO.3kVHY1KYTkH6k6fRqzt2fB9IyO', 1, '2025-10-03 13:01:32', '2025-10-27 12:02:28'),
-(2, 1001, 'Suresh', 'maskareamit@gmail.com', '$2b$10$jVqmbYgWtEzbvuCoSNf5YOVbQfsJsSDpNfGCFoV8.eb8bK7tLT3iq', 2, '2025-10-03 14:40:05', '2025-10-27 12:11:23');
+(2, 1001, 'Suresh', 'maskareamit@gmail.com', '$2b$10$ogYlnn2R2nLOWn8sYr/QTeTpaO.3kVHY1KYTkH6k6fRqzt2fB9IyO', 2, '2025-10-03 14:40:05', '2026-01-11 17:34:06');
 
 --
 -- Indexes for dumped tables
@@ -909,6 +912,12 @@ ALTER TABLE `sales_items`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `stocks`
+--
+ALTER TABLE `stocks`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `stores`
 --
 ALTER TABLE `stores`
@@ -994,19 +1003,19 @@ ALTER TABLE `permissions`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=145;
 
 --
 -- AUTO_INCREMENT for table `purchases`
 --
 ALTER TABLE `purchases`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `purchase_order_items`
 --
 ALTER TABLE `purchase_order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
 
 --
 -- AUTO_INCREMENT for table `ration_cards`
@@ -1048,13 +1057,19 @@ ALTER TABLE `role_permissions`
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `sales_items`
 --
 ALTER TABLE `sales_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `stocks`
+--
+ALTER TABLE `stocks`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `stores`
