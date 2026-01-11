@@ -36,33 +36,41 @@ export const ProductController = {
         "product_name",
         "sku",
         "category_id",
-        "subcategory_id",
         "barcode",
         "brand",
         "description",
         "cost_price",
-        "unit_price",
         "selling_price",
         "tax_rate",
-        "initial_stock",
-        "reorder_level",
-        "min_stock",
-        "max_stock",
-        "unit",
-        "unit_per_package",
         "supplier_id",
       ];
       
       for (let field of requiredFields) {
-        if (!req.body[field]) {
+        if (req.body[field] === undefined) {
           return sendResponse(resp, false, 400, `${field} is required`);
         }
+      }
+      const stockFields = [
+        "initial_stock"
+      ];
+      if (req.body.initial_stock === undefined) {
+        return sendResponse(resp, false, 400, "initial_stock is required");
       }
         const result = await ProductService.add(req.body);
         if (!result) {
           return sendResponse(resp, false, 400, "Something went wrong");
         }
 
+        await CommonModel.insertData({
+          table: "stocks",
+         data: {
+            product_id: result,
+            stock: req.body.initial_stock,
+            type:'credit',
+            note:'Add Product',
+            created_at:new Date(),
+          }
+        });
         return sendResponse(resp, true, 201, "Product added successful");
       } catch (error) {
         return sendResponse(
@@ -87,10 +95,8 @@ export const ProductController = {
   update: async (req, resp) => {
     try{
       const requiredFields = [
-        "id","product_name","sku","category_id","subcategory_id","barcode",
-        "brand","description","cost_price","unit_price","selling_price","tax_rate",
-        "initial_stock","reorder_level","min_stock","max_stock",
-        "unit","unit_per_package","supplier_id",
+        "id","product_name","sku","category_id","barcode",
+        "brand","description","cost_price","selling_price","tax_rate","supplier_id",
       ];
   
       for (let field of requiredFields) {

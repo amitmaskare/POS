@@ -67,7 +67,7 @@ useEffect(() => {
         ...item,
         selected: true,
         qty: found.quantity,
-        price: found.unit_price,
+        price: found.cost_price,
         purchase_item_id: found.id,
       };
     }
@@ -111,7 +111,7 @@ useEffect(() => {
         ...p,
         selected: false,
         qty: 1,
-        price: p.unit_price,
+        price: p.cost_price,
       }));
       setItems(formattedItems);
     }
@@ -224,7 +224,7 @@ useEffect(() => {
      id: i.purchase_item_id,
     product_id: i.id,
     quantity: i.qty,
-    unit_price: i.unit_price,
+    cost_price: i.cost_price,
   })),
 };
 
@@ -330,11 +330,10 @@ useEffect(() => {
               <>
                 <TableCell sx={{ color: "#fff" }}>Supplier</TableCell>
                 <TableCell sx={{ color: "#fff" }}>Stock</TableCell>
-                <TableCell sx={{ color: "#fff" }}>Reorder</TableCell>
                 <TableCell sx={{ color: "#fff" }}>Status</TableCell>
                 </>
           )}
-                <TableCell sx={{ color: "#fff" }}>Unit Price</TableCell>
+                <TableCell sx={{ color: "#fff" }}>Cost Price</TableCell>
                 <TableCell sx={{ color: "#fff" }}>Order Qty</TableCell>
                 <TableCell sx={{ color: "#fff" }}>Total</TableCell>
               </TableRow>
@@ -369,12 +368,11 @@ useEffect(() => {
           {(!editData || editData?.purchase?.type === "draft") && (
                 <>
                   <TableCell sx={{ color: "#fff" }}>{item.supplier_name}</TableCell>
-                  <TableCell sx={{ color: "#fff" }}>{item.initial_stock}</TableCell>
-                  <TableCell sx={{ color: "#fff" }}>{item.reorder_level}</TableCell>
-
+                  <TableCell sx={{ color: "#fff" }}>{item.stock}</TableCell>
+                
                   <TableCell>
                     <Chip
-                      label="critical"
+                      label={item.status}
                       size="small"
                       sx={{
                         bgcolor: "#fee2e2",
@@ -386,7 +384,7 @@ useEffect(() => {
                   </>
           )}
                   <TableCell sx={{ color: "#fff" }}>
-                    ₹{item.unit_price.toFixed(2)}
+                    ₹{item.cost_price.toFixed(2)}
                   </TableCell>
 
                   <TableCell>
@@ -415,7 +413,7 @@ useEffect(() => {
                   </TableCell>
 
                   <TableCell sx={{ color: "#fff" }}>
-                    {item.selected ? "₹" + (item.qty * item.unit_price).toFixed(2) : "-"}
+                    {item.selected ? "₹" + (item.qty * item.cost_price).toFixed(2) : "-"}
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,7 +1,7 @@
 import { ReturnService } from "../services/ReturnService.js";
 import {sendResponse} from "../utils/sendResponse.js"
 import {CommonModel} from "../models/CommonModel.js"
-
+import bcrypt from "bcrypt";
 export const ReturnController={
 
    scanInvoice: async (req, res) => {
@@ -116,7 +116,17 @@ scanProduct: async (req, res) => {
   
         const amount = i.qty * saleItem.price;
         refundAmount += amount;
-  
+        
+        await CommonModel.insertData({
+          table: "stocks",
+         data: {
+            product_id: i.product_id,
+            stock:  i.qty,
+            type:'credit',
+            note:'Refund Product',
+            created_at:new Date(),
+          }
+        });
         /* -------------------- INSERT RETURN ITEMS -------------------- */
         await CommonModel.insertData({
           table: "return_items",
@@ -273,7 +283,18 @@ await CommonModel.updateData({
   
         const amount = r.qty * saleItem.price;
         returnAmount += amount;
-  
+        
+        await CommonModel.insertData({
+          table: "stocks",
+         data: {
+            product_id: r.product_id,
+            stock:  r.qty,
+            type:'credit',
+            note:'Exchange Product',
+            created_at:new Date(),
+          }
+        });
+
         await CommonModel.insertData({
           table: "return_items",
           data: {
@@ -308,7 +329,16 @@ await CommonModel.updateData({
         if (!e.product_id) continue;
         const amount = e.qty * e.price;
         exchangeAmount += amount;
-  
+        await CommonModel.insertData({
+          table: "stocks",
+         data: {
+            product_id: e.product_id,
+            stock:  e.qty,
+            type:'debit',
+            note:'Sale',
+            created_at:new Date(),
+          }
+        });
         await CommonModel.insertData({
           table: "sales_items",
           data: {
@@ -440,13 +470,19 @@ saleReturnById: async (req, res) => {
 
 verifyManagerAuth: async (req, res) => {
   try{
-  const { username, password } = req.body;
-
+  const { user_id, password } = req.body;
+  if(!user_id)
+  {
+    return sendResponse(res, false, 400, "user_id is required");
+  }
+  if (!password) {
+    return sendResponse(res, false, 400, "password is required");
+  }
   const [user] = await CommonModel.rawQuery(
-    `SELECT id, password FROM users WHERE username = ? AND role = '2'`,
-    [username]
+    `SELECT userId, password FROM users WHERE user_id = ? AND role = '2'`,
+    [user_id]
   );
-
+  //res.send(user);
   if (!user)
     return sendResponse(res, false, 401, "Unauthorized");
 
@@ -455,7 +491,7 @@ verifyManagerAuth: async (req, res) => {
     return sendResponse(res, false, 401, "Invalid credentials");
 
   return sendResponse(res, true, 200, "Approved", {
-    manager_id: user.id
+    manager_id: user.userId
   });
 }catch(error)
 {

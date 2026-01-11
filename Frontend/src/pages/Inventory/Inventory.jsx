@@ -1,4 +1,4 @@
-import React from 'react';
+import {useState,useEffect} from 'react';
 import {
   Box,
   Typography,
@@ -23,14 +23,74 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { statsData } from './StatsData';
 import { inventory } from './Inventoryitems';
-
-
+import {productList} from "../../services/productService"
+import {saleList} from "../../services/saleService"
+import {purchaseList} from "../../services/purchaseService"
 
 const Inventory = () => {
-  const lowStock = inventory.filter(item => item.stock > 0 && item.stock <= 2);
-  const outOfStock = inventory.filter(item => item.stock === 0);
+   const[data,setData]=useState([])
+   const[sale,setSale]=useState([])
+   const[purchase,setPurchase]=useState([])
 
+   useEffect(()=>{
+  fetchProductList()
+  fetchSaleList()
+  fetchPurchaseList()
+  },[])
+  
+    const fetchProductList =async()=>{
+      try{
+        const result=await productList()
+        if(result.status===true)
+        {
+          setData(result.data)
+        }else{
+          console.log(result.message)
+        }
+      }catch(error)
+      {
+          console.log(error.response?.data?.message || error.message);
+      }
+    }
+    const fetchSaleList =async()=>{
+      try{
+        const result=await saleList()
+        if(result.status===true)
+        {
+          setSale(result.data)
+        }else{
+          console.log(result.message)
+        }
+      }catch(error)
+      {
+          console.log(error.response?.data?.message || error.message);
+      }
+    }
+    const fetchPurchaseList =async()=>{
+      try{
+        const result=await purchaseList()
+        if(result.status===true)
+        {
+          setPurchase(result.data)
+        }else{
+          console.log(result.message)
+        }
+      }catch(error)
+      {
+          console.log(error.response?.data?.message || error.message);
+      }
+    }
+  const lowStock = data.filter(item => item.stock > 0 && item.stock <= 2);
+  const outOfStock = data.filter(item => item.stock === 0);
+  const totalSale = sale.filter(item => item.status === 'COMPLETED');
+  const totalPurchase = purchase.filter(item => item.type === 'SEND');
 
+   const getstatsData = statsData({
+    lowStockCount: lowStock.length,
+    outOfStockCount: outOfStock.length,
+    totalSaleCount: totalSale.length,
+    totalPurchaseCount: totalPurchase.length,
+  });
   return (
     <Box sx={{ minHeight: "100vh" }}>
 
@@ -49,17 +109,11 @@ const Inventory = () => {
             icon: <FileDownloadIcon />,
             variant: "outlined",
           },
-          {
-            label: "Add Item",
-            icon: <AddIcon />,
-            variant: "contained",
-            bgcolor: "#5A8DEE"
-          },
         ]} />
 
       {/* Stats */}
       <Box mt={3}>
-        <Stats stats={statsData} />
+        <Stats stats={getstatsData} />
       </Box>
 
       <Box mt={3}>
@@ -89,7 +143,7 @@ const Inventory = () => {
       <Divider sx={{ mb: 2, bgcolor: '#333' }} />
 
       <Box>
-        {inventory.map((item, index) => (
+        {data.map((item, index) => (
           <Box
             key={index}
             sx={{
@@ -125,7 +179,7 @@ const Inventory = () => {
                 {/* Name + Stock-Level Badge */}
                 <Box display="flex" alignItems="center" gap={1}>
                   <Typography sx={{ fontSize: 16, fontWeight: 600 }}>
-                    {item.name}
+                    {item.product_name}
                   </Typography>
 
                   <Chip
@@ -150,10 +204,10 @@ const Inventory = () => {
                 {/* Category + Price in one row */}
                 <Box display="flex" gap={2} mt={0.5}>
                   <Typography variant="body2" >
-                    Category: {item.category}
+                    Category: {item.category_name}
                   </Typography>
                   <Typography variant="body2" >
-                    Price: ${item.price}
+                    Price: ${item.cost_price}
                   </Typography>
                 </Box>
 
@@ -162,80 +216,16 @@ const Inventory = () => {
                   <Typography variant="body2" >
                     Stock: {item.stock}
                   </Typography>
-                  <Typography variant="body2" >
+                  {/* <Typography variant="body2" >
                     Last updated: {item.updated}
-                  </Typography>
+                  </Typography> */}
                 </Box>
               </Box>
             </Box>
 
             {/* RIGHT SIDE ACTION */}
             {/* RIGHT SIDE — replace your existing right box with this */}
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-                minWidth: 160,
-                gap: 0.5,
-              }}
-            >
-              {/* First line: Stock (label + value)  + Price */}
-              <Box display="flex" alignItems="center" gap={2}>
-                <Box textAlign="right">
-                  <Typography sx={{ fontSize: 15 }}>Stock:{item.stock}</Typography>
-
-                </Box>
-
-                {/* Price block */}
-                <Box textAlign="right">
-
-                  <Typography sx={{ fontWeight: 700, fontSize: 16 }}>
-                    ₹{item.price}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Second line: min / max and per unit */}
-              <Box display="flex" alignItems="center" gap={2} sx={{ width: "100%", justifyContent: "flex-end" }}>
-                <Typography sx={{ fontSize: 15 }}>
-                  Min: {item.min ?? 10} | Max: {item.max ?? 100}
-                </Typography>
-
-                <Typography sx={{ fontSize: 1 }}>
-                  per unit
-                </Typography>
-              </Box>
-
-              {/* Action buttons */}
-              <Box display="flex" gap={1} mt={1}>
-                <IconButton
-                  size="small"
-                  sx={{
-
-                    border: "1px solid #1f2937",
-                    width: 36,
-                    height: 36,
-                    "&:hover": { bgcolor: "#0f1724" }
-                  }}
-                >
-                  <EditIcon sx={{ fontSize: 18, color: "#9ca3af" }} />
-                </IconButton>
-
-                <IconButton
-                  size="small"
-                  sx={{
-
-                    border: "1px solid #1f2937",
-                    width: 36,
-                    height: 36,
-                    "&:hover": { bgcolor: "#0f1724" }
-                  }}
-                >
-                  <DeleteIcon sx={{ fontSize: 18, color: "#ef4444" }} />
-                </IconButton>
-              </Box>
-            </Box>
+           
 
           </Box>
         ))}
@@ -250,7 +240,7 @@ const Inventory = () => {
             <CardContent sx={{ height: "100%" }}>
               <Typography variant="h6" color="#5A8DEE">Low in Stock</Typography>
               {lowStock.map((item, i) => (
-                <Chip key={i} label={item.name} sx={{ m: 0.5, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }} />
+                <Chip key={i} label={item.product_name} sx={{ m: 0.5, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }} />
               ))}
             </CardContent>
           </Card>
@@ -261,7 +251,7 @@ const Inventory = () => {
             <CardContent sx={{ height: "100%" }}>
               <Typography variant="h6" color="#5A8DEE">Out of Stock</Typography>
               {outOfStock.map((item, i) => (
-                <Chip key={i} label={item.name} color="error" sx={{ m: 0.5 }} />
+                <Chip key={i} label={item.product_name} color="error" sx={{ m: 0.5 }} />
               ))}
             </CardContent>
           </Card>
@@ -271,9 +261,9 @@ const Inventory = () => {
           <Card sx={{ height: "100%" }}>
             <CardContent sx={{ height: "100%" }}>
               <Typography variant="h6" color="#5A8DEE">Recent Activity</Typography>
-              {inventory.map((item, i) => (
+              {data.slice(0, 5).map((item, i) => (
                 <Typography key={i} variant="body2" sx={{ mt: 1 }}>
-                  2 days ago: {item.name} updated
+                  2 days ago: {item.product_name} updated
                 </Typography>
               ))}
             </CardContent>

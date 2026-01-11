@@ -443,13 +443,13 @@ const saleId = cart.length > 0 ? cart[0].sale_id : null;
 
 const verifyManager = async () => {
   const result = await verifyManagerAuth({
-    username: managerUser,
+    user_id: managerUser,
     password: managerPass
   });
 
   if (result.status === true) {
     setShowApproval(false);
-    handleExchangeSave(result.data.manager_id);
+    handleRefundSave(result.data.manager_id);
   } else {
     alert("Invalid manager credentials");
   }

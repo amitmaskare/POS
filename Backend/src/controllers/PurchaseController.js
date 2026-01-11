@@ -86,7 +86,7 @@ const purchase_date = `${year}-${month}-${day}`;
             po_number:getPoNumber.po_number,
             product_id: item.product_id,
             quantity: item.quantity,
-            unit_price: item.unit_price,
+            cost_price: item.cost_price,
           };
           await PurchaseService.addItem(itemData);
 
@@ -241,25 +241,28 @@ const purchase_date = `${year}-${month}-${day}`;
         grand_total,
         type,
         po_number: newPoNumber,
-       
+        status: 'completed',  
       };
   
       await PurchaseService.update(purchaseData);
   
-      // STEP 4: Remove old items
-      // await CommonModel.deleteData({
-      //   table: "purchase_order_items",
-      //   conditions: { po_number: oldPoNumber }
-      // });
-  
-      // STEP 5: Insert updated items
       for (const item of items) {
+        await CommonModel.insertData({
+          table: "stocks",
+         data: {
+            product_id: item.product_id,
+            stock: item.quantity,
+            type:'credit',
+            note:'Purchase Receiving',
+            created_at:new Date(),
+          }
+        });
         await CommonModel.updateData({
           table: "purchase_order_items",
           data: {
             po_number: newPoNumber,
             quantity: item.quantity,
-            unit_price: item.unit_price,
+            cost_price: item.cost_price,
             product_id: item.product_id,
             received_qty: item.received_qty || 0,
             received_reason: item.received_reason || null,
@@ -350,6 +353,7 @@ const purchase_date = `${year}-${month}-${day}`;
           data: { received_qty: newReceived },
           conditions: { id: poItem.id }
         });
+
   
         // update stock
        // await PurchaseService.updateProductStock(product_id, receive_qty);

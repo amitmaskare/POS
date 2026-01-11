@@ -60,6 +60,18 @@ export const SaleController={
             }
            
             for (const item of cart) {
+
+              await CommonModel.insertData({
+                table: "stocks",
+               data: {
+                  product_id: item.product_id,
+                  stock: item.qty,
+                  type:'debit',
+                  note:'Sale',
+                  created_at:new Date(),
+                }
+              });
+
               const itemData = {
                 sale_id: saleId,
         product_id: item.product_id,

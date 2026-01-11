@@ -10,29 +10,25 @@ export const ProductService = {
         p.product_name,
         s.name AS supplier_name,
         cat.category_name,
-        p.unit_price,
-        p.reorder_level,
-        p.initial_stock,
+        p.cost_price,
+        p.selling_price,
         p.sku,
-        p.unit_per_package,
-        p.unit,
         p.tax_rate,
         p.status,
-        p.image
+        p.is_returnable,
+        p.created_at,
+        p.image,
+        IFNULL(
+          SUM(CASE WHEN st.type = 'credit' THEN st.stock ELSE 0 END) -
+          SUM(CASE WHEN st.type = 'debit' THEN st.stock ELSE 0 END),
+        0) AS stock
       FROM products p
       LEFT JOIN suppliers s ON p.supplier_id = s.id
       LEFT JOIN categories cat ON p.category_id = cat.id
+      LEFT JOIN stocks st ON st.product_id = p.id
       ORDER BY p.id DESC`;
     return await CommonModel.rawQuery(query);
   },
-
-  // list: async () => {
-  //   const result = await CommonModel.getAllData({
-  //     table: "products",
-  //     fields: ["id,product_name,sku,category_id,unit_price,unit_per_package,min_stock,max_stock,status,unit"],
-  //   });
-  //   return result;
-  // },
 
   add: async (productData) => {
     const result = await CommonModel.insertData({
@@ -74,11 +70,6 @@ export const ProductService = {
     });
     return result;
   },
-
-  // searchProduct:async(search)=>{
-  //   const result=await CommonModel.getSingle({table:"products", fields: ["id,product_name,category_id,selling_price,image"],conditions:{barcode :`${search}`},orderBy: "product_name ASC"})
-  //   return result
-  // },
 
   searchProduct: async (search) => {
     const query = `
@@ -125,16 +116,5 @@ export const ProductService = {
     ORDER BY p.id DESC`
     return await CommonModel.rawQuery(query);
   },
-
-//   SELECT 
-//   p.id,
-//   p.product_name,
-//   cat.category_name,
-//   p.selling_price,
-//   p.image
-// FROM products p
-// LEFT JOIN categories cat ON p.category_id = cat.id
-// WHERE p.favourite='yes'
-// ORDER BY p.id DESC`;
 
 };
