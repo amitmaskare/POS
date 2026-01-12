@@ -411,12 +411,13 @@ const retrieveItem=async(id)=>{
     }
 }
 const saleId = cart.length > 0 ? cart[0].sale_id : null;
- const handleRefundSave = async (manager_id) => {
+ const handleExchangeSave = async (manager_id) => {
   
    try{
     const payload = {
     sale_id: saleId,
     return_type: "refund",
+    manager_id,
     items: cart.map(item => ({
       sale_item_id: item.id,
       product_id: item.product_id,
@@ -431,7 +432,7 @@ const saleId = cart.length > 0 ? cart[0].sale_id : null;
     if(result.status===true)
     {
       alert(`Refund Amount ₹${result.data.refundAmount}`);
-       const invoice = buildExchangeInvoice(result.invoice_no);
+       const invoice = buildExchangeInvoice(result.data.invoice_no);
       printInvoice(invoice);
       setCart([])
     }
@@ -628,9 +629,9 @@ const verifyManager = async () => {
           </button>
         </div>
 
-        {/* Print */}
+        {/* Print  onClick={checkoutSale } */}
         <div className="d-grid gap-2 mt-3">
-          <button className="btn btn-success" onClick={checkoutSale }>
+          <button className="btn btn-success" >
             <PrintIcon style={{ fontSize: 18, marginRight: 5 }} />
             Print Receipt
           </button>

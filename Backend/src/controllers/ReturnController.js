@@ -65,12 +65,14 @@ scanProduct: async (req, res) => {
 
   confirmReturn: async (req, res) => {
     try {
-      const { sale_id, items, return_type } = req.body;
+      const { sale_id, items, return_type,manager_id } = req.body;
   
       /* -------------------- VALIDATIONS -------------------- */
       if (!sale_id)
         return sendResponse(res, false, 400, "sale_id required");
-  
+       if (!manager_id)
+      return sendResponse(res, false, 400, "manager_id required");
+    
         if (!["refund", "exchange"].includes(return_type))
         return sendResponse(res, false, 400, "Invalid return_type");
   
@@ -83,9 +85,11 @@ scanProduct: async (req, res) => {
       const returnId = await CommonModel.insertData({
         table: "returns",
         data: {
-          sale_id,
-          return_type,
-          refund_amount: 0
+         sale_id,
+        return_type,
+        refund_amount: 0,
+        approved_by: manager_id,
+        approved_at: new Date()
         }
       });
   
@@ -194,22 +198,13 @@ await CommonModel.updateData({
   conditions: { id: returnId }
 });
 
-await CommonModel.updateData({
-  table: "returns",
-  data: {
-    approved_by: managerId,
-    approved_at: new Date()
-  },
-  conditions: { id: returnId }
-});
-
   await CommonModel.insertData({
   table: "return_approvals",
   data: {
     return_id: returnId,
     sale_id,
     cashier_id: req.user.id,
-    manager_id: managerId,
+    manager_id: manager_id,
     action: 'refund'
   }
 });
@@ -470,14 +465,8 @@ saleReturnById: async (req, res) => {
 
 verifyManagerAuth: async (req, res) => {
   try{
-  const { user_id, password } = req.body;
-  if(!user_id)
-  {
-    return sendResponse(res, false, 400, "user_id is required");
-  }
-  if (!password) {
-    return sendResponse(res, false, 400, "password is required");
-  }
+  const { username, password } = req.body;
+
   const [user] = await CommonModel.rawQuery(
     `SELECT userId, password FROM users WHERE user_id = ? AND role = '2'`,
     [user_id]
