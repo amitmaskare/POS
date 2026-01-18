@@ -23,7 +23,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { statsData } from './StatsData';
 import { inventory } from './Inventoryitems';
-import {productList} from "../../services/productService"
+import {inventoryList} from "../../services/productService"
 import {saleList} from "../../services/saleService"
 import {purchaseList} from "../../services/purchaseService"
 
@@ -40,7 +40,7 @@ const Inventory = () => {
   
     const fetchProductList =async()=>{
       try{
-        const result=await productList()
+        const result=await inventoryList()
         if(result.status===true)
         {
           setData(result.data)
@@ -80,10 +80,16 @@ const Inventory = () => {
           console.log(error.response?.data?.message || error.message);
       }
     }
-  const lowStock = data.filter(item => item.stock > 0 && item.stock <= 2);
-  const outOfStock = data.filter(item => item.stock === 0);
+ const lowStock = data.filter(
+  item => Number(item.stock) > 0 && Number(item.stock) <= 2
+);
+
+const outOfStock = data.filter(
+  item => Number(item.stock) === 0
+);
+
   const totalSale = sale.filter(item => item.status === 'COMPLETED');
-  const totalPurchase = purchase.filter(item => item.type === 'SEND');
+  const totalPurchase = purchase.filter(item => item.status === 'completed');
 
    const getstatsData = statsData({
     lowStockCount: lowStock.length,
@@ -184,17 +190,17 @@ const Inventory = () => {
 
                   <Chip
                     label={
-                      item.stock === 0
+                      Number(item.stock) === 0
                         ? "Out of Stock"
-                        : item.stock <= 2
+                        : Number(item.stock) <= 2
                           ? "Low Stock"
                           : "In Stock"
                     }
                     size="small"
                     color={
-                      item.stock === 0
+                      Number(item.stock) === 0
                         ? "error"
-                        : item.stock <= 2
+                        : Number(item.stock) <= 2
                           ? "warning"
                           : "success"
                     }

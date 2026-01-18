@@ -3,6 +3,7 @@ import { CommonModel } from "../models/CommonModel.js";
 import bcrypt from "bcrypt";
 import pool from "../config.js";
 import jwt from "jsonwebtoken";
+
 import dotenv from "dotenv";
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -35,20 +36,60 @@ export const AuthService = {
   },
 
   loginByPassword: async (loginData) => {
-
-    const{user_id,password}=loginData
-    const user= await CommonModel.getSingle({table:'users',conditions:{user_id},})
-    if(!user)
-    {
-      throw new Error("Invalid User Id")
+    const { user_id, password } = loginData;
+  
+    const user = await CommonModel.getSingle({
+      table: "users",
+      conditions: { user_id }
+    });
+  
+    if (!user) throw new Error("Invalid User Id");
+  
+    const checkPassword = await bcrypt.compare(password, user.password);
+    if (!checkPassword) throw new Error("Invalid Password");
+  
+    const role = await CommonModel.getSingle({
+      table: "roles",
+      conditions: { roleId: user.role }
+    });
+  
+    let permissions = [];
+  
+    // ✅ ADMIN → ALL
+    if (Number(user.role) === 1 || role?.name === "admin") {
+      const allPerms = await CommonModel.getAllData({ table: "permissions" });
+      permissions = allPerms.map(p => p.slug_url);
+    } 
+    // ✅ OTHERS
+    else {
+      const permissionsQuery = `
+        SELECT p.slug_url
+        FROM role_permissions rp
+        JOIN permissions p ON p.permissionId = rp.permission_id
+        WHERE rp.role_id = ?
+      `;
+  
+      const permissionResult = await CommonModel.rawQuery(
+        permissionsQuery,
+        [user.role]
+      );
+  
+      const rows = Array.isArray(permissionResult[0])
+        ? permissionResult[0]
+        : permissionResult;
+  
+      permissions = rows.map(p => p.slug_url);
     }
-    const checkPassword=await bcrypt.compare(password,user.password)
-    if(!checkPassword)
-    {
-      throw new Error("Invalid Password")
-    }
-    return user
+  
+    delete user.password;
+  
+    return {
+      ...user,
+      role_name: role?.name || "admin",
+      permissions
+    };
   },
+  
 
   Profile: async (userId) => {
     const user = await AuthModel.getById(userId);

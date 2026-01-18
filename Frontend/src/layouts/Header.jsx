@@ -41,7 +41,8 @@ export default function Header({ sidebarState }) {
   const handleOpenAadhaar = () => setOpenAadhaar(true); // open modal
   const handleCloseAadhaar = () => setOpenAadhaar(false); // close modal
 
-  
+ 
+
   return (
     <Box
   sx={{

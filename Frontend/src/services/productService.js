@@ -143,3 +143,31 @@ export const favouriteList=async()=>{
   }
 }
 
+export const looseItemList=async()=>{
+  try{
+   const response=await axios.get(`${apiUrl}/product/looseItemList`,{
+     headers: {
+          Authorization: `Bearer ${token}`,
+        },
+   })
+   return response.data
+  }catch(error)
+  {
+    throw error
+  }
+}
+
+export const inventoryList=async()=>{
+    try{
+        const response= await axios.get(`${apiUrl}/product/inventoryList`,{
+           headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        })
+        return response.data
+    }catch(error)
+    {
+      throw error
+    }
+}
+

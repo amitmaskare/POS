@@ -34,6 +34,7 @@ import Users from "../pages/Users/Users";
 import RationCards from "../pages/RationCards/RationCards";
 import Offer from "../pages/Offer/Offer";
 import ProtectedRoute from "./ProtectedRoute";
+import PermissionRoute from "./PermissionRoute";
 import SaleReturn from "../pages/SaleReturn/Dashboard"
 
 const AppRoutes = () => {
@@ -58,7 +59,9 @@ const AppRoutes = () => {
              }
            >
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="products" element={<Products />} />
+        <Route path="products" element={<PermissionRoute permission="view-product">
+      <Products />
+    </PermissionRoute>} />
         <Route path="purchases" element={<Purchases />} />
         <Route path="receiving" element={<Receiving />} />
         <Route path="sales" element={<Sales />} />

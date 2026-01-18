@@ -4,6 +4,6 @@ import AuthMiddleware from "../middleware/AuthMiddleware.js";
 const route = express.Router();
 
 route.use(AuthMiddleware)
-route.post("/payment", PaymentController.payment);
+route.post("/order", PaymentController.order);
 
 export default route;

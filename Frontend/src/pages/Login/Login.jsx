@@ -46,6 +46,7 @@ export default function Login({ onLogin }) {
         setSuccess(result.message);
         const token = result.data.token;
         sessionStorage.setItem("token", token);
+        sessionStorage.setItem("user", JSON.stringify(result.data.user));
          onLogin();
         navigate('dashboard');
       } else {

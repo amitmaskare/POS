@@ -1,9 +1,11 @@
 import { PaymentService } from "../services/PaymentService.js"
 import { sendResponse } from "../utils/sendResponse.js"
-
+import crypto from "crypto"
+import razorpay from "../config/razorpay.js"
+import {CommonModel} from "../models/CommonModel.js"
 export const PaymentController={
 
-   payment:async(req,resp)=>{
+   order:async(req,resp)=>{
     try{
         const requiredFields=[
             'total_amount',
@@ -18,7 +20,7 @@ export const PaymentController={
                 return sendResponse(resp,false,400,`${fields} is required`)
             }
         }
-         const{total_amount,productId,price,quantity}=req.body
+        const { cart, subtotal, tax, total, payment_mode } = req.body;
                 const userId=req.user.userId;
                 const orderId=await PaymentService.getNextOrderId()
                 const saveData={

@@ -25,7 +25,7 @@ import { Box,
   TableRow,
   DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
-import { checkout_sale } from "../../services/saleService";
+import { checkout_sale,verifyPayment } from "../../services/saleService";
 
 export default function Cart({ cart, setCart }) {
   const [active, setActive] = useState(""); 
@@ -38,30 +38,41 @@ const [receivedAmount, setReceivedAmount] = useState("");
 const [returnAmount, setReturnAmount] = useState(0);
 const [holdItem, setHoldItem] = useState(0);
   // Handle Quantity
- const updateQty = (id, type) => {
+ const updateQty = (id, action) => {
   setCart((prev) =>
     prev.map((item) => {
       if (item.id !== id) return item;
 
       const newQty =
-        type === "inc" ? item.qty + 1 : Math.max(1, item.qty - 1);
+        action === "inc" ? item.qty + 1 : Math.max(1, item.qty - 1);
 
       let totalPrice = newQty * item.selling_price; // default
 
-      // ✅ OFFER BLOCK LOGIC (CORRECT)
-      if (item.min_qty && item.offer_price && newQty >= item.min_qty) {
-        const offerSets = Math.floor(newQty / item.min_qty);
-        const remainingQty = newQty % item.min_qty;
+      // 🔥 OFFER LOGIC
+      if (item.offer_price) {
+        // ✅ CASE 2: FIXED OFFER PRICE (per-unit)
+        if (item.offer_qty_price === "offer_price") {
+          totalPrice = newQty * item.offer_price;
+        }
 
-        totalPrice =
-          offerSets * item.offer_price +
-          remainingQty * item.selling_price;
+        // ✅ CASE 1: REGULAR (offer only till min_qty)
+        if (
+          item.offer_qty_price === "regular" &&
+          item.min_qty &&
+          newQty >= item.min_qty
+        ) {
+          const offerTotal = item.min_qty * item.offer_price;
+          const remainingQty = newQty - item.min_qty;
+
+          totalPrice =
+            offerTotal + remainingQty * item.selling_price;
+        }
       }
 
       return {
         ...item,
         qty: newQty,
-        price: totalPrice, // 👈 store TOTAL, not per-unit
+        price: totalPrice, // TOTAL price
       };
     })
   );
@@ -279,7 +290,7 @@ const printInvoice = (invoice) => {
 const checkoutSale = async () => {
   try{
   const payload = {
-    payment_type: active,
+    payment_method: 'cash',
     subtotal,
     tax,
     total,
@@ -353,6 +364,62 @@ const retrieveItem=async(id)=>{
       console.log(error.message)
     }
 }
+
+ const loadRazorpay = () =>
+  new Promise(resolve => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    document.body.appendChild(script);
+  });
+const handleRazorpay = async () => {
+  
+  await loadRazorpay();
+  const payload = {
+    payment_method: 'credit',
+    subtotal,
+    tax,
+    total,
+
+    cart: cart.map(item => ({
+      product_id: item.id,
+      product_name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      total:item.price,
+      image: item.image
+    }))
+  };
+  const result= await checkout_sale(payload)
+ // console.log(result); return false;
+   const options = {
+    key: "rzp_test_RvRduZ5UNffoaN",
+    amount: result.data.amount * 100,
+    currency: "INR",
+    order_id: result.data.razorpayOrderId,
+    name: "My POS",
+    handler: async function (response) {
+        const data={
+           ...response,
+           razorpay_order_id: response.razorpay_order_id,
+      razorpay_payment_id: response.razorpay_payment_id,
+      razorpay_signature: response.razorpay_signature,
+        saleId: result.data.saleId,
+        }
+      const verifyData=await verifyPayment(data);
+
+      alert("Payment Successful");
+     const invoice = buildExchangeInvoice('Invoice-0001');
+    printInvoice(invoice);
+    setCashOpen(false);
+      setCart([]);
+      setReceivedAmount("");
+      setReturnAmount(0);
+    },
+  };
+
+  new window.Razorpay(options).open();
+};
 
   return (
     <>
@@ -488,7 +555,10 @@ const retrieveItem=async(id)=>{
           <button
             className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
             style={getButtonStyle("credit")}
-            onClick={() => setActive("credit")}
+            onClick={() =>{ 
+              setActive("credit");
+              handleRazorpay();
+            }}
           >
             <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
             Credit

@@ -18,6 +18,21 @@ export const checkout_sale=async(data)=>{
     }
 }
 
+export const verifyPayment=async(data)=>{
+    try{
+        const response= await axios.post(`${apiUrl}/sale/verifyPayment`,data,{
+           headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        })
+       
+        return response.data
+    }catch(error)
+    {
+      throw error
+    }
+}
+
 export const saleList=async()=>{
     try{
         const response= await axios.get(`${apiUrl}/sale/list`,{

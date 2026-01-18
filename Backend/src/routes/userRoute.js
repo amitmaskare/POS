@@ -2,6 +2,7 @@ import { AuthController } from "../controllers/AuthController.js";
 
 import express from "express";
 import AuthMiddleware from "../middleware/AuthMiddleware.js";
+
 const route = express.Router();
 
 route.post("/login", AuthController.login);

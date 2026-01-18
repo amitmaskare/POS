@@ -43,39 +43,43 @@ export const AuthController = {
 
   login: async (req, resp) => {
     try {
-      if (!req.body) {
-        return sendResponse(resp, false, 400, "user_id,password is required");
+      const { user_id, password } = req.body;
+  
+      if (!user_id || !password) {
+        return sendResponse(resp, false, 400, "user_id & password required");
       }
-      const { user_id,password } = req.body;
-      if(!user_id)
-      {
-        return sendResponse(resp, false, 400, "user_id is required");
-      }
-      if (!password) {
-        return sendResponse(resp, false, 400, "password is required");
-      }
+  
       const userData = await AuthService.loginByPassword(req.body);
-      if (!userData) {
-        return sendResponse(resp, false, 400, "Invalid User Id and Password");
-      }
+  
       const token = jwt.sign(
         {
           userId: userData.userId,
           email: userData.email,
           name: userData.name,
+          role: userData.role_name,          // ✅ FIXED
+          permissions: userData.permissions // ✅ FIXED
         },
         JWT_SECRET,
         { expiresIn: "1d" }
       );
+  
       const data = {
-        token: `${token}`,
+        token,
+        user: {
+          id: userData.userId,
+          name: userData.name,
+          role: userData.role_name,          // ✅ FIXED
+          permissions: userData.permissions
+        }
       };
+  
       return sendResponse(resp, true, 200, "Login Successful", data);
+  
     } catch (error) {
-     
-        return sendResponse(resp, false, 500, error.message);
+      return sendResponse(resp, false, 500, error.message);
     }
   },
+  
 
   logout: async (req, resp) => {
     try {

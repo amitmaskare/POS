@@ -154,6 +154,7 @@ export const ProductController = {
         : null,
         min_qty:item.min_qty,
         offer_price:item.offer_price,
+        offer_qty_price:item.offer_qty_price,
       }
       return sendResponse(resp,true,200,"Fetch Data Successful",data)
     }catch(error)
@@ -242,6 +243,49 @@ export const ProductController = {
         : null,
         min_qty:item.min_qty,
         offer_price:item.offer_price,
+    }));
+      return sendResponse(resp, true, 200, "Fetch store data", data);
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error :${error.message}`);
+    }
+  },
+
+  looseItemList: async (req, resp) => {
+    try {
+      const result = await ProductService.looseItemList();
+    
+      if (!result || result.length === 0) {
+        return sendResponse(resp, false, 400, "No Data Found");
+      }
+     const data = result.map(item => ({
+      ...item,
+      qty:1,
+      selling_price: item.selling_price,
+      price:item.selling_price,
+      image: item.image
+        ? `${baseUrl}/public/uploads/product/${item.image}`
+        : null,
+        min_qty:item.min_qty,
+        offer_price:item.offer_price,
+    }));
+      return sendResponse(resp, true, 200, "Fetch store data", data);
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error :${error.message}`);
+    }
+  },
+
+  inventoryList: async (req, resp) => {
+    try {
+      const result = await ProductService.inventoryList();
+    
+      if (!result || result.length === 0) {
+        return sendResponse(resp, false, 400, "No Data Found");
+      }
+     const data = result.map(item => ({
+      ...item,
+      image: item.image
+        ? `${baseUrl}/public/uploads/product/${item.image}`
+        : null
     }));
       return sendResponse(resp, true, 200, "Fetch store data", data);
     } catch (error) {

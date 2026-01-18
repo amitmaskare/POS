@@ -13,8 +13,7 @@ import { statsData } from "./StatsData";
 import { columns } from "./columns";
 //import { rows } from "./rows";
 import {productList,getById,deleteProduct} from "../../services/productService"
-
-
+import { getUser } from "../../utils/Auth.js";
 
 const Products = () => {
   const [open, setOpen] = useState(false);
@@ -23,6 +22,7 @@ const Products = () => {
   const[error,setError]=useState('')
   const[loading,setLoading]=useState(false)
   const [editData, setEditData] = useState(null);
+    const user = getUser();
 
    useEffect(()=>{
 fetchProductList()
@@ -87,9 +87,12 @@ fetchProductList()
                       setError(error.response?.data?.message || error.message)
                     }
               };
+
   return (
     <Box sx={{ minHeight: "100vh" }}>
-      <Title
+     {(user.role === "admin" ||
+  user.permissions.includes("add-product")) && (
+   <Title
         title="Products"
         subtitle="Manage your product inventory"
         actions={[
@@ -105,8 +108,9 @@ fetchProductList()
           },
         ]}
       />
-
-      <ModalLayout open={open} onClose={() => setOpen(false)} onSaved={fetchProductList}  editData={editData}/>
+)}
+     
+   <ModalLayout open={open} onClose={() => setOpen(false)} onSaved={fetchProductList}  editData={editData}/>
       <Box sx={{ width: "100%", px: 3, py: 2 }}>
         <Stats stats={statsData} />
       </Box>

@@ -411,7 +411,7 @@ const retrieveItem=async(id)=>{
     }
 }
 const saleId = cart.length > 0 ? cart[0].sale_id : null;
- const handleExchangeSave = async (manager_id) => {
+ const handleRefundSave = async (manager_id) => {
   
    try{
     const payload = {

@@ -22,12 +22,12 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import DownloadIcon from "@mui/icons-material/Download";
 import { columns } from "./columns";
 import { rows } from "./rows";
-import { searchProduct,add_product,favouriteList } from "../../services/productService";
+import { searchProduct,add_product,favouriteList,looseItemList } from "../../services/productService";
 import { useOutletContext } from "react-router-dom";
 
 export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState("All");
-  const filters = ["Favourite"];
+  const filters = ["Favourite","Loose Items"];
    const { addToCart } = useOutletContext();
    const[data,setData]=useState([])
       const[success,setSuccess]=useState('')
@@ -39,6 +39,7 @@ const [barcode, setBarcode] = useState("");
 const [product_name, setProduct_name] = useState("");
 const [selling_price, setSelling_price] = useState("");
 const [favourites, setFavourites] = useState([]); 
+const [looseItems, setLooseItems] = useState([]); 
 
 const handleBarcodeChange = async (value) => {
   
@@ -87,6 +88,7 @@ const addProduct=async()=>{
 }
  useEffect(()=>{
 getFavouriteList()
+fetchLooseItemList()
 },[])
 
 const getFavouriteList=async()=>{
@@ -98,6 +100,24 @@ setSuccess(null)
       {
         setSuccess(result.message)
         setFavourites(result.data)
+      }else{
+        setError(result.message)
+      }
+    }catch(error)
+    {
+        setError(error.response?.data?.message || error.message);
+    }
+}
+
+const fetchLooseItemList=async()=>{
+setSuccess(null)
+    setError(null)
+    try{
+      const result=await looseItemList()
+      if(result.status===true)
+      {
+        setSuccess(result.message)
+        setLooseItems(result.data)
       }else{
         setError(result.message)
       }
@@ -155,6 +175,29 @@ const filteredProducts = () => {
           {activeFilter === "Favourite" && (
              <div className="btn-group d-flex w-100">
          <TableLayout columns={columns} rows={favourites}  extra={{ selectItem: handleSelectItem}} actionButtons={
+      [
+        {
+          label: "Filter",
+          variant: "outlined",
+        },
+        {
+          label: "Export",
+          variant: "outlined",
+
+        },
+        {
+          label: "Import",
+          variant: "outlined",
+
+        },
+      ]
+      }/>
+      </div>
+          )}
+
+           {activeFilter === "Loose Items" && (
+             <div className="btn-group d-flex w-100">
+         <TableLayout columns={columns} rows={looseItems}  extra={{ selectItem: handleSelectItem}} actionButtons={
       [
         {
           label: "Filter",

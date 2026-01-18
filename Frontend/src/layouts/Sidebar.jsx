@@ -23,21 +23,22 @@ import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import NightlightIcon from "@mui/icons-material/Nightlight";
 import MenuIcon from "@mui/icons-material/Menu";
+import { getUser } from "../utils/Auth.js";
 
 const menuItems = [
-  { title: "POS System", icon: <ShoppingCartIcon />, path: "/dashboard" },
-  { title: "Products", icon: <CategoryIcon />, path: "/products" },
-  { title: "Purchases", icon: <ShoppingBagIcon />, path: "/purchases" },
-  { title: "Receiving", icon: <ShoppingBagIcon />, path: "/receiving" },
-  { title: "Sales", icon: <ShoppingBagIcon />, path: "/sales" },
-  { title: "Return Product", icon: <ShoppingBagIcon />, path: "/return-product" },
-  { title: "Transactions", icon: <ReceiptLongIcon />, path: "/transactions" },
-  { title: "Inventory", icon: <InventoryIcon />, path: "/inventory" },
-  { title: "Reports", icon: <AssessmentIcon />, path: "/reports" },
-  { title: "Customers", icon: <PeopleIcon />, path: "/customers" },
-  { title: "Users", icon: <PersonIcon />, path: "/users" },
-  { title: "Ration Cards", icon: <InventoryIcon />, path: "/rationcards" },
-  { title: "Offers", icon: <InventoryIcon />, path: "/offers" },
+  { title: "POS System", icon: <ShoppingCartIcon />, path: "/dashboard" , permission: "view-pos"},
+  { title: "Products", icon: <CategoryIcon />, path: "/products", permission: "view-product" },
+  { title: "Purchases", icon: <ShoppingBagIcon />, path: "/purchases", permission: "view-purchase" },
+  { title: "Receiving", icon: <ShoppingBagIcon />, path: "/receiving", permission: "view-receiving" },
+  { title: "Sales", icon: <ShoppingBagIcon />, path: "/sales", permission: "view-sale" },
+  { title: "Return Product", icon: <ShoppingBagIcon />, path: "/return-product", permission: "view-return" },
+  { title: "Transactions", icon: <ReceiptLongIcon />, path: "/transactions", permission: "view-transaction" },
+  { title: "Inventory", icon: <InventoryIcon />, path: "/inventory", permission: "view-inventory" },
+  { title: "Reports", icon: <AssessmentIcon />, path: "/reports", permission: "view-reports" },
+  { title: "Customers", icon: <PeopleIcon />, path: "/customers", permission: "view-customer" },
+  { title: "Users", icon: <PersonIcon />, path: "/users", permission: "view-user" },
+  { title: "Ration Cards", icon: <InventoryIcon />, path: "/rationcards", permission: "view-rationcard" },
+  { title: "Offers", icon: <InventoryIcon />, path: "/offers", permission: "view-offer" },
 ];
 
 export default function Sidebar({ sidebarState, setSidebarState }) {
@@ -54,6 +55,10 @@ const logOut=async()=>{
     sessionStorage.clear()
     navigate('/')
   }
+   const user = getUser();
+   const visibleMenus = menuItems.filter(menu =>
+  user.role === "admin" || user.permissions.includes(menu.permission)
+);
   return (
     <>
       {sidebarState === "hidden" && (
@@ -148,7 +153,7 @@ const logOut=async()=>{
         {sidebarState !== "hidden" && (
           <Box sx={{ flexGrow: 1, p: 2 }}>
             <List>
-              {menuItems.map((item, index) => {
+              {visibleMenus.map((item, index) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <ListItemButton

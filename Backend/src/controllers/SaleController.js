@@ -1,7 +1,8 @@
 import { SaleService } from "../services/SaleService.js";
 import {sendResponse} from "../utils/sendResponse.js"
 import {CommonModel} from "../models/CommonModel.js"
-
+import crypto from "crypto"
+import razorpay from "../config/razorpay.js"
 export const SaleController={
     list:async(req,resp)=>{
         try{
@@ -21,7 +22,7 @@ export const SaleController={
       
         try {
             const requiredFields = [
-             "subtotal", "tax", "total","payment_type","cart"
+             "subtotal", "tax", "total","payment_method","cart"
             ];
         
             for (let field of requiredFields) {
@@ -34,7 +35,7 @@ export const SaleController={
               subtotal,
               tax,
               total,
-              payment_type,
+              payment_method,
               cart
             } = req.body;
         
@@ -51,7 +52,8 @@ export const SaleController={
                      subtotal,
                      tax,
                      total,
-                     payment_type,
+                     payment_method,
+                     payment_status:payment_method === "cash" ? "paid" : "pending"
                   };
             const saleId = await SaleService.createSale(saleData);
              
@@ -103,7 +105,20 @@ export const SaleController={
           });
         }
         
-            return sendResponse(resp, true, 201, "Sale completed successfully",invoice_no);
+        if (payment_method === "cash") {
+          return sendResponse(resp, true, 201, "Sale completed successfully",invoice_no);
+        }
+        const order = await razorpay.orders.create({
+          amount: Math.round(total * 100),
+          currency: "INR",
+          receipt: `sale_${saleId}`,
+        });
+        const data={
+          razorpayOrderId: order.id,
+            saleId,
+            amount: total,
+        }
+        return sendResponse(resp, true, 201, "Sale completed successfully",data);
           } catch (error) {
             return sendResponse(
               resp,
@@ -112,6 +127,52 @@ export const SaleController={
               error.message || "Something wennt Wrong"
             );
           }
+    },
+
+    verifyPayment:async(req,resp)=>{
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        saleId,
+      } = req.body;
+    
+      const body = razorpay_order_id + "|" + razorpay_payment_id;
+    
+      const expectedSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        .update(body)
+        .digest("hex");
+    
+      if (expectedSignature !== razorpay_signature) {
+        await CommonModel.rawQuery(`
+          UPDATE sales SET payment_status='failed' WHERE id=?`,
+          [saleId]
+        );
+        return sendResponse(resp,false,400,"No Data found")
+      }
+    
+      // ✅ Mark Paid
+      await CommonModel.rawQuery(`
+        UPDATE sales SET payment_status='paid' WHERE id=?`,
+        [saleId]
+      );
+    
+      await CommonModel.rawQuery(
+        `INSERT INTO payments 
+         (sale_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, status)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          saleId,
+          razorpay_order_id,
+          razorpay_payment_id,
+          razorpay_signature,
+          0,
+          "paid"
+        ]
+      );
+     return sendResponse(resp,true,201,"Payment successful")
+      
     },
 
     getSaleById: async (req, res) => {
