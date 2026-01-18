@@ -405,6 +405,7 @@ const handleRazorpay = async () => {
       razorpay_payment_id: response.razorpay_payment_id,
       razorpay_signature: response.razorpay_signature,
         saleId: result.data.saleId,
+        amount: response.amount,
         }
       const verifyData=await verifyPayment(data);
 
