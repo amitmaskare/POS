@@ -63,4 +63,19 @@ export const getSaleById=async(id)=>{
     }
 }
 
+export const transactionList=async()=>{
+    try{
+        const response= await axios.get(`${apiUrl}/sale/transactionList`,{
+           headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        })
+       
+        return response.data
+    }catch(error)
+    {
+      throw error
+    }
+}
+
 

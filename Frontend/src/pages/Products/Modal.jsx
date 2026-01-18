@@ -33,6 +33,7 @@ const [newCategory, setNewCategory] = useState("");
     brand: "",
     description: "",
     category_id: "",
+    favourite: "",
     cost_price: "",
     selling_price: "",
     tax_rate: "",
@@ -51,6 +52,7 @@ const [newCategory, setNewCategory] = useState("");
             brand: editData.brand || "",
             description: editData.description || "",
             category_id: editData.category_id || "",
+            favourite: editData.favourite || "",
             cost_price: editData.cost_price || "",
             selling_price: editData.selling_price || "",
             tax_rate: editData.tax_rate || "",
@@ -66,6 +68,7 @@ const [newCategory, setNewCategory] = useState("");
     brand: "",
     description: "",
     category_id: "",
+    favourite: "",
     cost_price: "",
     selling_price: "",
     tax_rate: "",
@@ -108,6 +111,7 @@ const [newCategory, setNewCategory] = useState("");
           brand: "",
           description: "",
           category_id: "",
+          favourite: "",
           cost_price: "",
           selling_price: "",
           tax_rate: "",
@@ -255,6 +259,23 @@ const [newCategory, setNewCategory] = useState("");
                     value={form.brand}
                     onChange={handleChange}
                   />
+                </Grid>
+
+                 <Grid item xs={6}>
+                   <TextField
+      label="Favourite"
+      name="favourite"
+      select
+      fullWidth
+      required
+      value={form.favourite}
+       onChange={handleChange}
+      sx={{ width: "230px" }}
+    >
+      <MenuItem value="no">No</MenuItem>
+      <MenuItem value="yes">Yes</MenuItem>
+      <MenuItem value="loose">Loose Item</MenuItem>
+    </TextField>
                 </Grid>
 
                 <Grid item xs={10}>

@@ -89,6 +89,21 @@ export const SaleService={
         return await CommonModel.rawQuery(query);
       },
 
-      
+      transactionList:async()=>{
+        const query = `
+        SELECT 
+          s.id,
+          s.invoice_no,
+          s.total,
+          s.payment_method,
+          s.payment_status,
+          s.created_at,
+          p.razorpay_payment_id
+        FROM sales s
+        LEFT JOIN payments p ON p.sale_id = s.id
+        ORDER BY s.created_at DESC
+      `;
+      return await CommonModel.rawQuery(query);    
+      },   
 
 }

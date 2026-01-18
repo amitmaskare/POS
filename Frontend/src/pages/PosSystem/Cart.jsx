@@ -411,15 +411,13 @@ const handleRazorpay = async () => {
 
       alert("Payment Successful");
      const invoice = buildExchangeInvoice('Invoice-0001');
-    printInvoice(invoice);
-    setCashOpen(false);
+     printInvoice(invoice);
+     setCashOpen(false);
       setCart([]);
-      setReceivedAmount("");
-      setReturnAmount(0);
     },
   };
 
-  new window.Razorpay(options).open();
+  //new window.Razorpay(options).open();
 };
 
   return (

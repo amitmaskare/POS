@@ -35,9 +35,10 @@ export const ProductController = {
       const requiredFields = [
         "product_name",
         "sku",
-        "category_id",
         "barcode",
         "brand",
+        "category_id",
+        "favourite",
         "description",
         "cost_price",
         "selling_price",
@@ -95,7 +96,7 @@ export const ProductController = {
   update: async (req, resp) => {
     try{
       const requiredFields = [
-        "id","product_name","sku","category_id","barcode",
+        "id","product_name","sku","category_id","favourite","barcode",
         "brand","description","cost_price","selling_price","tax_rate","supplier_id",
       ];
   
