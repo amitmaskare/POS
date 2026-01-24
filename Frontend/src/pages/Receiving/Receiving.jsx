@@ -74,7 +74,7 @@ export default function Receiving() {
                   };
   return (
     <Box sx={{ minHeight: "100vh" }}>
-      <Title
+      {/* <Title
         title="Purchases"
         subtitle="Manage Purchase oders and suppliers "
         actions={[
@@ -87,7 +87,7 @@ export default function Receiving() {
           },
         ]}
 
-      />
+      /> */}
       {/* TOP CARDS */}
       <Box mb={3} mt={3}>
         <Stats stats={statsData} />

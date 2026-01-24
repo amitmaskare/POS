@@ -1,4 +1,4 @@
 export const getUser = () => {
-  const data = sessionStorage.getItem("user");
+  const data = localStorage.getItem("user");
   return data ? JSON.parse(data) : null;
 };

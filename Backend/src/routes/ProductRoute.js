@@ -18,5 +18,6 @@ route.post("/product/addProduct",ProductController.addProduct)
 route.get("/product/favouriteList",ProductController.favouriteList)
 route.get("/product/looseItemList",ProductController.looseItemList)
 route.get("/product/inventoryList",ProductController.inventoryList)
+route.post("/product/addStock",ProductController.addStock)
 
 export default route

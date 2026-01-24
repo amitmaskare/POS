@@ -1,7 +1,7 @@
 import axios from "axios"
 const apiUrl= process.env.REACT_APP_API_URL
 
-const token = sessionStorage.getItem("token");
+const token = localStorage.getItem("token");
 
 export const purchaseList=async()=>{
     try{
@@ -88,3 +88,16 @@ export const receiveItems=async()=>{
     }
 }
 
+export const receiveQuantity=async(data)=>{
+  try{
+   const response=await axios.post(`${apiUrl}/purchase/receiveQuantity`,data,{
+     headers: {
+          Authorization: `Bearer ${token}`,
+        },
+   })
+   return response.data
+  }catch(error)
+  {
+    throw error
+  }
+}

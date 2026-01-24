@@ -3,22 +3,9 @@ const apiUrl= process.env.REACT_APP_API_URL
 
 const token = localStorage.getItem("token");
 
-export const rationcardList=async()=>{
+export const permissionList=async()=>{
     try{
-        const response= await axios.get(`${apiUrl}/rationcard/list`,{
-           headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        })
-        return response.data
-    }catch(error)
-    {
-      throw error
-    }
-}
-export const cardTypeList=async()=>{
-    try{
-        const response= await axios.get(`${apiUrl}/card/list`,{
+        const response= await axios.get(`${apiUrl}/permission/list`,{
            headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -30,9 +17,9 @@ export const cardTypeList=async()=>{
     }
 }
 
-export const addRationCard=async(data)=>{
+export const addPermission=async(data)=>{
   try{
-   const response=await axios.post(`${apiUrl}/rationcard/add`,data,{
+   const response=await axios.post(`${apiUrl}/permission/add`,data,{
      headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -46,7 +33,7 @@ export const addRationCard=async(data)=>{
 
 export const getById=async(id)=>{
     try{
-   const response=await axios.get(`${apiUrl}/rationcard/getById/${id}`,{
+   const response=await axios.get(`${apiUrl}/permission/getById/${id}`,{
      headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -58,9 +45,9 @@ export const getById=async(id)=>{
   }
   }
 
-  export const updateRationCard=async(data)=>{
+export const updatePermission=async(data)=>{
   try{
-   const response=await axios.post(`${apiUrl}/rationcard/update`,data,{
+   const response=await axios.post(`${apiUrl}/permission/update`,data,{
      headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -74,7 +61,7 @@ export const getById=async(id)=>{
 
 export const deleteItem=async(id)=>{
     try{
-   const response=await axios.delete(`${apiUrl}/rationcard/delete/${id}`,{
+   const response=await axios.delete(`${apiUrl}/permission/delete/${id}`,{
      headers: {
           Authorization: `Bearer ${token}`,
         },

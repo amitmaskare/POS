@@ -14,8 +14,10 @@ import {
   DialogTitle,
   DialogContent,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import IconButton from "@mui/material/IconButton";
 import { categoryList,addCategory } from "../../services/categoryService";
-import { addProduct,updateProduct,supplierList } from "../../services/productService";
+import { addProduct,updateProduct,supplierList,addSupplier } from "../../services/productService";
 
 const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
   const [tab, setTab] = useState(0);
@@ -25,7 +27,10 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
   const [error, setError] = useState("");
   const [categoryId, setCategoryId] = useState("");
  const [openAddCategory, setOpenAddCategory] = useState(false);
+ const [openAddSupplier, setOpenAddSupplier] = useState(false);
 const [newCategory, setNewCategory] = useState("");
+const [newSupplier, setNewSupplier] = useState("");
+
   const [form, setForm] = useState({
     product_name: "",
     sku: "",
@@ -135,17 +140,13 @@ const [newCategory, setNewCategory] = useState("");
   }, []);
 
   const getCategories = async () => {
-    setSuccess("");
-    setError("");
     try {
       const result = await categoryList();
       if (result.status === true) {
         setCategories(result.data);
-      } else {
-        setError(result.message);
-      }
+      } 
     } catch (error) {
-      setError(error.response?.data?.message || error.message);
+      console.log(error.response?.data?.message || error.message);
     }
   };
 
@@ -158,17 +159,13 @@ const [newCategory, setNewCategory] = useState("");
 
  
   const getSupplier = async () => {
-    setSuccess("");
-    setError("");
     try {
       const result = await supplierList();
       if (result.status === true) {
         setSupplier(result.data);
-      } else {
-        setError(result.message);
-      }
+      } 
     } catch (error) {
-      setError(error.response?.data?.message || error.message);
+      console.log(error.response?.data?.message || error.message);
     }
   };
 
@@ -176,15 +173,27 @@ const [newCategory, setNewCategory] = useState("");
   if (!newCategory.trim()) return;
  const data = { category_name: newCategory };
   const result = await addCategory(data);
-
   if (result.status ===true) {
       getCategories(); 
      setNewCategory(""); 
    setOpenAddCategory(false);
-   
   }
 };
-  
+
+const handleAddSupplier = async () => {
+  if (!newSupplier.trim()) return;
+ const data = { name: newSupplier };
+  const result = await addSupplier(data);
+  if (result.status ===true) {
+      getSupplier(); 
+     setNewSupplier(""); 
+   setOpenAddSupplier(false);
+  }
+};
+  const handleClose = () => {
+  setOpenAddCategory(false);
+   setOpenAddSupplier(false);
+};
   return (
     <>
     <Modal open={open} onClose={onClose}>
@@ -203,9 +212,6 @@ const [newCategory, setNewCategory] = useState("");
         <Typography variant="h6" mb={2} color="#5A8DEE" fontWeight="bold">
           Add New Product
         </Typography>
-
-        {success && <Typography color="green">{success}</Typography>}
-        {error && <Typography color="red">{error}</Typography>}
 
         <Tabs value={tab} onChange={handleTabChange} mb={2} variant="fullWidth">
           <Tab label="Basic Info" />
@@ -377,25 +383,40 @@ const [newCategory, setNewCategory] = useState("");
           )}
 
           {tab === 2 && (
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                    label="Supplier ID"
-                    name="supplier_id"
-                    select
-                    fullWidth
-                    value={form.supplier_id}
-                    onChange={handleChange}
-                    className="form-control m-5"
-                  >
-                    <MenuItem value="">Select</MenuItem>
-                    {supplier.map((item, i) => (
-                      <MenuItem key={i} value={item.id}>{item.name}</MenuItem>
-                    ))}
-                  </TextField>
-                
-              </Grid>
-            </Grid>
+            <Grid container spacing={2} alignItems="center">
+  {/* Dropdown */}
+  <Grid>
+    <TextField  sx={{ width: "95%" }}
+      label="Supplier"
+      name="supplier_id"
+      select
+      fullWidth
+      value={form.supplier_id}
+      onChange={handleChange}
+    >
+      <MenuItem value="">Select</MenuItem>
+      {supplier.map((item) => (
+        <MenuItem key={item.id} value={item.id}>
+          {item.name}
+        </MenuItem>
+      ))}
+    </TextField>
+  </Grid>
+
+  {/* Add Button */}
+  <Grid item xs={2}>
+    <Button
+      variant="contained"
+      color="primary"
+      fullWidth
+      sx={{ height: "56px" }} // TextField default height
+      onClick={() => setOpenAddSupplier(true)}
+    >
+      +
+    </Button>
+  </Grid>
+</Grid>
+      
           )}
           <input type="hidden" name="id" value={form.id || ''}/>
           <Box mt={3} display="flex" justifyContent="flex-end" gap={1}>
@@ -416,8 +437,11 @@ const [newCategory, setNewCategory] = useState("");
     </Modal>
       
       <Dialog open={openAddCategory}>
-  <DialogTitle>Add Category</DialogTitle>
-
+  <DialogTitle  sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>Add Category
+       <IconButton onClick={handleClose}>
+    <CloseIcon />
+  </IconButton>
+  </DialogTitle>
   <DialogContent>
     <TextField
       label="Category Name"
@@ -431,6 +455,31 @@ const [newCategory, setNewCategory] = useState("");
       variant="contained"
       fullWidth
       onClick={handleAddCategory}
+    >
+      Save
+    </Button>
+  </DialogContent>
+</Dialog>
+
+<Dialog open={openAddSupplier}>
+  <DialogTitle  sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>Add Supplier
+       <IconButton onClick={handleClose}>
+    <CloseIcon />
+  </IconButton>
+  </DialogTitle>
+  <DialogContent>
+    <TextField
+      label="Supplier Name"
+      fullWidth
+      value={newSupplier}
+      onChange={(e) => setNewSupplier(e.target.value)}
+      margin="normal"
+    />
+
+    <Button
+      variant="contained"
+      fullWidth
+      onClick={handleAddSupplier}
     >
       Save
     </Button>

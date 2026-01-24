@@ -102,6 +102,8 @@ export default function Purchases() {
             Purchase Orders
           </Typography>
         </Box>
+         {success && <Typography color="green" className="text-center">{success}</Typography>}
+          {error && <Typography color="red">{error}</Typography>}
         <TableLayout columns={columns} rows={rows} extra={{ edit: handleEdit }} actionButtons={[
           {
             label: "Filter",

@@ -23,7 +23,7 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
 import { useState, useEffect } from "react";
 import { supplierList, productList } from "../../services/productService";
-import { createPurchase,updatePurchase } from "../../services/purchaseService";
+import { createPurchase,updatePurchase,receiveQuantity } from "../../services/purchaseService";
 
 export default function NewPurchaseOrderModal({ open, onClose, onSaved,editData }) {
 
@@ -46,14 +46,14 @@ useEffect(() => {
  const purchaseItems = editData.purchaseItem;
 
  const formatted = purchaseItems.map((p) => {
-    const product = productItem.find((prod) => prod.id === p.product_id);
+  const product = productItem.find((prod) => prod.id === p.product_id);
 
     return {
       product_id: p.product_id,
       purchase_item_id: p.id,
       order_qty: p.quantity,      // ordered quantity
       qty: p.received_qty || 0,                     // received qty default
-      unit_price: p.unit_price,                     // received qty default
+      cost_price: p.cost_price,                     // received qty default
       selected: true,
       // MERGED PRODUCT DETAILS
       image: product?.image || "Unknown Product",
@@ -79,7 +79,7 @@ useEffect(() => {
         ...p,
         selected: true,
         qty: 1,
-        price: p.unit_price,
+        price: p.cost_price,
       }));
       setItems(formattedItems);
     }
@@ -158,54 +158,39 @@ useEffect(() => {
 
   // CREATE PURCHASE (draft/order)
   const handleReceivedQty = async () => {
-  try {
-    const selected = items.filter((i) => i.selected);
-
-    if (selected.length === 0) {
-      alert("Please select at least one item.");
-      return;
+    try {
+      const selected = items.filter(i => i.selected && i.qty > 0);
+  
+      if (selected.length === 0) {
+        alert("Please enter receive quantity");
+        return;
+      }
+  
+      const payload = {
+        po_number: poNumber,
+        items: selected.map(i => ({
+          product_id: i.product_id,
+          receive_qty: Number(i.qty),               // ✅ received now
+          received_reason: i.received_reason || "" // optional
+        }))
+      };
+  
+      const response = await receiveQuantity(payload); // ✅ CORRECT API
+  
+      if (response.status === true) {
+        alert("Items received successfully");
+        onClose();
+        onSaved();
+      } else {
+        alert(response.message);
+      }
+  
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Something went wrong");
     }
-
-    const payload = {
-  id: purchaseId,
-  po_number: poNumber,
-  type:'send',
-  supplier_id: supplierId,
-  purchase_date: editData?.purchase?.purchase_date,
-  userId: 1,
- subtotal: editData?.purchase?.subtotal || totalValue,
-  tax: editData?.purchase?.tax || 10,
-  grand_total: editData?.purchase?.grand_total || totalValue,
-  items: selected.map((i) => ({
-     id: i.purchase_item_id,
-     product_id: i.product_id,
-     quantity: i.order_qty,
-     received_qty: i.qty,
-     unit_price: i.unit_price,
-//    received_reason:i.received_reason
-  })),
-};
-
-    let response;
-
-    if (editData) {
-      response = await updatePurchase(payload);
-    } 
-
-    if (response.status === true) {
-      alert(editData ? "Purchase Updated Successfully!" : "Purchase Order Created Successfully!");
-      onClose();
-      onSaved();
-    } else {
-      alert(response.message);
-    }
-  } catch (error) {
-    console.log(error);
-    alert(error.response?.data?.message || "Something went wrong");
-  }
-};
-
-
+  };
+  
   return (
     <Modal open={open} onClose={onClose}>
       <Box

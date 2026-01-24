@@ -52,8 +52,6 @@ export const PurchaseService = {
     return `${prefix}-${day}-${month}-${year}-${formattedSeq}`;
   },
   
-  
-  
   getFinalPoFromDraft: (oldPo) => {
     // oldPo = TEMP-06-12-2025-0003
     const parts = oldPo.split("-");
@@ -83,14 +81,6 @@ export const PurchaseService = {
       data:data,
     });
   },
-
-  updateProductStock: async (product_id, qty) => {
-    return await CommonModel.rawQuery(
-      `UPDATE products SET stock_qty = stock_qty + ? WHERE id = ?`,
-      [qty, product_id],
-    );
-  },
-
 
   getById: async (id) => {
     const result = await CommonModel.getSingle({

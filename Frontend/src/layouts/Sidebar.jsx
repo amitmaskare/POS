@@ -39,6 +39,9 @@ const menuItems = [
   { title: "Users", icon: <PersonIcon />, path: "/users", permission: "view-user" },
   { title: "Ration Cards", icon: <InventoryIcon />, path: "/rationcards", permission: "view-rationcard" },
   { title: "Offers", icon: <InventoryIcon />, path: "/offers", permission: "view-offer" },
+  { title: "Role", icon: <InventoryIcon />, path: "/role", permission: "view-role" },
+  { title: "Permission", icon: <InventoryIcon />, path: "/permission", permission: "view-permission" },
+  { title: "Role Permission", icon: <InventoryIcon />, path: "/rolepermission", permission: "view-rolepermission" },
 ];
 
 export default function Sidebar({ sidebarState, setSidebarState }) {
@@ -52,7 +55,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
   };
 const logOut=async()=>{
     
-    sessionStorage.clear()
+    localStorage.clear()
     navigate('/')
   }
    const user = getUser();

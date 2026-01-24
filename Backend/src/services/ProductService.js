@@ -5,28 +5,31 @@ export const ProductService = {
 
   list: async () => {
     const query = `
-      SELECT 
-        p.id,
-        p.product_name,
-        s.name AS supplier_name,
-        cat.category_name,
-        p.cost_price,
-        p.selling_price,
-        p.sku,
-        p.tax_rate,
-        p.status,
-        p.is_returnable,
-        p.created_at,
-        p.image,
-        IFNULL(
-          SUM(CASE WHEN st.type = 'credit' THEN st.stock ELSE 0 END) -
-          SUM(CASE WHEN st.type = 'debit' THEN st.stock ELSE 0 END),
-        0) AS stock
-      FROM products p
-      LEFT JOIN suppliers s ON p.supplier_id = s.id
-      LEFT JOIN categories cat ON p.category_id = cat.id
-      LEFT JOIN stocks st ON st.product_id = p.id
-      ORDER BY p.id DESC`;
+    SELECT 
+    p.id,
+    p.product_name,
+    s.name AS supplier_name,
+    cat.category_name,
+    p.cost_price,
+    p.selling_price,
+    p.sku,
+    p.tax_rate,
+    p.status,
+    p.is_returnable,
+    p.created_at,
+    p.image,
+    IFNULL(
+      SUM(CASE WHEN st.type = 'credit' THEN st.stock ELSE 0 END) -
+      SUM(CASE WHEN st.type = 'debit' THEN st.stock ELSE 0 END),
+    0) AS stock
+  FROM products p
+  LEFT JOIN suppliers s ON p.supplier_id = s.id
+  LEFT JOIN categories cat ON p.category_id = cat.id
+  LEFT JOIN stocks st ON st.product_id = p.id
+  GROUP BY p.id
+  HAVING stock > 0
+  ORDER BY p.id DESC;
+  `;
     return await CommonModel.rawQuery(query);
   },
   

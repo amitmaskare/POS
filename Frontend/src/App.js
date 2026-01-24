@@ -3,11 +3,11 @@ import AppRoutes from './routes/AppRoutes';
 import Login from './pages/Login/Login';
 
 function App() {
- const [auth, setAuth] = useState(sessionStorage.getItem('token'))
+ const [auth, setAuth] = useState(localStorage.getItem('token'))
 
 useEffect(() => {
     const handleStorageChange = () => {
-      setAuth(sessionStorage.getItem('token'));
+      setAuth(localStorage.getItem('token'));
     };
      window.addEventListener('storage', handleStorageChange);
 
@@ -18,7 +18,7 @@ useEffect(() => {
 
   return (
       <>
-      {!auth ? <Login onLogin={() => setAuth(sessionStorage.getItem('token'))} /> : <AppRoutes />}
+      {!auth ? <Login onLogin={() => setAuth(localStorage.getItem('token'))} /> : <AppRoutes />}
      
       </>
     

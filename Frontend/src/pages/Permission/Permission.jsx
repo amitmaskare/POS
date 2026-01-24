@@ -11,12 +11,11 @@ import Title from "../../components/MainContentComponents/Title";
 import Stats from "../../components/MainContentComponents/Stats";
 import TableLayout from "../../components/MainContentComponents/Table";
 import { stats } from "./StatsData";
-import { columns } from "./columns";
-import {offerList,getById,deleteItem} from "../../services/offerService"
+import { Column } from "./Column";
+import {permissionList,getById,deleteItem} from "../../services/PermissionService"
 import ModalLayout from "./Modal";
 
-
-export default function Users() {
+export default function Permission() {
     const [open, setOpen] = useState(false);
     const[data,setData]=useState([])
     const[success,setSuccess]=useState('')
@@ -24,14 +23,14 @@ export default function Users() {
     const[loading,setLoading]=useState(false)
   const [editData, setEditData] = useState(null);
      useEffect(()=>{
-    fetchOfferList()
+    fetchPermissionList()
     },[])
     
-      const fetchOfferList =async()=>{
+      const fetchPermissionList =async()=>{
         setSuccess(null)
         setError(null)
         try{
-          const result=await offerList()
+          const result=await permissionList()
           if(result.status===true)
           {
             setSuccess(result.message)
@@ -44,7 +43,7 @@ export default function Users() {
             setError(error.response?.data?.message || error.message);
         }
       }
-    
+     
       const handleDelete = async(id) => {
                 setSuccess('')
                 setError('')
@@ -57,7 +56,7 @@ export default function Users() {
                 if(result.status===true)
                 {
                   setSuccess(result.message)
-                  fetchOfferList()
+                  fetchPermissionList()
                 }else{
                   setError(result.message)
                 }
@@ -93,11 +92,11 @@ export default function Users() {
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Title
-        title="Offers"
-        subtitle="Manage Offer"
+        title="Users"
+        subtitle="Manage system users and permissions"
         actions={[
           {
-            label: "Add Offer",
+            label: "Add Permission",
             icon: <FaRegSquarePlus />,
             variant: "contained",
             bgcolor: "#5A8DEE",
@@ -110,7 +109,7 @@ export default function Users() {
       />
 
       {/* TOP STATS + ADD USER */}
-     <ModalLayout open={open} onClose={() => setOpen(false)} onSaved={fetchOfferList} editData={editData}/>
+     <ModalLayout open={open} onClose={() => setOpen(false)} onSaved={fetchPermissionList} editData={editData}/>
 
       <Box mt={2}>
         <Stats stats={stats} />
@@ -120,12 +119,10 @@ export default function Users() {
       {/* USERS TABLE */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3} mt={3}>
         <Typography variant="h6" fontWeight={700}>
-          System Offer
+          Permission
         </Typography>
       </Box>
-      {success && <Typography color="green" className="text-center">{success}</Typography>}
-      {error && <Typography color="red" className="text-center">{error}</Typography>}
-      <TableLayout columns={columns} rows={data}  extra={{ deleteItem: handleDelete, edit: handleEdit }}  actionButtons={[
+      <TableLayout columns={Column} rows={data}  extra={{ deleteItem: handleDelete, edit: handleEdit }}  actionButtons={[
             {
               label: "Filter",
               icon: <FilterListIcon />,

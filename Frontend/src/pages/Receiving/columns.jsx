@@ -12,7 +12,7 @@ export  const columns = [
       render: (row,extra) => (
         <Box display="flex" gap={1}>
           <Button size="small" variant="outlined" color="primary" onClick={() => extra?.edit(row?.id)}>
-            Edit
+            Received Items
           </Button>
     
           {/* <Button size="small" variant="outlined" color="error">

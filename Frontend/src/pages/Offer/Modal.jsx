@@ -145,9 +145,6 @@ const [product, setProduct] = useState([]);
         Add New offer
       </Typography>
 
-      {success && <Typography color="green">{success}</Typography>}
-      {error && <Typography color="red">{error}</Typography>}
-
       <Box component="form" onSubmit={handleSubmit}>
         <Grid container spacing={2}>
 

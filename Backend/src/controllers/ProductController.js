@@ -294,4 +294,35 @@ export const ProductController = {
     }
   },
 
+  addStock:async(req,resp)=>{
+    try{
+      const{stock,product_id}=req.body
+      if(!product_id)
+      {
+          return sendResponse(resp,false,400,"product_id field is required")
+      }
+      if(!stock)
+      {
+          return sendResponse(resp,false,400,"stock field is required")
+      }
+       const result= await CommonModel.insertData({
+          table: "stocks",
+         data: {
+            product_id: product_id,
+            stock: stock,
+            type:'credit',
+            note:'Add Product',
+          }
+        });
+        return sendResponse(resp, true, 201, "Stock added successful");
+      } catch (error) {
+        return sendResponse(
+          resp,
+          false,
+          500,
+          error.message || "Something wennt Wrong"
+        );
+      }
+  }
+
 };

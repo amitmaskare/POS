@@ -45,8 +45,8 @@ export default function Login({ onLogin }) {
       if (result.status === true) {
         setSuccess(result.message);
         const token = result.data.token;
-        sessionStorage.setItem("token", token);
-        sessionStorage.setItem("user", JSON.stringify(result.data.user));
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(result.data.user));
          onLogin();
         navigate('dashboard');
       } else {
@@ -116,7 +116,7 @@ export default function Login({ onLogin }) {
         <CardContent>
           <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
            
-          <FormControl fullWidth>
+          {/* <FormControl fullWidth>
                 <InputLabel id="role-label">Role</InputLabel>
                 <Select
                   labelId="role-label"
@@ -145,7 +145,7 @@ export default function Login({ onLogin }) {
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
+              </FormControl> */}
             {/* Username */}
             
 

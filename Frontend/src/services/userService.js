@@ -1,7 +1,7 @@
 import axios from "axios"
 const apiUrl= process.env.REACT_APP_API_URL
 
-const token = sessionStorage.getItem("token");
+const token = localStorage.getItem("token");
 
 export const userList=async()=>{
     try{

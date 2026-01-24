@@ -4,7 +4,7 @@ import slugify from 'slugify';
 export const PermissionService={
 
     list:async(req,resp)=>{
-        const result= await CommonModel.getAllData({table:'permissions',fields:["permissionId,name"]})
+        const result= await CommonModel.getAllData({table:'permissions',fields:["permissionId,name,created_at"]})
         return result
     },
 

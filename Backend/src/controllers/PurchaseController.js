@@ -30,8 +30,7 @@ export const PurchaseController = {
           "subtotal",
           "tax",
           "grand_total",
-          "type",
-         
+          "type", 
           "items"
         ];
     
@@ -56,7 +55,7 @@ export const PurchaseController = {
     
         const po_number = await PurchaseService.getNextPurchaseId(type);
         //resp.send(po_number); return false;
-       const userId = req.user.userId;
+       const user_id  = req.user.userId;
        const now = new Date();
 const year = now.getFullYear();
 const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -64,7 +63,7 @@ const day = String(now.getDate()).padStart(2, "0");
 const purchase_date = `${year}-${month}-${day}`;
               const purchaseData  = {
                 po_number: po_number,
-                userId:userId,
+                userId:user_id,
                 supplier_id,
       purchase_date:purchase_date,
       subtotal,
@@ -87,11 +86,11 @@ const purchase_date = `${year}-${month}-${day}`;
             product_id: item.product_id,
             quantity: item.quantity,
             cost_price: item.cost_price,
+            product_name: item.product_name || '', // ✅ NEW
+            tax: item.tax || 0,               // ✅ NEW
+            image: item.image || null 
           };
           await PurchaseService.addItem(itemData);
-
-      // Update product stock
-      //await PurchaseService.updateProductStock(item.product_id, item.quantity);
     }
         return sendResponse(resp, true, 201, "Purchase added successful",po_number);
       } catch (error) {
@@ -114,55 +113,7 @@ const purchase_date = `${year}-${month}-${day}`;
     }
   },
   
-  changeStatus: async (req, resp) => {
-    try {
-      const { id,type } = req.body;
-      if(!id)
-      {
-          return sendResponse(resp,false,400,"id field is required")
-      }
-      if(!type)
-      {
-          return sendResponse(resp,false,400,"type field is required")
-      }
-      // Get purchase info
-      const purchase = await CommonModel.getSingle({
-        table: "purchases",
-        fields: ["po_number", "type"],
-        conditions: { id }
-      });
   
-      if (!purchase) {
-        return sendResponse(resp, false, 404, "Purchase not found");
-      }
-  
-      // Only convert if draft
-      if (purchase.type !== "draft") {
-        return sendResponse(resp, false, 400, "Only drafts can be converted to send");
-      }
-  
-      const oldPo = purchase.po_number;
-  
-      // Generate new PO number
-      const newPo = await PurchaseService.getFinalPoFromDraft(oldPo);
-  
-      // Update PO number in both tables
-      await PurchaseService.updatePoNumber(oldPo, newPo);
-      // Update status
-      const result=await PurchaseService.changeStatus(req.body)
-     
-      if(!result)
-      {
-      return sendResponse(resp, false, 400, "Something went wrong");
-
-      }
-      return sendResponse(resp, true, 200, "Draft converted to send", newPo);
-  
-    } catch (error) {
-    
-      return sendResponse(resp, false, 500, error.message);
-    }
-  },
   
   getById: async (req, resp) => {
     try {
@@ -241,36 +192,66 @@ const purchase_date = `${year}-${month}-${day}`;
         grand_total,
         type,
         po_number: newPoNumber,
-        status: 'completed',  
+        status: 'pending',  
       };
   
       await PurchaseService.update(purchaseData);
-  
+      const dbItems = await CommonModel.getAllData({
+        table: "purchase_order_items",
+        fields: ["id"],
+        conditions: { purchase_id: id }
+      });
+      const dbItemIds = dbItems.map(i => i.id);
+      const requestItemIds = items.filter(i => i.id).map(i => i.id);
       for (const item of items) {
-        await CommonModel.insertData({
-          table: "stocks",
-         data: {
-            product_id: item.product_id,
-            stock: item.quantity,
-            type:'credit',
-            note:'Purchase Receiving',
-            created_at:new Date(),
-          }
-        });
-        await CommonModel.updateData({
-          table: "purchase_order_items",
-          data: {
-            po_number: newPoNumber,
-            quantity: item.quantity,
-            cost_price: item.cost_price,
-            product_id: item.product_id,
-            received_qty: item.received_qty || 0,
-            received_reason: item.received_reason || null,
-          },
-          conditions: { 
-            id: item.id,
-          }
-        });
+       
+        if (item.id) {
+          await CommonModel.updateData({
+            table: "purchase_order_items",
+            data: {
+              po_number: newPoNumber,
+              product_id: item.product_id,
+              quantity: item.quantity,
+              cost_price: item.cost_price,
+              product_name: item.product_name || "",
+              tax: item.tax || 0,
+              image: item.image || null,
+              received_qty: item.received_qty || 0,
+              received_reason: item.received_reason || null
+            },
+            conditions: { id: item.id }
+          });
+        }
+        else {
+          await CommonModel.insertData({
+            table: "purchase_order_items",
+            data: {
+              purchase_id: id,
+              po_number: newPoNumber,
+              product_id: item.product_id,
+              quantity: item.quantity,
+              cost_price: item.cost_price,
+              product_name: item.product_name || "",
+              tax: item.tax || 0,
+              image: item.image || null,
+              received_qty: 0,
+              created_at: new Date()
+            }
+          });
+        }
+      
+      }
+      if (type === "draft" || type === "send") {
+        const deletedIds = dbItemIds.filter(
+          id => !requestItemIds.includes(id)
+        );
+  
+        if (deletedIds.length > 0) {
+          await CommonModel.deleteData({
+            table: "purchase_order_items",
+            conditions: { id: deletedIds }
+          });
+        }
       }
   
       return sendResponse(resp, true, 200, "Purchase updated successfully", {
@@ -311,8 +292,10 @@ const purchase_date = `${year}-${month}-${day}`;
   
       const poData = await CommonModel.getSingle({
         table: "purchases",
+        fields: ["id", "status"],
         conditions: { po_number }
       });
+  
   
       if (!poData) {
         return sendResponse(resp, false, 404, "Invalid PO number");
@@ -321,7 +304,7 @@ const purchase_date = `${year}-${month}-${day}`;
       let allCompleted = true;
   
       for (const item of items) {
-        const { product_id, receive_qty } = item;
+        const { product_id, receive_qty,received_reason = null } = item;
   
         if (!product_id || !receive_qty || receive_qty <= 0) {
           continue;
@@ -334,49 +317,35 @@ const purchase_date = `${year}-${month}-${day}`;
         });
   
         if (!poItem) continue;
-  
-        const newReceived = poItem.received_qty + receive_qty;
-  
-        // prevent over receiving
-        if (newReceived > poItem.ordered_qty) {
-          return sendResponse(
-            resp,
-            false,
-            400,
-            `Receive qty exceeds ordered qty for product ${product_id}`
-          );
-        }
-  
-        // update item received qty
+        const orderedQty = poItem.quantity; // 🔥 ordered qty
+        const newReceivedQty = poItem.received_qty + receive_qty;
         await CommonModel.updateData({
           table: "purchase_order_items",
-          data: { received_qty: newReceived },
+          data: {
+            received_qty: newReceivedQty,
+            received_reason
+          },
           conditions: { id: poItem.id }
         });
 
   
         // update stock
-       // await PurchaseService.updateProductStock(product_id, receive_qty);
+        await CommonModel.insertData({
+          table: "stocks",
+          data: {
+            product_id,
+            stock: receive_qty,
+            type: "credit",
+            note: "Purchase Receiving",
+            created_at: new Date()
+          }
+        });
   
-        // log stock transaction
-        // await CommonModel.insertData({
-        //   table: "stock_ledger",
-        //   data: {
-        //     product_id,
-        //     qty: receive_qty,
-        //     type: "purchase_receive",
-        //     reference_no: po_number,
-        //     date: new Date()
-        //   }
-        // });
-  
-        // Decide item status
-        if (newReceived < poItem.ordered_qty) {
+        if (newReceivedQty < orderedQty) {
           allCompleted = false;
         }
       }
   
-      // Update PO status based on items
       await CommonModel.updateData({
         table: "purchases",
         data: {

@@ -1,7 +1,7 @@
 import axios from "axios"
 const apiUrl= process.env.REACT_APP_API_URL
 
-const token = sessionStorage.getItem("token");
+const token = localStorage.getItem("token");
 
 export const productList=async()=>{
     try{
@@ -169,5 +169,32 @@ export const inventoryList=async()=>{
     {
       throw error
     }
+}
+
+export const addSupplier=async(data)=>{
+  try{
+   const response=await axios.post(`${apiUrl}/supplier/add`,data,{
+     headers: {
+          Authorization: `Bearer ${token}`,
+        },
+   })
+   return response.data
+  }catch(error)
+  {
+    throw error
+  }
+}
+export const addStock=async(data)=>{
+  try{
+   const response=await axios.post(`${apiUrl}/product/addStock`,data,{
+     headers: {
+          Authorization: `Bearer ${token}`,
+        },
+   })
+   return response.data
+  }catch(error)
+  {
+    throw error
+  }
 }
 

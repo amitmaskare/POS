@@ -36,15 +36,18 @@ import Offer from "../pages/Offer/Offer";
 import ProtectedRoute from "./ProtectedRoute";
 import PermissionRoute from "./PermissionRoute";
 import SaleReturn from "../pages/SaleReturn/Dashboard"
+import Role from "../pages/Role/Role";
+import Permission from "../pages/Permission/Permission";
+import RolePermission from "../pages/RolePermission/RolePermission";
 
 const AppRoutes = () => {
- const [auth, setAuth] = useState(sessionStorage.getItem('token'));
+ const [auth, setAuth] = useState(localStorage.getItem('token'));
 
   return (
     <Routes>
       {/* LOGIN PAGE (public) */}
-           <Route path="/" element={<Login onLogin={() =>  setAuth(sessionStorage.getItem('token'))}/>} />
-           <Route path="/login" element={<Login onLogin={() =>  setAuth(sessionStorage.getItem('token'))}/>} />
+           <Route path="/" element={<Login onLogin={() =>  setAuth(localStorage.getItem('token'))}/>} />
+           <Route path="/login" element={<Login onLogin={() =>  setAuth(localStorage.getItem('token'))}/>} />
      
            {/* FORGOT PASSWORD PAGE (public) */}
            <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -73,6 +76,9 @@ const AppRoutes = () => {
         <Route path="users" element={<Users />} />
         <Route path="rationcards" element={<RationCards />} />
         <Route path="offers" element={<Offer />} />
+        <Route path="role" element={<Role />} />
+        <Route path="permission" element={<Permission />} />
+        <Route path="rolepermission" element={<RolePermission />} />
         <Route path="salereturn" element={<SaleReturn />} />
       </Route>
 

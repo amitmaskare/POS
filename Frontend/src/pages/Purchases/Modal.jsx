@@ -34,7 +34,9 @@ export default function NewPurchaseOrderModal({ open, onClose, onSaved,editData 
   const [productItem, setProductItem] = useState([]);
   const [supplierId, setSupplierId] = useState("");
  const [purchaseId,setPurchaseId]=useState("")
-
+  const [success, setSuccess] = useState("");
+   const [error, setError] = useState("");
+   
 useEffect(() => {
   if (!editData || productItem.length === 0) return;
 
@@ -158,12 +160,27 @@ useEffect(() => {
 
   // Checkbox toggle  
   const toggleSelect = (id) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, selected: !item.selected } : item
-      )
-    );
-  };
+  setItems((prev) =>
+    prev.map((item) => {
+      if (item.id !== id) return item;
+
+      // when selecting first time in edit
+      if (!item.selected) {
+        return {
+          ...item,
+          selected: true,
+          qty: item.qty && item.qty > 0 ? item.qty : 1 // 👈 FIX
+        };
+      }
+
+      return {
+        ...item,
+        selected: false
+      };
+    })
+  );
+};
+
 
   const increaseQty = (id) => {
     setItems((prev) =>
@@ -199,16 +216,39 @@ useEffect(() => {
     (acc, i) => acc + i.qty * i.price,
     0
   );
+  const getItemTaxAmount = (item) => {
+  const base = item.qty * item.cost_price;
+  const taxPercent = item.tax_rate || 0;
+  return (base * taxPercent) / 100;
+};
+
+const getSubTotal = () => {
+  return items
+    .filter(i => i.selected)
+    .reduce((sum, i) => sum + (i.qty * i.cost_price), 0);
+};
+
+const getTotalTax = () => {
+  return items
+    .filter(i => i.selected)
+    .reduce((sum, i) => sum + getItemTaxAmount(i), 0);
+};
+
+const getGrandTotal = () => {
+  return getSubTotal() + getTotalTax();
+};
 
   // CREATE PURCHASE (draft/order)
   const handleCreatePurchase = async (type) => {
   try {
     const selected = items.filter((i) => i.selected);
-
     if (selected.length === 0) {
       alert("Please select at least one item.");
       return;
     }
+     const subtotal = getSubTotal();
+    const totalTax = getTotalTax();
+    const grandTotal = getGrandTotal();
 
     const payload = {
   id: purchaseId,
@@ -216,36 +256,33 @@ useEffect(() => {
   type,
   supplier_id: supplierId,
   purchase_date: new Date().toISOString().slice(0, 19).replace("T", " "),
-  userId: 1,
-  subtotal: totalValue,
-  tax: 10,
-  grand_total: totalValue,
+  subtotal: subtotal,
+  tax: totalTax,
+  grand_total: grandTotal,
   items: selected.map((i) => ({
      id: i.purchase_item_id,
     product_id: i.id,
     quantity: i.qty,
     cost_price: i.cost_price,
+    product_name: i.product_name,
+    tax: i.tax_rate || 0,
+    image: i.image || null
   })),
 };
-
-    let response;
-
     if (editData) {
-      response = await updatePurchase(payload);
-    } else {
-      response = await createPurchase(payload);
+      payload.id = editData.purchase.id;
     }
-
+     const response = editData ? await updatePurchase(payload) : await createPurchase(payload);
     if (response.status === true) {
-      alert(editData ? "Purchase Updated Successfully!" : "Purchase Order Created Successfully!");
+      setSuccess(editData ? "Purchase Updated Successfully!" : "Purchase Order Created Successfully!");
       onClose();
       onSaved();
     } else {
-      alert(response.message);
+      setError(response.message);
     }
   } catch (error) {
     console.log(error);
-    alert(error.response?.data?.message || "Something went wrong");
+    setError(error.response?.data?.message || "Something went wrong");
   }
 };
 
