@@ -36,7 +36,7 @@ const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
 const [cashOpen, setCashOpen] = useState(false);
 const [receivedAmount, setReceivedAmount] = useState("");
 const [returnAmount, setReturnAmount] = useState(0);
-const [holdItem, setHoldItem] = useState(0);
+const [holdItem, setHoldItem] = useState([]);
   // Handle Quantity
  const updateQty = (id, action) => {
   setCart((prev) =>
@@ -45,17 +45,11 @@ const [holdItem, setHoldItem] = useState(0);
 
       const newQty =
         action === "inc" ? item.qty + 1 : Math.max(1, item.qty - 1);
-
       let totalPrice = newQty * item.selling_price; // default
-
-      // 🔥 OFFER LOGIC
       if (item.offer_price) {
-        // ✅ CASE 2: FIXED OFFER PRICE (per-unit)
         if (item.offer_qty_price === "offer_price") {
           totalPrice = newQty * item.offer_price;
         }
-
-        // ✅ CASE 1: REGULAR (offer only till min_qty)
         if (
           item.offer_qty_price === "regular" &&
           item.min_qty &&
@@ -77,8 +71,6 @@ const [holdItem, setHoldItem] = useState(0);
     })
   );
 };
-
-
 
   // Delete Item
   const deleteItem = (id) => {
@@ -141,10 +133,14 @@ const payload={customer_mobile: mobile}
   );
 };
   // Totals
+  const getItemTaxAmount = (item) => {
+  const base = item.qty * item.price;
+  const taxPercent = item.tax || 0;
+  return (base * taxPercent) / 100;
+};
  const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
-
-const taxRate = 0.05;
-const tax = subtotal * taxRate;
+ const tax =  cart.reduce((sum, item) => sum + getItemTaxAmount(item),0);
+ const totalTax = cart.reduce((sum, item) => sum + Number(item.tax), 0);
 const total = subtotal + tax;
 
 
@@ -171,7 +167,8 @@ const total = subtotal + tax;
       product_name: item.product_name,
       qty: item.qty,
       price: item.price,
-      image: item.image
+      image: item.image,
+      tax: item.tax,
     }))
   };
 
@@ -205,16 +202,18 @@ const buildExchangeInvoice = (apiResult) => {
           : item.price * item.qty
     })),
     subtotal,
+    tax,
     total,
     difference: apiResult.difference
   };
 };
 
-
+let printWindow = null;
 const printInvoice = (invoice) => {
-  const win = window.open("", "", "width=350");
+   if (!printWindow) return;
 
-  win.document.write(`
+  printWindow.document.open();
+  printWindow.document.write(`
     <html>
       <head>
         <title>Exchange Invoice</title>
@@ -257,6 +256,10 @@ const printInvoice = (invoice) => {
             <td>Subtotal</td>
             <td class="right">${invoice.subtotal.toFixed(2)}</td>
           </tr>
+           <tr>
+            <td>Tax(%)</td>
+            <td class="right">${invoice.tax.toFixed(2)}</td>
+          </tr>
           <tr>
             <td><b>Total</b></td>
             <td class="right"><b>${invoice.total.toFixed(2)}</b></td>
@@ -285,7 +288,7 @@ const printInvoice = (invoice) => {
     </html>
   `);
 
-  win.document.close();
+  printWindow.document.close();
 };
 const checkoutSale = async () => {
   try{
@@ -298,8 +301,9 @@ const checkoutSale = async () => {
       product_id: item.id,
       product_name: item.product_name,
       qty: item.qty,
+      tax: item.tax,
       price: item.price,
-      total:item.price,
+      total:item.price*item.tax,
       image: item.image
     }))
   };
@@ -307,10 +311,10 @@ const checkoutSale = async () => {
   const result= await checkout_sale(payload)
   if(result.status===true)
   {
-  alert("Sale completed");
-  const invoice = buildExchangeInvoice('Invoice-0001');
+  //alert("Sale completed");
+  const invoice = buildExchangeInvoice(result.data);
     printInvoice(invoice);
-  setCashOpen(false);
+     setCashOpen(false);
       setCart([]);
       setReceivedAmount("");
       setReturnAmount(0);
@@ -348,16 +352,22 @@ const retrieveItem=async(id)=>{
   {
     const { items } = result.data;
       setCart(
-    items.map(item => ({
-      id: item.product_id,
+     items.map(item => ({
+      id: item.product_id || item.id,
+      product_id: item.id,
       product_name: item.product_name,
       qty: item.qty,
       price: item.price,
-      image: item.image
+      image: item.image,
+      tax: item.tax,
     }))
      );
   setOpenRetrieveModal(false);
   setMobile("");
+  }
+  else{
+    alert("Hold Item Not Found")
+  setOpenRetrieveModal(false);
   }
   }catch(error)
     {
@@ -365,38 +375,46 @@ const retrieveItem=async(id)=>{
     }
 }
 
- const loadRazorpay = () =>
-  new Promise(resolve => {
+ const loadRazorpay = () => {
+  return new Promise((resolve) => {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
+};
+
 const handleRazorpay = async () => {
-  
+   printWindow = window.open("", "_blank", "width=350");
+
+  if (!printWindow) {
+    alert("Please allow popups");
+    return;
+  }
   await loadRazorpay();
   const payload = {
     payment_method: 'credit',
     subtotal,
     tax,
     total,
-
     cart: cart.map(item => ({
       product_id: item.id,
       product_name: item.product_name,
       qty: item.qty,
       price: item.price,
-      total:item.price,
+      tax: item.tax,
+      total:item.price*item.qty,
       image: item.image
     }))
   };
   const result= await checkout_sale(payload)
- // console.log(result); return false;
+  console.log(result);
    const options = {
     key: "rzp_test_RvRduZ5UNffoaN",
-    amount: result.data.amount * 100,
+    amount: result.data.data.amount * 100,
     currency: "INR",
-    order_id: result.data.razorpayOrderId,
+    order_id: result.data.data.razorpayOrderId,
     name: "My POS",
     handler: async function (response) {
         const data={
@@ -404,20 +422,23 @@ const handleRazorpay = async () => {
            razorpay_order_id: response.razorpay_order_id,
       razorpay_payment_id: response.razorpay_payment_id,
       razorpay_signature: response.razorpay_signature,
-        saleId: result.data.saleId,
-        amount: response.amount,
+        saleId: result.data.data.saleId,
+        amount: result.data.data.amount,
         }
       const verifyData=await verifyPayment(data);
-
-      alert("Payment Successful");
-     const invoice = buildExchangeInvoice('Invoice-0001');
+     const invoice = buildExchangeInvoice(result.data.saleData);
      printInvoice(invoice);
+    // writeInvoiceToPrintWindow(invoice);
      setCashOpen(false);
       setCart([]);
     },
+     modal: {
+      ondismiss: () => {
+        printWindow.close(); // user closed payment popup
+      }
+    }
   };
-
-  //new window.Razorpay(options).open();
+  new window.Razorpay(options).open();
 };
 
   return (
@@ -439,7 +460,7 @@ const handleRazorpay = async () => {
             }}
           >
            <img
-              src={item.image}
+             src={item.image}
               alt="product"
               className="rounded-3"
               style={{ width: 55, height: 55, objectFit: "cover" }}
@@ -524,7 +545,7 @@ const handleRazorpay = async () => {
           <span>₹{Number(subtotal).toFixed(2)}</span>
         </div>
         <div className="d-flex justify-content-between mb-2">
-          <span>Tax (5%)</span>
+          <span>Tax ({`${totalTax} %`})</span>
           <span>₹{Number(tax).toFixed(2)}</span>
         </div>
         <div className="d-flex justify-content-between fw-bold border-top pt-3 mt-4">
@@ -628,7 +649,6 @@ const handleRazorpay = async () => {
         <TableRow sx={{ backgroundColor: "#f1f5f9" }}>
           <TableCell><b>Mobile</b></TableCell>
           <TableCell><b>Item Count</b></TableCell>
-          <TableCell align="center"><b>Amount</b></TableCell>
           <TableCell align="center"><b>Total</b></TableCell>
           <TableCell align="center"><b>DateTime</b></TableCell>
           <TableCell align="center"><b>Cashier Name</b></TableCell>
@@ -640,18 +660,11 @@ const handleRazorpay = async () => {
          {holdItem.map(item => (
     <TableRow>
       <TableCell>{item.customer_mobile}</TableCell>
-
       <TableCell>{item.total_items}</TableCell>
-
-      <TableCell align="center">{item.price}</TableCell>
-
       <TableCell align="center">{item.total}</TableCell>
-
-      <TableCell align="center">{item.datetime}
-        
+      <TableCell align="center">{item.datetime}  
       </TableCell>
-      <TableCell align="center">{item.name}
-        
+      <TableCell align="center">{item.name} 
       </TableCell>
        <TableCell align="center">
         <Button size="small" variant="outlined" color="success" onClick={() =>retrieveItem(item.id)}>

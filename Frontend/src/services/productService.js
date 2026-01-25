@@ -103,7 +103,7 @@ export const getById=async(id)=>{
 
 export const searchProduct=async(data)=>{
   try{
-   const response=await axios.post(`${apiUrl}/product/searchProduct`,data,{
+   const response= await axios.post(`${apiUrl}/product/searchProduct`,data,{
      headers: {
           Authorization: `Bearer ${token}`,
         },

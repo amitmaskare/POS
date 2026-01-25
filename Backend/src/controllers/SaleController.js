@@ -63,27 +63,26 @@ export const SaleController={
            
             for (const item of cart) {
 
-              await CommonModel.insertData({
-                table: "stocks",
-               data: {
-                  product_id: item.product_id,
-                  stock: item.qty,
-                  type:'debit',
-                  note:'Sale',
-                  created_at:new Date(),
-                }
-              });
-
               const itemData = {
                 sale_id: saleId,
         product_id: item.product_id,
         product_name: item.product_name,
         price: item.price,
+        tax: item.tax,
         qty: item.qty,
         image: item.image,
         total: item.price * item.qty
               };
          await SaleService.createSaleItem(itemData)
+         await CommonModel.insertData({
+          table: "stocks",
+         data: {
+            product_id: item.product_id,
+            stock: item.qty,
+            type:'debit',
+            note:'Sale',
+          }
+        });
         }
         const getData = await CommonModel.getSingle({
           table: "hold_sales",
@@ -106,8 +105,9 @@ export const SaleController={
         }
         
         if (payment_method === "cash") {
-          return sendResponse(resp, true, 201, "Sale completed successfully",invoice_no);
+          return sendResponse(resp, true, 201, "Sale completed successfully",saleData);
         }
+        else{
         const order = await razorpay.orders.create({
           amount: Math.round(total * 100),
           currency: "INR",
@@ -116,9 +116,14 @@ export const SaleController={
         const data={
           razorpayOrderId: order.id,
             saleId,
-            amount: total,
-        }
-        return sendResponse(resp, true, 201, "Sale completed successfully",data);
+            amount:total,
+          }
+          const invoiceData={
+            saleData,
+            data
+          }
+          return sendResponse(resp, true, 201, "Sale completed successfully",invoiceData);
+      }
           } catch (error) {
             return sendResponse(
               resp,
@@ -135,6 +140,7 @@ export const SaleController={
         razorpay_payment_id,
         razorpay_signature,
         saleId,
+        amount,
       } = req.body;
     
       const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -171,6 +177,7 @@ export const SaleController={
           "paid"
         ]
       );
+     
      return sendResponse(resp,true,201,"Payment successful")
       
     },

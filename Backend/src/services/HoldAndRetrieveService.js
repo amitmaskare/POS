@@ -9,6 +9,7 @@ export const HoldAndRetrieveService={
     hs.id,
     hs.customer_mobile,
     hs.total,
+    hs.tax,
     DATE_FORMAT(hs.created_at, '%Y-%m-%d %H:%i') AS datetime,
     COUNT(hsi.id) AS total_items,
     hsi.price,
@@ -66,7 +67,7 @@ export const HoldAndRetrieveService={
          return result
      },
       retrieveHoldSaleItem: async (id) => {
-       const result=await CommonModel.getAllData({table:"hold_sale_items",fields:["product_id as id, product_name, price, qty, image"],conditions:{hold_sale_id:id}})
+       const result=await CommonModel.getAllData({table:"hold_sale_items",fields:["product_id as id, product_name, price,tax, qty,total, image"],conditions:{hold_sale_id:id}})
         return result
     },
    

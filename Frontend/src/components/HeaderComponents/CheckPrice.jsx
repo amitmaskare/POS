@@ -20,18 +20,19 @@ export default function CheckPriceModal({ open, onClose }) {
        const[success,setSuccess]=useState('')
        const[error,setError]=useState('')
        const[loading,setLoading]=useState(false)
+       const [searchValue, setSearchValue] = useState("");
   const handleSearch = async (value) => {
+    setSearchValue(value);
     if (!value) {
       setData([]);
       return;
     }
    setError("")
     try {
-      setLoading(true);
-      const result = await searchProduct({ search: value });
-  
+      const result = await searchProduct({ search: value })
       if (result.status===true) {
-        setData(result.data);   // product list set
+        setData(result.data);
+        setSearchValue("");
         setError("");
       } else {
         setData([]);
@@ -39,9 +40,7 @@ export default function CheckPriceModal({ open, onClose }) {
       }
     } catch (err) {
       setError("Something went wrong");
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
   const item=data
   return (
@@ -83,7 +82,7 @@ export default function CheckPriceModal({ open, onClose }) {
         </IconButton>
       </DialogTitle>
      
-      <SearchFilter onSearchChange={(e) => handleSearch(e.target.value)}/>
+      <SearchFilter  value={searchValue} onSearchChange={(e) => handleSearch(e.target.value)}/>
       {/* CONTENT */}
       <DialogContent sx={{ p: 3, mt: 2 }}>
         {/* {data.map((item) => ( */}

@@ -5,7 +5,7 @@ import { IoSearch } from "react-icons/io5";
 const SearchFilter = ({
   placeholder = "Search Barcode...",
   onSearchChange = () => {},
-  value,
+  value = "",
   buttons = [],
   extraFields = [],
 }) => {

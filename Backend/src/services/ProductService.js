@@ -82,6 +82,7 @@ export const ProductService = {
         p.selling_price,
         p.image,
         p.barcode,
+        p.tax_rate,
         o.min_qty,
         o.offer_price,
         o.offer_qty_price
@@ -109,6 +110,7 @@ export const ProductService = {
         cat.category_name,
         p.selling_price,
         p.image,
+        p.tax_rate,
     o.min_qty,
     o.offer_price,
     o.offer_qty_price
@@ -130,6 +132,7 @@ export const ProductService = {
         cat.category_name,
         p.selling_price,
         p.image,
+        p.tax_rate,
     o.min_qty,
     o.offer_price
   FROM products p

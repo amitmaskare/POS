@@ -65,6 +65,7 @@ export const HoldAndRetrieveController={
         product_name: item.product_name,
         price: item.price,
         qty: item.qty,
+        tax: item.tax,
         image: item.image,
         total: item.price * item.qty
               };

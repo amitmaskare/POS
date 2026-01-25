@@ -41,31 +41,36 @@ const [selling_price, setSelling_price] = useState("");
 const [favourites, setFavourites] = useState([]); 
 const [looseItems, setLooseItems] = useState([]); 
 
+const BARCODE_LENGTH = 13;
 const handleBarcodeChange = async (value) => {
-  
+  setBarcode(value);
+   if (!value || value.length !== BARCODE_LENGTH) {
+    setConfirmAdd(false);
+    return;
+  }
   try {
-    setBarcode(value);
-
-    const result = await searchProduct({ search: value });
-
-    if (result?.status===true && result?.data) {
+    const payload={
+      search: value
+    }
+    const result = await searchProduct(payload);
+    if (result.status === true) {
       addToCart(result.data);
-      setConfirmAdd(false);
-    } else {
+      setBarcode("");  
+      setConfirmAdd(false); 
+    } 
+    else {
       setConfirmAdd(true); 
     }
   } catch (error) {
-    console.error(error);
-    setConfirmAdd(true); 
+    console.log(error.response?.data?.message || error.message);
+    setConfirmAdd(true);
   }
 };
-
 
 
 const handleSelectItem =(row)=>{
   addToCart(row);
 }
-
 const addProduct=async()=>{
   setError("")
   setSuccess("")
@@ -143,12 +148,8 @@ const filteredProducts = () => {
       >
      <div className="row">
       <div className="col-12 col-md-6 col-lg-8">
-      <SearchFilter  value={barcode} onSearchChange={(e) => handleBarcodeChange(e.target.value)}  onKeyDown={(e) => {
-    if (e.key === "Enter" && e.target.value.trim() !== "") {
-      handleBarcodeChange(e.target.value);
-    }
-  }}
-  autoFocus/>
+      <SearchFilter  value={barcode} onSearchChange={(e) => handleBarcodeChange(e.target.value)}  
+        autoFocus/>
       </div>
     </div>
    

@@ -156,6 +156,7 @@ export const ProductController = {
         min_qty:item.min_qty,
         offer_price:item.offer_price,
         offer_qty_price:item.offer_qty_price,
+        tax:item.tax_rate,
       }
       return sendResponse(resp,true,200,"Fetch Data Successful",data)
     }catch(error)
@@ -209,6 +210,7 @@ export const ProductController = {
            product_name,
            price:selling_price,
            qty:1,
+           tax:0,
            image: getImage.image
            ? `${baseUrl}/public/uploads/product/${getImage.image}`
            : null,
@@ -244,6 +246,7 @@ export const ProductController = {
         : null,
         min_qty:item.min_qty,
         offer_price:item.offer_price,
+        tax:item.tax_rate,
     }));
       return sendResponse(resp, true, 200, "Fetch store data", data);
     } catch (error) {
@@ -268,6 +271,8 @@ export const ProductController = {
         : null,
         min_qty:item.min_qty,
         offer_price:item.offer_price,
+        tax:item.tax_rate,
+
     }));
       return sendResponse(resp, true, 200, "Fetch store data", data);
     } catch (error) {

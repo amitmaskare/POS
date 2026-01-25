@@ -16,10 +16,40 @@ const Manage = () => {
   // receives: "expanded", "collapsed", "hidden"
   const [sidebarState, setSidebarState] = useState("expanded");
   const [cart, setCart] = useState([]);
-  const addToCart = (product) => {
+//   const addToCart = (product) => {
+//   setCart((prev) => {
+//     const exists = prev.find((item) => item.id === product.id);
+
+//     if (exists) {
+//       return prev.map((item) => {
+//         if (item.id !== product.id) return item;
+
+//         const newQty = item.qty + 1;
+//         const basePrice = item.selling_price ?? item.price;
+
+//         return {
+//           ...item,
+//           qty: newQty,
+//           price: basePrice,
+//         };
+//       });
+//     }
+
+//     return [
+//       ...prev,
+//       {
+//         ...product,
+//         price: product.selling_price ?? product.price,
+//       },
+//     ];
+//   });
+// };
+
+const addToCart = (product) => {
   setCart((prev) => {
     const exists = prev.find((item) => item.id === product.id);
 
+    // ✅ product already in cart → qty++
     if (exists) {
       return prev.map((item) => {
         if (item.id !== product.id) return item;
@@ -30,21 +60,26 @@ const Manage = () => {
         return {
           ...item,
           qty: newQty,
-          price: basePrice,
+          price: newQty * basePrice,
+          total: newQty * basePrice, // 🔥 important
         };
       });
     }
+
+    // ✅ new product → add first time
+    const basePrice = product.selling_price ?? product.price;
 
     return [
       ...prev,
       {
         ...product,
-        price: product.selling_price ?? product.price,
+        qty: 1,
+        price: basePrice,
+        total: basePrice,
       },
     ];
   });
 };
-
 
   const getSidebarWidth = () => {
     if (sidebarState === "expanded") return 265;
