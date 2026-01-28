@@ -25,7 +25,7 @@ import { Box,
   TableRow,
   DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
-import { checkout_sale } from "../../services/saleService";
+import { checkout_sale,verifyPayment } from "../../services/saleService";
 import {confirmReturn,confirmExchange,verifyManagerAuth} from "../../services/ReturnService";
 
 export default function SaleReturnCart({ cart, setCart }) {
@@ -38,7 +38,7 @@ const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
 const [cashOpen, setCashOpen] = useState(false);
 const [receivedAmount, setReceivedAmount] = useState("");
 const [returnAmount, setReturnAmount] = useState(0);
-const [holdItem, setHoldItem] = useState(0);
+const [holdItem, setHoldItem] = useState([]);
 const [showApproval, setShowApproval] = useState(false);
 const[managerUser,setManagerUser]=useState("")
 const[managerPass,setManagerPass]=useState("")
@@ -101,11 +101,13 @@ const payload={customer_mobile: mobile}
     const { items } = result.data;
       setCart(
     items.map(item => ({
-      id: item.product_id,
+      id: item.product_id || item.id,
+      product_id: item.product_id || item.id,
       product_name: item.product_name,
       qty: item.qty,
       price: item.price,
-      image: item.image
+      image: item.image,
+      tax: item.tax
     }))
      );
   setOpenRetrieveModal(false);
@@ -132,12 +134,7 @@ const payload={customer_mobile: mobile}
     )
   );
 };
-//   // Totals
-//  const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
 
-// const taxRate = 0.00;
-// const tax = subtotal * taxRate;
-// const total = subtotal + tax;
 const mode = cart.some(item => item.cart_type === "exchange")
   ? "exchange"
   : "refund";
@@ -161,11 +158,16 @@ const subtotal = cart.reduce((sum, item) => {
 
   return sum;
 }, 0);
+const getItemTaxAmount = (item) => {
+  const base = item.qty * item.price;
+  const taxPercent = item.tax || 0;
+  return (base * taxPercent) / 100;
+};
+const tax =  cart.reduce((sum, item) => sum + getItemTaxAmount(item),0);
+const totalTax = cart.reduce((sum, item) => sum + Number(item.tax), 0);
+const saleId = cart.length > 0 ? cart[0].id : null;
 
-const taxRate = 0.0;
-const tax = subtotal * taxRate;
 const total = subtotal + tax;
-
 
   const submitHoldSale = async () => {
     try{
@@ -182,6 +184,7 @@ const total = subtotal + tax;
 
   const payload = {
     customer_mobile: mobile,
+    saleId,
     subtotal,
     tax,
     total,
@@ -190,6 +193,7 @@ const total = subtotal + tax;
       product_name: item.product_name,
       qty: item.qty,
       price: item.price,
+      tax: item.tax,
       image: item.image
     }))
   };
@@ -229,6 +233,7 @@ const buildExchangeInvoice = (apiResult) => {
   };
 };
 
+let printWindow = null;
 
 const printInvoice = (invoice) => {
   const win = window.open("", "", "width=350");
@@ -262,6 +267,7 @@ const printInvoice = (invoice) => {
               i => `
               <tr>
                 <td>${i.name} (${i.qty})</td>
+                <td class="right">${i.price.toFixed(2)}</td>
                 <td class="right">${i.total.toFixed(2)}</td>
               </tr>
             `
@@ -275,6 +281,10 @@ const printInvoice = (invoice) => {
           <tr>
             <td>Subtotal</td>
             <td class="right">${invoice.subtotal.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td>Tax(%)</td>
+            <td class="right">${invoice.tax.toFixed(2)}</td>
           </tr>
           <tr>
             <td><b>Total</b></td>
@@ -313,16 +323,18 @@ const checkoutSale = async () => {
       alert("Sale ID missing");
       return;
     }
-     const return_items = cart
-      .filter(i => i.cart_type === "refund")
-      .map(i => ({
-        sale_item_id: i.id,
-        product_id: i.product_id,
-        product_name: i.product_name,
-        image: i.image,
-        qty: i.qty,
-      }));
 
+    const return_items = cart
+  .filter(item => item.cart_type === "refund")
+  .map(item => ({
+    sale_item_id: item.id,          // cart item id
+    product_id: item.product_id,
+    product_name: item.product_name,
+    image: item.image || null,
+    qty: Number(item.qty) || 0,
+    tax: Number(item.tax) || 0,
+  }));
+     
     const exchange_items = cart
       .filter(i => i.cart_type === "exchange")
       .map(i => ({
@@ -331,14 +343,16 @@ const checkoutSale = async () => {
         image: i.image,
         qty: i.qty,
         price: i.price,
+        tax: i.tax,
       }));
 
-    if (!return_items.length || !exchange_items.length) {
-      alert("Return & Exchange items required");
-      return;
-    }
+    // if (!return_items.length || !exchange_items.length) {
+    //   alert("Return & Exchange items required");
+    //   return;
+    // }
    const payload = {
       sale_id: saleId,
+      payment_method:"cash",
       return_items,
       exchange_items,
     };
@@ -353,7 +367,7 @@ const checkoutSale = async () => {
       } else {
         alert("Even exchange – no payment");
       }
-      const invoice = buildExchangeInvoice(result.invoice_no);
+      const invoice = buildExchangeInvoice(result.data.invoice_no);
       printInvoice(invoice);
   setCashOpen(false);
       setCart([]);
@@ -386,7 +400,7 @@ const holdlist=async()=>{
     console.log(error.message)
   }
 }
-
+console.log(holdItem);
 const retrieveItem=async(id)=>{
    try{
   const result= await retrieveHoldItem(id);
@@ -395,11 +409,13 @@ const retrieveItem=async(id)=>{
     const { items } = result.data;
       setCart(
     items.map(item => ({
-      id: item.product_id,
+      id: item.product_id || item.id,
+      product_id: item.product_id || item.id,
       product_name: item.product_name,
       qty: item.qty,
       price: item.price,
-      image: item.image
+      image: item.image,
+      tax: item.tax,
     }))
      );
   setOpenRetrieveModal(false);
@@ -410,7 +426,6 @@ const retrieveItem=async(id)=>{
       console.log(error.message)
     }
 }
-const saleId = cart.length > 0 ? cart[0].sale_id : null;
  const handleRefundSave = async (manager_id) => {
   
    try{
@@ -424,7 +439,8 @@ const saleId = cart.length > 0 ? cart[0].sale_id : null;
       product_name: item.product_name,
       image: item.image,
       qty: Number(item.return_qty),   // 👈 backend expects this
-      price: item.price
+      price: item.price,
+      tax: item.tax
     }))
   };
 
@@ -456,6 +472,90 @@ const verifyManager = async () => {
   }
 };
 
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+const handleRazorpay = async () => {
+   printWindow = window.open("", "_blank", "width=350");
+
+  if (!printWindow) {
+    alert("Please allow popups");
+    return;
+  }
+  await loadRazorpay();
+  if (!saleId) {
+      alert("Sale ID missing");
+      return;
+    }
+     const return_items = cart
+      .filter(i => i.cart_type === "refund")
+      .map(i => ({
+        sale_item_id: i.id,
+        product_id: i.product_id,
+        product_name: i.product_name,
+        image: i.image,
+        qty: i.qty,
+        tax: i.tax,
+      }));
+
+    const exchange_items = cart
+      .filter(i => i.cart_type === "exchange")
+      .map(i => ({
+        product_id: i.id,
+        product_name: i.product_name,
+        image: i.image,
+        qty: i.qty,
+        price: i.price,
+        tax: i.tax,
+      }));
+
+    if (!return_items.length || !exchange_items.length) {
+      alert("Return & Exchange items required");
+      return;
+    }
+   const payload = {
+      sale_id: saleId,
+      payment_method:"credit",
+      return_items,
+      exchange_items,
+    };
+  const result= await confirmExchange(payload)
+   const options = {
+    key: "rzp_test_RvRduZ5UNffoaN",
+    amount: result.data.data.amount * 100,
+    currency: "INR",
+    order_id: result.data.data.razorpayOrderId,
+    name: "My POS",
+    handler: async function (response) {
+        const data={
+           ...response,
+           razorpay_order_id: response.razorpay_order_id,
+      razorpay_payment_id: response.razorpay_payment_id,
+      razorpay_signature: response.razorpay_signature,
+        saleId: result.data.data.saleId,
+        amount: result.data.data.amount,
+        }
+      const verifyData=await verifyPayment(data);
+     const invoice = buildExchangeInvoice(result.data.invoice_no);
+     printInvoice(invoice);
+    // writeInvoiceToPrintWindow(invoice);
+     setCashOpen(false);
+      setCart([]);
+    },
+     modal: {
+      ondismiss: () => {
+        printWindow.close(); // user closed payment popup
+      }
+    }
+  };
+  new window.Razorpay(options).open();
+};
 
   return (
     <>
@@ -570,7 +670,7 @@ const verifyManager = async () => {
           <span>₹{Number(subtotal).toFixed(2)}</span>
         </div>
         <div className="d-flex justify-content-between mb-2">
-          <span>Tax (5%)</span>
+          <span>Tax ({`${totalTax} %`})</span>
           <span>₹{Number(tax).toFixed(2)}</span>
         </div>
         <div className="d-flex justify-content-between fw-bold border-top pt-3 mt-4">
@@ -611,8 +711,10 @@ const verifyManager = async () => {
           <button
             className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
             style={getButtonStyle("credit")}
-            onClick={() => setActive("credit")}
-          >
+            onClick={() =>{
+               setActive("credit")
+              handleRazorpay()
+              }} >
             <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
             Credit
           </button>
@@ -682,7 +784,6 @@ const verifyManager = async () => {
         <TableRow sx={{ backgroundColor: "#f1f5f9" }}>
           <TableCell><b>Mobile</b></TableCell>
           <TableCell><b>Item Count</b></TableCell>
-          <TableCell align="center"><b>Amount</b></TableCell>
           <TableCell align="center"><b>Total</b></TableCell>
           <TableCell align="center"><b>DateTime</b></TableCell>
           <TableCell align="center"><b>Cashier Name</b></TableCell>
@@ -696,9 +797,6 @@ const verifyManager = async () => {
       <TableCell>{item.customer_mobile}</TableCell>
 
       <TableCell>{item.total_items}</TableCell>
-
-      <TableCell align="center">{item.price}</TableCell>
-
       <TableCell align="center">{item.total}</TableCell>
 
       <TableCell align="center">{item.datetime}

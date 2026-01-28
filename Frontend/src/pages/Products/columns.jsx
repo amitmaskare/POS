@@ -1,7 +1,21 @@
 import { Button,Box } from "@mui/material";
 
 export const columns = [
-    { id: "sku", label: "SKU" },
+    {id: "image",
+    label: "Image",
+    render: (row) => (
+      <img
+        src={row.image}
+        alt="product"
+        width={45}
+        height={45}
+        style={{
+          objectFit: "cover",
+          borderRadius: 6,
+        }}
+      />
+    ),
+  },
     { id: "product_name", label: "Product Name" },
     { id: "category_name", label: "Category" },
     { id: "stock", label: "Stock" },

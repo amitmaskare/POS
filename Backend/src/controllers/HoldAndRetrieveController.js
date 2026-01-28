@@ -21,7 +21,7 @@ export const HoldAndRetrieveController={
       
         try {
             const requiredFields = [
-            "customer_mobile", "subtotal", "tax", "total","cart"
+            "customer_mobile","subtotal", "tax", "total","cart"
             ];
         
             for (let field of requiredFields) {
@@ -32,6 +32,7 @@ export const HoldAndRetrieveController={
         
             const {
             customer_mobile,
+           
               subtotal,
               tax,
               total,
@@ -61,6 +62,7 @@ export const HoldAndRetrieveController={
             for (const item of cart) {
               const itemData = {
                 hold_sale_id: result,
+                saleId: item.sale_id || 0,
         product_id: item.product_id,
         product_name: item.product_name,
         price: item.price,

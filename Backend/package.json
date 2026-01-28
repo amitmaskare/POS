@@ -19,6 +19,7 @@
     "dotenv": "^17.2.2",
     "express": "^5.2.1",
     "fs": "^0.0.1-security",
+    "jsbarcode": "^3.12.3",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "mysql2": "^3.16.0",

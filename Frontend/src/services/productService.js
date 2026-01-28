@@ -22,6 +22,7 @@ export const addProduct=async(data)=>{
    const response=await axios.post(`${apiUrl}/product/add`,data,{
      headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
    })
    return response.data
@@ -64,6 +65,7 @@ export const getById=async(id)=>{
    const response=await axios.post(`${apiUrl}/product/update`,data,{
      headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
    })
    return response.data

@@ -4,6 +4,7 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
 import EditIcon from "@mui/icons-material/Edit";
+import JsBarcode from "jsbarcode";
 import { Box,
   Typography,
   Paper,
@@ -101,11 +102,13 @@ const payload={customer_mobile: mobile}
     const { items } = result.data;
       setCart(
     items.map(item => ({
-      id: item.product_id,
+      id: item.product_id || item.id,
+      product_id: item.product_id || item.id,
       product_name: item.product_name,
       qty: item.qty,
       price: item.price,
-      image: item.image
+      image: item.image,
+      tax:item.tax,
     }))
      );
   setOpenRetrieveModal(false);
@@ -207,10 +210,11 @@ const buildExchangeInvoice = (apiResult) => {
     difference: apiResult.difference
   };
 };
-
-let printWindow = null;
+let printWindow=null;
 const printInvoice = (invoice) => {
-   if (!printWindow) return;
+  printWindow = window.open("", "_blank", "width=350,height=600");
+
+  if (!printWindow) return;
 
   printWindow.document.open();
   printWindow.document.write(`
@@ -219,18 +223,24 @@ const printInvoice = (invoice) => {
         <title>Exchange Invoice</title>
         <style>
           body { font-family: monospace; font-size: 12px; }
-          h3, h4 { text-align: center; }
+          h3, h4 { text-align: center; margin: 4px 0; }
           table { width: 100%; border-collapse: collapse; }
           td { padding: 4px 0; }
           .right { text-align: right; }
           .line { border-top: 1px dashed #000; margin: 8px 0; }
         </style>
+
+        <!-- JsBarcode CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
       </head>
+
       <body>
         <h3>${invoice.shop_name}</h3>
         <h4>Exchange Invoice</h4>
+
         <p>
           Invoice: ${invoice.invoice_no}<br/>
+          <svg id="barcode"></svg><br/>
           Date: ${invoice.date}
         </p>
 
@@ -240,11 +250,11 @@ const printInvoice = (invoice) => {
           ${invoice.items
             .map(
               i => `
-              <tr>
-                <td>${i.name} (${i.qty})</td>
-                <td class="right">${i.total.toFixed(2)}</td>
-              </tr>
-            `
+                <tr>
+                  <td>${i.name} (${i.qty})</td>
+                  <td class="right">${i.total.toFixed(2)}</td>
+                </tr>
+              `
             )
             .join("")}
         </table>
@@ -256,8 +266,8 @@ const printInvoice = (invoice) => {
             <td>Subtotal</td>
             <td class="right">${invoice.subtotal.toFixed(2)}</td>
           </tr>
-           <tr>
-            <td>Tax(%)</td>
+          <tr>
+            <td>Tax</td>
             <td class="right">${invoice.tax.toFixed(2)}</td>
           </tr>
           <tr>
@@ -281,8 +291,19 @@ const printInvoice = (invoice) => {
         <p style="text-align:center;">Thank You!</p>
 
         <script>
-          window.print();
-          window.close();
+          window.onload = function () {
+            JsBarcode("#barcode", "${invoice.invoice_no}", {
+              format: "CODE128",
+              width: 2,
+              height: 40,
+              displayValue: false
+            });
+
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 300);
+          };
         </script>
       </body>
     </html>
@@ -290,6 +311,7 @@ const printInvoice = (invoice) => {
 
   printWindow.document.close();
 };
+
 const checkoutSale = async () => {
   try{
   const payload = {
@@ -354,7 +376,7 @@ const retrieveItem=async(id)=>{
       setCart(
      items.map(item => ({
       id: item.product_id || item.id,
-      product_id: item.id,
+      product_id: item.product_id || item.id,
       product_name: item.product_name,
       qty: item.qty,
       price: item.price,
@@ -386,15 +408,15 @@ const retrieveItem=async(id)=>{
 };
 
 const handleRazorpay = async () => {
-   printWindow = window.open("", "_blank", "width=350");
-
-  if (!printWindow) {
-    alert("Please allow popups");
+  const res = await loadRazorpay();
+  if (!res) {
+    alert("Razorpay SDK failed to load");
     return;
   }
-  await loadRazorpay();
+
+  // Step 1: Create Sale + Razorpay Order (Backend)
   const payload = {
-    payment_method: 'credit',
+    payment_method: "credit",
     subtotal,
     tax,
     total,
@@ -404,41 +426,60 @@ const handleRazorpay = async () => {
       qty: item.qty,
       price: item.price,
       tax: item.tax,
-      total:item.price*item.qty,
-      image: item.image
-    }))
+      total: item.price * item.qty,
+      image: item.image,
+    })),
   };
-  const result= await checkout_sale(payload)
-  console.log(result);
-   const options = {
+
+  const result = await checkout_sale(payload);
+  if (!result.status) return;
+
+  // Step 2: Razorpay Options
+  const options = {
     key: "rzp_test_RvRduZ5UNffoaN",
     amount: result.data.data.amount * 100,
     currency: "INR",
     order_id: result.data.data.razorpayOrderId,
     name: "My POS",
+
     handler: async function (response) {
-        const data={
-           ...response,
-           razorpay_order_id: response.razorpay_order_id,
-      razorpay_payment_id: response.razorpay_payment_id,
-      razorpay_signature: response.razorpay_signature,
-        saleId: result.data.data.saleId,
-        amount: result.data.data.amount,
+      const invoiceWindow = window.open("", "_blank");
+      try {
+        // Step 3: Verify Payment
+        const verifyPayload = {
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          saleId: result.data.data.saleId,
+          amount: result.data.data.amount,
+        };
+
+        const verifyRes = await verifyPayment(verifyPayload);
+        // ✅ Step 4: Print ONLY if verified
+        if (verifyRes.status === true) {
+          const invoice = buildExchangeInvoice(result.data.saleData);
+          printInvoice(invoice);
+
+          // Reset POS
+          setCashOpen(false);
+          setCart([]);
+        } else {
+           invoiceWindow.close();
+          alert("Payment verification failed");
         }
-      const verifyData=await verifyPayment(data);
-     const invoice = buildExchangeInvoice(result.data.saleData);
-     printInvoice(invoice);
-    // writeInvoiceToPrintWindow(invoice);
-     setCashOpen(false);
-      setCart([]);
-    },
-     modal: {
-      ondismiss: () => {
-        printWindow.close(); // user closed payment popup
+      } catch (err) {
+        console.error("Verification Error", err);
+        alert("Payment verification error");
       }
-    }
+    },
+
+    theme: {
+      color: "#2e86de",
+    },
   };
-  new window.Razorpay(options).open();
+
+  const rzp = new window.Razorpay(options);
+  rzp.open();
 };
 
   return (
@@ -725,65 +766,6 @@ const handleRazorpay = async () => {
     </Button>
   </DialogActions>
 </Dialog>
-
-<div style={{ display: "none" }}>
-<div id="receipt" style={{
-        width: "300px",
-        fontFamily: "Arial, sans-serif",
-        fontSize: "12px",
-        color: "#000",
-        padding: "8px",
-      }}>
-  <center>
-    <h3>ABC STORE</h3>
-    <p>Main Road, Indore</p>
-    <p>Ph: 9876543210</p>
-    <hr/>
-  </center>
-
-  <p>
-    Invoice: <b>INV-1025</b><br/>
-    Date: 28-12-2025<br/>
-    Payment: CASH
-  </p>
-
-  <hr/>
-
-  <table width="100%">
-    <thead>
-      <tr>
-        <th align="left">Item</th>
-        <th>Qty</th>
-        <th align="right">Amt</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Soap</td>
-        <td align="center">1</td>
-        <td align="right">₹60</td>
-      </tr>
-      <tr>
-        <td>Water Bottle</td>
-        <td align="center">1</td>
-        <td align="right">₹30</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <hr/>
-
-  <p>
-    Subtotal: ₹90<br/>
-    Tax (5%): ₹4.50<br/>
-    <b>Total: ₹94.50</b>
-  </p>
-
-  <center>
-    <p>Thank You! Visit Again 🙏</p>
-  </center>
-</div>
-</div>
 
     </>
   );

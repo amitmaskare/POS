@@ -6,7 +6,7 @@ import createuploadFile from "../utils/uploadFile.js";
 import path from "path";
 import { CommonModel } from "../models/CommonModel.js";
 dotenv.config();
-const upload = createuploadFile("store");
+const upload = createuploadFile("product");
 const baseUrl = process.env.BASE_URL;
 
 export const ProductController = {
@@ -31,7 +31,10 @@ export const ProductController = {
   },
 
   add: async (req, resp) => {
-   try{
+    upload.single("image")(req, resp, async (err) => {
+      if (err) {
+        return sendResponse(resp, false, 400, `Upload Error: ${err.message}`);
+      }
       const requiredFields = [
         "product_name",
         "sku",
@@ -51,17 +54,22 @@ export const ProductController = {
           return sendResponse(resp, false, 400, `${field} is required`);
         }
       }
+   try{
       const stockFields = [
         "initial_stock"
       ];
       if (req.body.initial_stock === undefined) {
         return sendResponse(resp, false, 400, "initial_stock is required");
       }
-        const result = await ProductService.add(req.body);
+      const imageUrl = req.file ? req.file.filename : null;
+      const payLoad={
+        ...req.body,
+        image: imageUrl
+      }
+      const result = await ProductService.add(payLoad);
         if (!result) {
           return sendResponse(resp, false, 400, "Something went wrong");
         }
-
         await CommonModel.insertData({
           table: "stocks",
          data: {
@@ -69,7 +77,6 @@ export const ProductController = {
             stock: req.body.initial_stock,
             type:'credit',
             note:'Add Product',
-            created_at:new Date(),
           }
         });
         return sendResponse(resp, true, 201, "Product added successful");
@@ -81,20 +88,46 @@ export const ProductController = {
           error.message || "Something wennt Wrong"
         );
       }
+    });
   },
 
   getById: async (req, resp) => {
     try {
       const { id } = req.params;
       const result = await ProductService.getById(id);
-      return sendResponse(resp, true, 200, "Fetch get by id", result);
+      const data = {
+        ...result,
+        image: result.image
+          ? `${baseUrl}/public/uploads/product/${result.image}`
+          : null,
+      };
+      return sendResponse(resp, true, 200, "Fetch get by id", data);
     } catch (error) {
       return sendResponse(resp, false, 500, `Error : ${error.message}`);
     }
   },
 
   update: async (req, resp) => {
+    upload.single("image")(req, resp, async (err) => {
     try{
+      if (err) {
+        return sendResponse(resp, false, 400, `Upload Error: ${err.message}`);
+      }
+
+      const {
+        id,
+        product_name,
+        sku,
+        category_id,
+        favourite,
+        barcode,
+        brand,
+        description,
+        cost_price,
+        selling_price,
+        tax_rate,
+        supplier_id,
+      } = req.body;
       const requiredFields = [
         "id","product_name","sku","category_id","favourite","barcode",
         "brand","description","cost_price","selling_price","tax_rate","supplier_id",
@@ -104,8 +137,31 @@ export const ProductController = {
         if (req.body[field] === undefined || req.body[field] === null) {
           return sendResponse(resp, false, 400, `${field} is required`);
         }
-      }      
-          const result = await ProductService.update(req.body);
+      }  
+      const existingItem = await ProductService.getById(id);
+      if (!existingItem) {
+        return sendResponse(resp, false, 404, "Product not found");
+      }
+
+      // ✅ Handle image update safely
+      let imageUrl = existingItem.image;  
+      if (req.file) {
+        const oldImagePath = path.join("public", "uploads", "product", existingItem.image || "");
+        if (existingItem.image && fs.existsSync(oldImagePath)) {
+          try {
+            await fs.promises.unlink(oldImagePath);
+          } catch (unlinkErr) {
+            console.error("Error deleting old image:", unlinkErr.message);
+          }
+        }
+
+        imageUrl = req.file.filename;
+      }  
+      const payLoad={
+        ...req.body,
+        image:imageUrl
+      }
+          const result = await ProductService.update(payLoad);
           if (!result || result.affectedRows === 0) {
             return sendResponse(resp, false, 400, "Product update failed");
           }
@@ -118,6 +174,7 @@ export const ProductController = {
             error.message || "Something wennt Wrong"
           );
         }
+      });
   },
 
   deleteData: async (req, resp) => {

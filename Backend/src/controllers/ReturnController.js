@@ -2,6 +2,8 @@ import { ReturnService } from "../services/ReturnService.js";
 import {sendResponse} from "../utils/sendResponse.js"
 import {CommonModel} from "../models/CommonModel.js"
 import bcrypt from "bcrypt";
+import crypto from "crypto"
+import razorpay from "../config/razorpay.js"
 export const ReturnController={
 
    scanInvoice: async (req, res) => {
@@ -141,6 +143,7 @@ scanProduct: async (req, res) => {
             product_name: i.product_name,
             image: i.image,
             return_qty: i.qty,
+            tax: i.tax,
             refund_amount: amount
           }
         });
@@ -213,7 +216,7 @@ await CommonModel.updateData({
       /* -------------------- SUCCESS RESPONSE -------------------- */
       return sendResponse(res, true, 200, "Return processed successfully", {
         return_id: returnId,
-        invoice_no:`Invoice-${returnId}`,
+        invoice_no:sale.invoice_no,
         refundAmount,
         return_type
       });
@@ -230,7 +233,7 @@ await CommonModel.updateData({
 
   confirmExchange: async (req, res) => {
     try {
-      const { sale_id, return_items, exchange_items } = req.body;
+      const { sale_id, return_items, exchange_items,payment_method } = req.body;
   
       /* ---------------- VALIDATION ---------------- */
       if (!sale_id)
@@ -244,7 +247,7 @@ await CommonModel.updateData({
   
       /* ---------------- FETCH SALE ---------------- */
       const [sale] = await CommonModel.rawQuery(
-        `SELECT subtotal, tax, total FROM sales WHERE id = ?`,
+        `SELECT subtotal, tax, total,invoice_no FROM sales WHERE id = ?`,
         [sale_id]
       );
       if (!sale)
@@ -258,6 +261,7 @@ await CommonModel.updateData({
         table: "returns",
         data: {
           sale_id,
+          payment_method,
           return_type: "exchange",
           refund_amount: 0
         }
@@ -299,6 +303,7 @@ await CommonModel.updateData({
             product_name: r.product_name,
             image: r.image,
             return_qty: r.qty,
+            tax: r.tax,
             refund_amount:amount
           }
         });
@@ -343,6 +348,7 @@ await CommonModel.updateData({
       image: e.image,                 // ✅ ADD
       qty: e.qty,
       price: e.price,
+      tax: e.tax,
       total: amount,
       returned_qty: 0,
       is_returned: "no"
@@ -371,33 +377,31 @@ await CommonModel.updateData({
         WHERE id = ?`,
        [difference < 0 ? Math.abs(difference) : 0, returnId]
       );
-
-      // await CommonModel.updateData({
-      //   table: "returns",
-      //   data: { refund_amount: returnAmount },
-      //   conditions: { id: returnId }
-      // });
-  
-      /* ---------------- RESPONSE ---------------- */
-      // return sendResponse(res, true, 200, "Exchange completed", {
-      //   return_id: returnId,
-      //   returned_amount: returnAmount,
-      //   exchanged_amount: exchangeAmount,
-      //   payable:
-      //     difference > 0
-      //       ? `Customer pays ₹${difference}`
-      //       : difference < 0
-      //       ? `Refund ₹${Math.abs(difference)}`
-      //       : "No payment"
-      // });
+      if (payment_method === "cash") {
       return sendResponse(res, true, 200, "Exchange processed successfully", {
         return_id: returnId,
-        invoice_no: `RET-${returnId}`,
+        invoice_no: sale.invoice_no,
         returnAmount,
         exchangeAmount,
         difference
       });
-  
+    }else{
+      const order = await razorpay.orders.create({
+        amount: Math.round(exchangeAmount * 100),
+        currency: "INR",
+        receipt: `exchange_${sale_id}`,
+      });
+      const data={
+        razorpayOrderId: order.id,
+          saleId:sale_id,
+          amount:difference,
+        }
+        const invoiceData={
+          invoice_no: sale.invoice_no,
+          data
+        }
+        return sendResponse(res, true, 201, "Exchange completed successfully",invoiceData);
+      }
     } catch (error) {
       return sendResponse(res, false, 500, error.message);
     }

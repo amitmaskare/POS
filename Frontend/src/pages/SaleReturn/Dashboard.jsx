@@ -103,20 +103,16 @@ const handleBarcodeSearch = async (value) => {
     alert("Something went wrong");
   }
 };
-
+const BARCODE_LENGTH = 13;
 const handleBarcodeChange  = async (value) => {
-  if (!value) {
-    setData([]);
-     setConfirmAdd(false);
-    
+  setBarcode(value);
+
+   if (!value || value.length !== BARCODE_LENGTH) {
+    setConfirmAdd(false);
     return;
   }
-  setBarcode(value);
   setError("")
-  
-
-  try {
-    
+  try {  
     const result = await searchProduct({ search: value });
     if (result.status===true) {
       
@@ -126,9 +122,9 @@ const handleBarcodeChange  = async (value) => {
         cart_type: "exchange"
       });
       // addToCart(result.data);
+      setBarcode("");
       setConfirmAdd(false); 
       setError("");
-       setBarcode("");
       
     } else {
       setData([]);
@@ -180,12 +176,11 @@ const returnItem=async(item)=>{
     if(result.status===true)
     {  
        const backendItem = result.data; 
-      // addToCart( result.data)
       addToCart({
         ...backendItem,
         qty: item.returned_qty,  
         return_qty: item.returned_qty, 
-        cart_type: "refund"
+        cart_type: "refund",
       });
     }
     }catch(error)

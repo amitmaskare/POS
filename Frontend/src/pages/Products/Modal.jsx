@@ -44,6 +44,7 @@ const [newSupplier, setNewSupplier] = useState("");
     tax_rate: "",
     initial_stock : "",
     supplier_id: "",
+    image: "",
     id: "",
   });
 
@@ -63,6 +64,7 @@ const [newSupplier, setNewSupplier] = useState("");
             tax_rate: editData.tax_rate || "",
             initial_stock : editData.initial_stock  || "",
             supplier_id: editData.supplier_id || "",
+            image: editData.image || "",
             id: editData.id || "",
           });
         } else {
@@ -79,6 +81,7 @@ const [newSupplier, setNewSupplier] = useState("");
     tax_rate: "",
     initial_stock : "",
     supplier_id: "",
+    image: "",
     id: "",
           });
         }
@@ -89,6 +92,7 @@ const [newSupplier, setNewSupplier] = useState("");
     setForm((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
+      image: e.target.files[0],
     }));
   };
 
@@ -122,6 +126,7 @@ const [newSupplier, setNewSupplier] = useState("");
           tax_rate: "",
           initial_stock : "",
           supplier_id: "",
+          image: "",
           id: "",
         });
         onClose();
@@ -150,7 +155,6 @@ const [newSupplier, setNewSupplier] = useState("");
     }
   };
 
- 
   useEffect(() => {
     if (categoryId) {
       setForm((prev) => ({ ...prev, category_id: categoryId, subcategory_id: "" }));  
@@ -401,6 +405,7 @@ const handleAddSupplier = async () => {
         </MenuItem>
       ))}
     </TextField>
+   
   </Grid>
 
   {/* Add Button */}
@@ -415,6 +420,19 @@ const handleAddSupplier = async () => {
       +
     </Button>
   </Grid>
+    <TextField
+                  label="Image"
+                  name="image"
+                  type="file"
+                  fullWidth
+                  onChange={handleChange}
+                />
+          <br/>
+        <img src={form.image} alt="IMG"  width={45} height={45}
+        style={{
+          objectFit: "cover",
+          borderRadius: 6,
+        }}/>
 </Grid>
       
           )}
