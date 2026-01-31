@@ -62,6 +62,7 @@ const [difference, setDifference] = useState(0);
  
 const handleInvoiceSearch = async (value) => {
   if (!value) return;
+  try{
   const result = await scanInvoice({ invoice_no: value });
   if (result.status===true) {
     setInvoice({ invoice_no: result.data.invoice_no });
@@ -77,6 +78,10 @@ const handleInvoiceSearch = async (value) => {
     setInvoice(null);
     setSaleItems([]);
   }
+}catch(error)
+{
+  alert(error.response?.data?.message || error.message)
+}
 };
 
 
@@ -168,9 +173,28 @@ const addProduct=async()=>{
 
 const returnItem=async(item)=>{
   try{
-     if (!item.returned_qty || item.returned_qty <= 0) {
+     const soldQty = Number(item.qty || 0);
+    const returnQty = Number(item.returned_qty || 0);
+
+    // 1️⃣ qty select nahi ki
+    if (returnQty <= 0) {
       alert("Please select return quantity");
       return;
+    }
+
+    // 2️⃣ qty se zyada return
+    if (returnQty > soldQty) {
+      alert("Return quantity cannot exceed sold quantity");
+      return;
+    }
+
+    // 3️⃣ 🔴 FULL QTY ALREADY SELECTED → BLOCK HERE
+    if (returnQty === soldQty) {
+      // pehli baar allow, dusri baar block
+      if (item._alreadyReturned) {
+        alert("Full quantity already returned");
+        return;
+      }
     }
     const result= await saleReturnById(item.sale_item_id);
     if(result.status===true)
@@ -182,6 +206,7 @@ const returnItem=async(item)=>{
         return_qty: item.returned_qty, 
         cart_type: "refund",
       });
+      item._alreadyReturned = true;
     }
     }catch(error)
       {
@@ -189,6 +214,7 @@ const returnItem=async(item)=>{
       }
  
 }
+
 
 const updateReturnedQty = (sale_item_id, type) => {
   setSaleItems(prev =>
@@ -320,7 +346,7 @@ const updateReturnedQty = (sale_item_id, type) => {
     
           <TableCell align="center">
              {item.is_returned !== 'yes' ? (
-             <Button size="small" variant="outlined" color="success" onClick={() =>returnItem(item)}>
+             <Button size="small" variant="outlined" color="success"   onClick={() =>returnItem(item)}>
                 Return
               </Button>
              ):(

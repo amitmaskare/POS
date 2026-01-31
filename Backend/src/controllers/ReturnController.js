@@ -101,7 +101,7 @@ scanProduct: async (req, res) => {
   
         // 🔍 Fetch sale item
         const [saleItem] = await CommonModel.rawQuery(
-          `SELECT qty, returned_qty, price 
+          `SELECT qty, returned_qty, price,tax 
            FROM sales_items 
            WHERE id = ?`,
           [i.sale_item_id]
@@ -119,8 +119,10 @@ scanProduct: async (req, res) => {
             `Return qty exceeds available qty for sale_item_id ${i.sale_item_id}`
           );
         }
-  
-        const amount = i.qty * saleItem.price;
+        const baseAmount = i.qty * saleItem.price;
+        const taxPercent = saleItem.tax || 0;
+        const taxAmount = (baseAmount * taxPercent) / 100;
+        const amount = baseAmount + taxAmount;
         refundAmount += amount;
         
         await CommonModel.insertData({
@@ -130,7 +132,6 @@ scanProduct: async (req, res) => {
             stock:  i.qty,
             type:'credit',
             note:'Refund Product',
-            created_at:new Date(),
           }
         });
         /* -------------------- INSERT RETURN ITEMS -------------------- */
@@ -206,7 +207,7 @@ await CommonModel.updateData({
   data: {
     return_id: returnId,
     sale_id,
-    cashier_id: req.user.id,
+    cashier_id: req.user.userId,
     manager_id: manager_id,
     action: 'refund'
   }
@@ -216,7 +217,7 @@ await CommonModel.updateData({
       /* -------------------- SUCCESS RESPONSE -------------------- */
       return sendResponse(res, true, 200, "Return processed successfully", {
         return_id: returnId,
-        invoice_no:sale.invoice_no,
+        invoice_no:sale,
         refundAmount,
         return_type
       });
@@ -469,13 +470,12 @@ saleReturnById: async (req, res) => {
 
 verifyManagerAuth: async (req, res) => {
   try{
-  const { username, password } = req.body;
+  const { user_id, password } = req.body;
 
   const [user] = await CommonModel.rawQuery(
-    `SELECT userId, password FROM users WHERE user_id = ? AND role = '2'`,
+    `SELECT userId, password FROM users WHERE user_id = ? AND (role = '1' OR role='2')`,
     [user_id]
   );
-  //res.send(user);
   if (!user)
     return sendResponse(res, false, 401, "Unauthorized");
 

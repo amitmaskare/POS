@@ -228,34 +228,42 @@ const buildExchangeInvoice = (apiResult) => {
           : item.price * item.qty
     })),
     subtotal,
+    tax,
     total,
     difference: apiResult.difference
   };
 };
-
-let printWindow = null;
-
+let printWindow=null;
 const printInvoice = (invoice) => {
-  const win = window.open("", "", "width=350");
+  printWindow = window.open("", "_blank", "width=350,height=600");
 
-  win.document.write(`
+  if (!printWindow) return;
+
+  printWindow.document.open();
+  printWindow.document.write(`
     <html>
       <head>
         <title>Exchange Invoice</title>
         <style>
           body { font-family: monospace; font-size: 12px; }
-          h3, h4 { text-align: center; }
+          h3, h4 { text-align: center; margin: 4px 0; }
           table { width: 100%; border-collapse: collapse; }
           td { padding: 4px 0; }
           .right { text-align: right; }
           .line { border-top: 1px dashed #000; margin: 8px 0; }
         </style>
+
+        <!-- JsBarcode CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
       </head>
+
       <body>
         <h3>${invoice.shop_name}</h3>
         <h4>Exchange Invoice</h4>
+
         <p>
           Invoice: ${invoice.invoice_no}<br/>
+          <svg id="barcode"></svg><br/>
           Date: ${invoice.date}
         </p>
 
@@ -265,12 +273,11 @@ const printInvoice = (invoice) => {
           ${invoice.items
             .map(
               i => `
-              <tr>
-                <td>${i.name} (${i.qty})</td>
-                <td class="right">${i.price.toFixed(2)}</td>
-                <td class="right">${i.total.toFixed(2)}</td>
-              </tr>
-            `
+                <tr>
+                  <td>${i.name} (${i.qty})</td>
+                  <td class="right">${i.total.toFixed(2)}</td>
+                </tr>
+              `
             )
             .join("")}
         </table>
@@ -283,7 +290,7 @@ const printInvoice = (invoice) => {
             <td class="right">${invoice.subtotal.toFixed(2)}</td>
           </tr>
           <tr>
-            <td>Tax(%)</td>
+            <td>Tax</td>
             <td class="right">${invoice.tax.toFixed(2)}</td>
           </tr>
           <tr>
@@ -307,14 +314,25 @@ const printInvoice = (invoice) => {
         <p style="text-align:center;">Thank You!</p>
 
         <script>
-          window.print();
-          window.close();
+          window.onload = function () {
+            JsBarcode("#barcode", "${invoice.invoice_no}", {
+              format: "CODE128",
+              width: 2,
+              height: 40,
+              displayValue: false
+            });
+
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 300);
+          };
         </script>
       </body>
     </html>
   `);
 
-  win.document.close();
+  printWindow.document.close();
 };
 
 const checkoutSale = async () => {
@@ -448,9 +466,9 @@ const retrieveItem=async(id)=>{
     if(result.status===true)
     {
       alert(`Refund Amount ₹${result.data.refundAmount}`);
-       const invoice = buildExchangeInvoice(result.data.invoice_no);
-      printInvoice(invoice);
       setCart([])
+      const invoice = buildExchangeInvoice(result.data.invoice_no);
+      printInvoice(invoice);
     }
    }catch(error)
    {
@@ -459,17 +477,21 @@ const retrieveItem=async(id)=>{
 };
 
 const verifyManager = async () => {
-  const result = await verifyManagerAuth({
-    user_id: managerUser,
-    password: managerPass
-  });
-
-  if (result.status === true) {
-    setShowApproval(false);
-    handleRefundSave(result.data.manager_id);
-  } else {
-    alert("Invalid manager credentials");
-  }
+  try{
+    const result = await verifyManagerAuth({
+      user_id: managerUser,
+      password: managerPass
+    });
+    if (result.status === true) {
+      setShowApproval(false);
+      handleRefundSave(result.data.manager_id);
+    } else {
+      alert("Invalid manager credentials");
+    }
+ }catch(error)
+ {
+  alert(error.response?.data?.message || error.message)
+ }
 };
 
 const loadRazorpay = () => {
@@ -701,7 +723,7 @@ const handleRazorpay = async () => {
             style={getButtonStyle("cash")}
             onClick={() => {
     setActive("cash");
-    setCashOpen(true);
+    setShowApproval(true);
   }}
           >
             <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
