@@ -1,14 +1,18 @@
 import axios from "axios"
 const apiUrl= process.env.REACT_APP_API_URL
 
-const token = localStorage.getItem("token");
+// Helper function to get fresh token
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+};
 
 export const userList=async()=>{
     try{
         const response= await axios.get(`${apiUrl}/user/list`,{
-           headers: {
-          Authorization: `Bearer ${token}`,
-        },
+           headers: getAuthHeaders(),
         })
         return response.data
     }catch(error)
@@ -20,9 +24,7 @@ export const userList=async()=>{
 export const roleList=async()=>{
     try{
         const response= await axios.get(`${apiUrl}/role/list`,{
-           headers: {
-          Authorization: `Bearer ${token}`,
-        },
+           headers: getAuthHeaders(),
         })
         return response.data
     }catch(error)
@@ -34,9 +36,7 @@ export const roleList=async()=>{
 export const addUser=async(data)=>{
   try{
    const response=await axios.post(`${apiUrl}/user/add`,data,{
-     headers: {
-          Authorization: `Bearer ${token}`,
-        },
+     headers: getAuthHeaders(),
    })
    return response.data
   }catch(error)
@@ -48,9 +48,7 @@ export const addUser=async(data)=>{
 export const getById=async(id)=>{
     try{
    const response=await axios.get(`${apiUrl}/user/getById/${id}`,{
-     headers: {
-          Authorization: `Bearer ${token}`,
-        },
+     headers: getAuthHeaders(),
    })
    return response.data
   }catch(error)
@@ -62,9 +60,7 @@ export const getById=async(id)=>{
 export const updateUser=async(data)=>{
   try{
    const response=await axios.post(`${apiUrl}/user/update`,data,{
-     headers: {
-          Authorization: `Bearer ${token}`,
-        },
+     headers: getAuthHeaders(),
    })
    return response.data
   }catch(error)
@@ -76,9 +72,7 @@ export const updateUser=async(data)=>{
 export const deleteItem=async(id)=>{
     try{
    const response=await axios.delete(`${apiUrl}/user/delete/${id}`,{
-     headers: {
-          Authorization: `Bearer ${token}`,
-        },
+     headers: getAuthHeaders(),
    })
    return response.data
   }catch(error)

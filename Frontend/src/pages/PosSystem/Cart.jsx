@@ -4,6 +4,8 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
 import EditIcon from "@mui/icons-material/Edit";
+import CloseIcon from "@mui/icons-material/Close";
+import { QRCodeSVG } from 'qrcode.react';
 import { Box,
   Typography,
   Paper,
@@ -23,12 +25,13 @@ import { Box,
   TableContainer,
   TableHead,
   TableRow,
-  DialogActions} from "@mui/material";
+  DialogActions,
+  IconButton} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
 import { checkout_sale,verifyPayment } from "../../services/saleService";
 
 export default function Cart({ cart, setCart }) {
-  const [active, setActive] = useState(""); 
+  const [active, setActive] = useState("");
   const [editingPriceId, setEditingPriceId] = useState(null);
   const [mobile, setMobile] = useState("");
 const [openHoldModal, setOpenHoldModal] = useState(false);
@@ -37,6 +40,8 @@ const [cashOpen, setCashOpen] = useState(false);
 const [receivedAmount, setReceivedAmount] = useState("");
 const [returnAmount, setReturnAmount] = useState(0);
 const [holdItem, setHoldItem] = useState([]);
+const [qrCodeData, setQrCodeData] = useState(null);
+const [enlargedQR, setEnlargedQR] = useState(false);
   // Handle Quantity
  const updateQty = (id, action) => {
   setCart((prev) =>
@@ -386,13 +391,17 @@ const retrieveItem=async(id)=>{
 };
 
 const handleRazorpay = async () => {
-   printWindow = window.open("", "_blank", "width=350");
+  console.log("🚀 handleRazorpay called!");
+
+  printWindow = window.open("", "_blank", "width=350");
 
   if (!printWindow) {
     alert("Please allow popups");
     return;
   }
+
   await loadRazorpay();
+
   const payload = {
     payment_method: 'credit',
     subtotal,
@@ -404,41 +413,138 @@ const handleRazorpay = async () => {
       qty: item.qty,
       price: item.price,
       tax: item.tax,
-      total:item.price*item.qty,
+      total: item.price * item.qty,
       image: item.image
     }))
   };
-  const result= await checkout_sale(payload)
-  console.log(result);
-   const options = {
+
+  console.log("📦 Sending payload:", payload);
+  const result = await checkout_sale(payload);
+  console.log("✅ Got result:", result);
+
+  // Store payment data
+  const tempPaymentData = {
+    saleId: result.data.data.saleId,
+    amount: result.data.data.amount,
+    saleData: result.data.saleData,
+    orderId: result.data.data.razorpayOrderId
+  };
+  console.log("💾 Payment data:", tempPaymentData);
+
+  // Generate UPI payment string for QR code
+  const upiString = `upi://pay?pa=yourvpa@bank&pn=My POS&am=${result.data.data.amount}&cu=INR&tn=Payment for Order ${result.data.data.razorpayOrderId}`;
+  setQrCodeData(upiString);
+
+  // Create floating "View QR Code" button overlay
+  const createQRButton = () => {
+    const buttonOverlay = document.createElement('div');
+    buttonOverlay.id = 'qr-button-overlay';
+    buttonOverlay.style.cssText = `
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10000001;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      animation: pulse 2s infinite;
+    `;
+
+    buttonOverlay.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      View QR Code
+    `;
+
+    buttonOverlay.onmouseover = () => {
+      buttonOverlay.style.transform = 'translateX(-50%) scale(1.05)';
+      buttonOverlay.style.boxShadow = '0 12px 32px rgba(102, 126, 234, 0.6)';
+    };
+
+    buttonOverlay.onmouseout = () => {
+      buttonOverlay.style.transform = 'translateX(-50%) scale(1)';
+      buttonOverlay.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.4)';
+    };
+
+    buttonOverlay.onclick = () => {
+      setEnlargedQR(true);
+    };
+
+    // Add pulsing animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.85; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(buttonOverlay);
+  };
+
+  // Remove QR button when modal closes
+  const removeQRButton = () => {
+    const buttonOverlay = document.getElementById('qr-button-overlay');
+    if (buttonOverlay) {
+      buttonOverlay.remove();
+    }
+  };
+
+  const options = {
     key: "rzp_test_RvRduZ5UNffoaN",
     amount: result.data.data.amount * 100,
     currency: "INR",
     order_id: result.data.data.razorpayOrderId,
     name: "My POS",
+    description: `Total: ₹${result.data.data.amount}`,
     handler: async function (response) {
-        const data={
-           ...response,
-           razorpay_order_id: response.razorpay_order_id,
-      razorpay_payment_id: response.razorpay_payment_id,
-      razorpay_signature: response.razorpay_signature,
-        saleId: result.data.data.saleId,
-        amount: result.data.data.amount,
-        }
-      const verifyData=await verifyPayment(data);
-     const invoice = buildExchangeInvoice(result.data.saleData);
-     printInvoice(invoice);
-    // writeInvoiceToPrintWindow(invoice);
-     setCashOpen(false);
+      const data = {
+        ...response,
+        razorpay_order_id: response.razorpay_order_id,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature: response.razorpay_signature,
+        saleId: tempPaymentData.saleId,
+        amount: tempPaymentData.amount,
+      };
+
+      await verifyPayment(data);
+      const invoice = buildExchangeInvoice(tempPaymentData.saleData);
+      printInvoice(invoice);
+      setCashOpen(false);
       setCart([]);
+      setEnlargedQR(false);
+      removeQRButton();
     },
-     modal: {
+    modal: {
       ondismiss: () => {
-        printWindow.close(); // user closed payment popup
+        printWindow.close();
+        setEnlargedQR(false);
+        removeQRButton();
       }
     }
   };
+
+  // Open Razorpay modal
   new window.Razorpay(options).open();
+
+  // Create the QR button after a short delay to ensure Razorpay is rendered
+  setTimeout(createQRButton, 500);
 };
 
   return (
@@ -784,6 +890,45 @@ const handleRazorpay = async () => {
   </center>
 </div>
 </div>
+
+{/* Enlarged QR Code Modal - Shows on top of Razorpay */}
+<Dialog
+  open={enlargedQR}
+  onClose={() => setEnlargedQR(false)}
+  maxWidth="md"
+  fullWidth
+  sx={{ zIndex: 10000000 }}
+  PaperProps={{
+    sx: {
+      bgcolor: 'white',
+      boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+    }
+  }}
+>
+  <DialogTitle sx={{ textAlign: 'center', bgcolor: '#667eea', color: 'white', py: 2 }}>
+    <Typography variant="h5" fontWeight="bold">
+      Scan QR Code to Pay
+    </Typography>
+  </DialogTitle>
+  <DialogContent sx={{ textAlign: 'center', py: 5, bgcolor: '#f5f5f5' }}>
+    {qrCodeData && (
+      <Box sx={{ bgcolor: 'white', p: 4, borderRadius: 3, display: 'inline-block', boxShadow: 3 }}>
+        <QRCodeSVG value={qrCodeData} size={400} level="H" />
+      </Box>
+    )}
+    <Typography variant="body1" sx={{ mt: 3, fontWeight: 'bold', color: '#333' }}>
+      Use any UPI app to scan this QR code
+    </Typography>
+    <Button
+      variant="contained"
+      onClick={() => setEnlargedQR(false)}
+      sx={{ mt: 3, bgcolor: '#667eea', '&:hover': { bgcolor: '#5568d3' } }}
+    >
+      Close QR Code
+    </Button>
+  </DialogContent>
+</Dialog>
+
 
     </>
   );

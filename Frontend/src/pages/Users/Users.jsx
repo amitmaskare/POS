@@ -2,7 +2,10 @@ import React, { useState,useEffect } from "react";
 import {
   Box,
   Typography,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 import FilterListIcon from "@mui/icons-material/FilterList";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -12,12 +15,12 @@ import Stats from "../../components/MainContentComponents/Stats";
 import TableLayout from "../../components/MainContentComponents/Table";
 import { stats } from "./StatsData";
 import { columns } from "./columns";
-import { rows } from "./rows";
 import {userList,getById,deleteItem} from "../../services/userService"
 import ModalLayout from "./Modal";
 
 
 export default function Users() {
+    const navigate = useNavigate();
     const [open, setOpen] = useState(false);
     const[data,setData]=useState([])
     const[success,setSuccess]=useState('')
@@ -31,20 +34,37 @@ export default function Users() {
       const fetchUserList =async()=>{
         setSuccess(null)
         setError(null)
+        setLoading(true)
+        console.log('Fetching user list...')
+        console.log('Token from localStorage:', localStorage.getItem('token') ? 'Token exists' : 'No token found')
         try{
           const result=await userList()
+          console.log('User list result:', result)
           if(result.status===true)
           {
             setSuccess(result.message)
             setData(result.data)
+            console.log('User data set:', result.data)
           }else{
-            setError(result.message)
+            const errorMsg = result.message || 'Failed to fetch users'
+            setError(errorMsg === 'Access denied. No token provided.'
+              ? 'Please login first to view users'
+              : errorMsg)
+            console.log('API returned error:', result.message)
           }
         }catch(error)
         {
-            setError(error.response?.data?.message || error.message);
+            console.error('Error fetching user list:', error)
+            const errorMsg = error.response?.data?.message || error.message
+            setError(errorMsg === 'Access denied. No token provided.'
+              ? 'Please login first to view users'
+              : errorMsg);
+        }finally{
+          setLoading(false)
         }
       }
+
+      // Use data directly from API - roleName is already included
       const rows = data
       const handleDelete = async(id) => {
                 setSuccess('')
@@ -73,9 +93,9 @@ export default function Users() {
                setSuccess('')
                 setError('')
               try{
-                
+
                 const result=await getById(id)
-                
+
                 if(result.status===true)
                 {
                   setSuccess(result.message)
@@ -90,6 +110,10 @@ export default function Users() {
                 setError(error.response?.data?.message || error.message)
               }
 
+        };
+
+        const handleManagePermissions = (userId) => {
+          navigate(`/user-permissions/${userId}`);
         };
   return (
     <Box sx={{ minHeight: "100vh" }}>
@@ -110,6 +134,18 @@ export default function Users() {
         ]}
       />
 
+      {/* SUCCESS/ERROR MESSAGES */}
+      {success && (
+        <Alert severity="success" sx={{ mt: 2 }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+
       {/* TOP STATS + ADD USER */}
      <ModalLayout open={open} onClose={() => setOpen(false)} onSaved={fetchUserList} editData={editData}/>
 
@@ -124,7 +160,19 @@ export default function Users() {
           System Users
         </Typography>
       </Box>
-      <TableLayout columns={columns} rows={rows}  extra={{ deleteItem: handleDelete, edit: handleEdit }}  actionButtons={[
+
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {data.length === 0 && !error ? (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              No users found. Please add a user or check if you are logged in.
+            </Alert>
+          ) : (
+            <TableLayout columns={columns} rows={rows}  extra={{ deleteItem: handleDelete, edit: handleEdit, managePermissions: handleManagePermissions }}  actionButtons={[
             {
               label: "Filter",
               icon: <FilterListIcon />,
@@ -140,6 +188,9 @@ export default function Users() {
               onClick: () => console.log("Export clicked"),
             },
           ]} />
+          )}
+        </>
+      )}
     </Box>
   );
 }
