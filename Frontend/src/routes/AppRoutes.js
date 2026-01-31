@@ -39,6 +39,7 @@ import SaleReturn from "../pages/SaleReturn/Dashboard"
 import Role from "../pages/Role/Role";
 import Permission from "../pages/Permission/Permission";
 import RolePermission from "../pages/RolePermission/RolePermission";
+import UserPermissions from "../pages/Users/UserPermissions";
 
 const AppRoutes = () => {
  const [auth, setAuth] = useState(localStorage.getItem('token'));
@@ -79,6 +80,8 @@ const AppRoutes = () => {
         <Route path="role" element={<Role />} />
         <Route path="permission" element={<Permission />} />
         <Route path="rolepermission" element={<RolePermission />} />
+        <Route path="user-permissions/:userId" element={<UserPermissions />} />
+        <Route path="user-permissions" element={<UserPermissions />} />
         <Route path="salereturn" element={<SaleReturn />} />
       </Route>
 

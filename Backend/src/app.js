@@ -7,6 +7,7 @@ import StoreRoute from "../src/routes/StoreRoute.js";
 import RoleRoute from "../src/routes/RoleRoute.js"
 import PermissionRoute from "../src/routes/PermissionRoute.js"
 import RolePermissionRoute from "../src/routes/RolePermissionRoute.js"
+import UserPermissionRoute from "../src/routes/UserPermissionRoute.js"
 import CategoryRoute from "../src/routes/CategoryRoute.js"
 import SubcategoryRoute from "../src/routes/SubcategoryRoute.js"
 import CustomerRoute from "../src/routes/CustomerRoute.js"
@@ -34,6 +35,7 @@ app.use("/api", StoreRoute);
 app.use("/api", RoleRoute);
 app.use("/api",PermissionRoute)
 app.use("/api",RolePermissionRoute)
+app.use("/api",UserPermissionRoute)
 app.use("/api",CategoryRoute)
 app.use("/api",SubcategoryRoute)
 app.use("/api",CustomerRoute)

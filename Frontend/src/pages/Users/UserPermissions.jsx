@@ -15,38 +15,62 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
-import { Save, CheckCircle } from "@mui/icons-material";
+import { Save, CheckCircle, ContentCopy } from "@mui/icons-material";
+import {useParams, useNavigate} from "react-router-dom";
 import Title from "../../components/MainContentComponents/Title";
+import { userList } from "../../services/userService";
 import { roleList } from "../../services/RoleService";
 import {
   getAllPermissionsGrouped,
-  getById,
-  updateRolePermissions,
-} from "../../services/RolePermissionService";
+  getUserPermissions,
+  updateUserPermissions,
+  copyRolePermissionsToUser,
+} from "../../services/UserPermissionService";
 
-export default function RolePermission() {
+export default function UserPermissions() {
+  const { userId: routeUserId } = useParams();
+  const navigate = useNavigate();
+
+  const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
-  const [selectedRole, setSelectedRole] = useState("");
+  const [selectedUser, setSelectedUser] = useState(routeUserId || "");
+  const [selectedUserData, setSelectedUserData] = useState(null);
   const [permissions, setPermissions] = useState([]);
-  const [rolePermissions, setRolePermissions] = useState([]);
   const [selectedPermissions, setSelectedPermissions] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  // Fetch roles on component mount
+  // Fetch users and permissions on component mount
   useEffect(() => {
+    fetchUsers();
     fetchRoles();
     fetchPermissions();
   }, []);
 
-  // Fetch role permissions when role is selected
+  // Fetch user permissions when user is selected
   useEffect(() => {
-    if (selectedRole) {
-      fetchRolePermissions(selectedRole);
+    if (selectedUser) {
+      fetchUserPermissions(selectedUser);
     }
-  }, [selectedRole]);
+  }, [selectedUser]);
+
+  const fetchUsers = async () => {
+    try {
+      const result = await userList();
+      if (result.status) {
+        setUsers(result.data);
+        // Find selected user data
+        if (routeUserId) {
+          const userData = result.data.find(u => u.userId.toString() === routeUserId);
+          setSelectedUserData(userData);
+        }
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || error.message);
+    }
+  };
 
   const fetchRoles = async () => {
     try {
@@ -73,21 +97,31 @@ export default function RolePermission() {
     }
   };
 
-  const fetchRolePermissions = async (roleId) => {
+  const fetchUserPermissions = async (userId) => {
     try {
       setLoading(true);
-      const result = await getById(roleId);
+      const result = await getUserPermissions(userId);
       if (result.status) {
-        setRolePermissions(result.data);
-        // Create a set of permission IDs that this role has
-        const permIds = new Set(result.data.map((rp) => rp.permission_id));
+        // Create a set of permission IDs that this user has
+        const permIds = new Set(result.data.map((up) => up.permission_id));
         setSelectedPermissions(permIds);
       }
     } catch (error) {
-      setError(error.response?.data?.message || error.message);
+      // User might not have custom permissions yet, that's okay
+      setSelectedPermissions(new Set());
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUserChange = (userId) => {
+    setSelectedUser(userId);
+    const userData = users.find(u => u.userId.toString() === userId);
+    setSelectedUserData(userData);
+    // Clear previous selections
+    setSelectedPermissions(new Set());
+    setSuccess("");
+    setError("");
   };
 
   const handleTogglePermission = (permissionId) => {
@@ -121,9 +155,33 @@ export default function RolePermission() {
     });
   };
 
+  const handleCopyFromRole = async () => {
+    if (!selectedUser || !selectedUserData) {
+      setError("Please select a user");
+      return;
+    }
+
+    setSuccess("");
+    setError("");
+
+    try {
+      const result = await copyRolePermissionsToUser(selectedUser, selectedUserData.role);
+      if (result.status) {
+        setSuccess("Role permissions copied successfully!");
+        // Refresh user permissions
+        await fetchUserPermissions(selectedUser);
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(result.message);
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || error.message);
+    }
+  };
+
   const handleSave = async () => {
-    if (!selectedRole) {
-      setError("Please select a role");
+    if (!selectedUser) {
+      setError("Please select a user");
       return;
     }
 
@@ -133,7 +191,7 @@ export default function RolePermission() {
 
     try {
       const permissionArray = Array.from(selectedPermissions);
-      const result = await updateRolePermissions(selectedRole, permissionArray);
+      const result = await updateUserPermissions(selectedUser, permissionArray);
 
       if (result.status) {
         setSuccess(result.message);
@@ -151,30 +209,54 @@ export default function RolePermission() {
   return (
     <Box sx={{ minHeight: "100vh", pb: 4 }}>
       <Title
-        title="Role Permission Management"
-        subtitle="Assign permissions to roles with toggle switches"
+        title="User Permission Management"
+        subtitle="Assign custom permissions to individual users"
       />
 
-      {/* Role Selection */}
+      {/* User Selection */}
       <Paper elevation={2} sx={{ p: 3, mt: 3, borderRadius: 2 }}>
-        <FormControl fullWidth>
-          <InputLabel>Select Role</InputLabel>
-          <Select
-            value={selectedRole}
-            label="Select Role"
-            onChange={(e) => setSelectedRole(e.target.value)}
-            sx={{ backgroundColor: "#fff" }}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {roles.map((role) => (
-              <MenuItem key={role.roleId} value={role.roleId}>
-                {role.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={8}>
+            <FormControl fullWidth>
+              <InputLabel>Select User</InputLabel>
+              <Select
+                value={selectedUser}
+                label="Select User"
+                onChange={(e) => handleUserChange(e.target.value)}
+                sx={{ backgroundColor: "#fff" }}
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {users.map((user) => (
+                  <MenuItem key={user.userId} value={user.userId}>
+                    {user.name} ({user.email}) - Role: {user.role === 1 ? 'Admin' : roles.find(r => r.roleId === user.role)?.name || 'Unknown'}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          {selectedUser && selectedUserData && (
+            <Grid item xs={12} md={4}>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<ContentCopy />}
+                onClick={handleCopyFromRole}
+                sx={{
+                  borderColor: "#5A8DEE",
+                  color: "#5A8DEE",
+                  "&:hover": {
+                    borderColor: "#4a7dd9",
+                    backgroundColor: "#f0f4ff",
+                  },
+                }}
+              >
+                Copy from Role
+              </Button>
+            </Grid>
+          )}
+        </Grid>
       </Paper>
 
       {/* Success/Error Messages */}
@@ -190,7 +272,7 @@ export default function RolePermission() {
       )}
 
       {/* Permissions Grid */}
-      {selectedRole && (
+      {selectedUser && (
         <Paper elevation={2} sx={{ p: 3, mt: 3, borderRadius: 2 }}>
           {loading ? (
             <Box display="flex" justifyContent="center" py={4}>
@@ -204,9 +286,14 @@ export default function RolePermission() {
                 alignItems="center"
                 mb={3}
               >
-                <Typography variant="h6" fontWeight={600} color="#5A8DEE">
-                  Module Permissions
-                </Typography>
+                <Box>
+                  <Typography variant="h6" fontWeight={600} color="#5A8DEE">
+                    Custom Permissions for {selectedUserData?.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" mt={0.5}>
+                    User-specific permissions override role permissions
+                  </Typography>
+                </Box>
                 <Chip
                   label={`${selectedPermissions.size} permissions selected`}
                   color="primary"
@@ -260,7 +347,6 @@ export default function RolePermission() {
                           </Typography>
                           <Switch
                             checked={allSelected}
-                            indeterminate={someSelected}
                             onChange={() =>
                               handleToggleModule(module.permissions)
                             }
@@ -350,7 +436,7 @@ export default function RolePermission() {
                     },
                   }}
                 >
-                  {saving ? "Saving..." : "Save Permissions"}
+                  {saving ? "Saving..." : "Save User Permissions"}
                 </Button>
               </Box>
             </>
@@ -359,7 +445,7 @@ export default function RolePermission() {
       )}
 
       {/* Empty State */}
-      {!selectedRole && !loading && (
+      {!selectedUser && !loading && (
         <Paper
           elevation={1}
           sx={{
@@ -370,10 +456,10 @@ export default function RolePermission() {
           }}
         >
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No Role Selected
+            No User Selected
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Please select a role from the dropdown above to manage permissions
+            Please select a user from the dropdown above to manage their custom permissions
           </Typography>
         </Paper>
       )}

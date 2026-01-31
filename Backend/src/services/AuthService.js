@@ -37,52 +37,76 @@ export const AuthService = {
 
   loginByPassword: async (loginData) => {
     const { user_id, password } = loginData;
-  
+
     const user = await CommonModel.getSingle({
       table: "users",
       conditions: { user_id }
     });
-  
+
     if (!user) throw new Error("Invalid User Id");
-  
+
     const checkPassword = await bcrypt.compare(password, user.password);
     if (!checkPassword) throw new Error("Invalid Password");
-  
+
     const role = await CommonModel.getSingle({
       table: "roles",
       conditions: { roleId: user.role }
     });
-  
+
     let permissions = [];
-  
-    // ✅ ADMIN → ALL
+
+    // ✅ ADMIN → ALL PERMISSIONS
     if (Number(user.role) === 1 || role?.name === "admin") {
       const allPerms = await CommonModel.getAllData({ table: "permissions" });
       permissions = allPerms.map(p => p.slug_url);
-    } 
-    // ✅ OTHERS
-    else {
-      const permissionsQuery = `
-        SELECT p.slug_url
-        FROM role_permissions rp
-        JOIN permissions p ON p.permissionId = rp.permission_id
-        WHERE rp.role_id = ?
-      `;
-  
-      const permissionResult = await CommonModel.rawQuery(
-        permissionsQuery,
-        [user.role]
-      );
-  
-      const rows = Array.isArray(permissionResult[0])
-        ? permissionResult[0]
-        : permissionResult;
-  
-      permissions = rows.map(p => p.slug_url);
     }
-  
+    // ✅ CHECK USER-SPECIFIC PERMISSIONS FIRST
+    else {
+      // Check if user has custom permissions
+      const userPermissionsQuery = `
+        SELECT p.slug_url
+        FROM user_permissions up
+        JOIN permissions p ON p.permissionId = up.permission_id
+        WHERE up.user_id = ?
+      `;
+
+      const userPermResult = await CommonModel.rawQuery(
+        userPermissionsQuery,
+        [user.userId]
+      );
+
+      const userPerms = Array.isArray(userPermResult[0])
+        ? userPermResult[0]
+        : userPermResult;
+
+      // If user has custom permissions, use them
+      if (userPerms && userPerms.length > 0) {
+        permissions = userPerms.map(p => p.slug_url);
+      }
+      // Otherwise, fall back to role permissions
+      else {
+        const rolePermissionsQuery = `
+          SELECT p.slug_url
+          FROM role_permissions rp
+          JOIN permissions p ON p.permissionId = rp.permission_id
+          WHERE rp.role_id = ?
+        `;
+
+        const rolePermResult = await CommonModel.rawQuery(
+          rolePermissionsQuery,
+          [user.role]
+        );
+
+        const rolePerms = Array.isArray(rolePermResult[0])
+          ? rolePermResult[0]
+          : rolePermResult;
+
+        permissions = rolePerms.map(p => p.slug_url);
+      }
+    }
+
     delete user.password;
-  
+
     return {
       ...user,
       role_name: role?.name || "admin",
@@ -183,8 +207,23 @@ export const AuthService = {
   },
 
   userList:async()=>{
-    const result=await CommonModel.getAllData({table:'users'})
-    return result
+    const sql = `
+      SELECT
+        u.userId,
+        u.user_id,
+        u.name,
+        u.email,
+        u.role,
+        CASE
+          WHEN u.role = 1 THEN 'Admin'
+          ELSE COALESCE(r.name, 'Unknown')
+        END as roleName,
+        u.created_at
+      FROM users u
+      LEFT JOIN roles r ON u.role = r.roleId
+    `;
+    const [result] = await pool.promise().query(sql);
+    return result;
   },
 
   add:async(userData)=>{

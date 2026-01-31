@@ -125,6 +125,7 @@ export const SaleController={
           return sendResponse(resp, true, 201, "Sale completed successfully",invoiceData);
       }
           } catch (error) {
+            console.error("❌ Checkout Sale Error:", error);
             return sendResponse(
               resp,
               false,
