@@ -42,6 +42,7 @@ const [holdItem, setHoldItem] = useState([]);
 const [showApproval, setShowApproval] = useState(false);
 const[managerUser,setManagerUser]=useState("")
 const[managerPass,setManagerPass]=useState("")
+const [approvalType, setApprovalType] = useState(""); 
   // Handle Quantity
  const updateQty = (id, type) => {
   setCart((prev) =>
@@ -387,7 +388,7 @@ const checkoutSale = async () => {
       }
       const invoice = buildExchangeInvoice(result.data.invoice_no);
       printInvoice(invoice);
-  setCashOpen(false);
+     setCashOpen(false);
       setCart([]);
       setReceivedAmount("");
       setReturnAmount(0);
@@ -418,7 +419,7 @@ const holdlist=async()=>{
     console.log(error.message)
   }
 }
-console.log(holdItem);
+
 const retrieveItem=async(id)=>{
    try{
   const result= await retrieveHoldItem(id);
@@ -484,10 +485,22 @@ const verifyManager = async () => {
     });
     if (result.status === true) {
       setShowApproval(false);
-      handleRefundSave(result.data.manager_id);
-    } else {
-      alert("Invalid manager credentials");
+       switch (approvalType) { 
+      case "refund":
+       handleRefundSave(result.data.manager_id);
+        break;
+      case "exchange":
+        setCashOpen(true);
+        break;
+
+      // case "credit":
+      //   handleRazorpay();  
+      //   break;
+
+      default:
+        alert("Invalid approval type");
     }
+  }
  }catch(error)
  {
   alert(error.response?.data?.message || error.message)
@@ -504,17 +517,14 @@ const loadRazorpay = () => {
   });
 };
 const handleRazorpay = async () => {
-   printWindow = window.open("", "_blank", "width=350");
-
-  if (!printWindow) {
-    alert("Please allow popups");
-    return;
-  }
+ 
   await loadRazorpay();
+  
   if (!saleId) {
       alert("Sale ID missing");
       return;
     }
+     try{
      const return_items = cart
       .filter(i => i.cart_type === "refund")
       .map(i => ({
@@ -555,6 +565,7 @@ const handleRazorpay = async () => {
     order_id: result.data.data.razorpayOrderId,
     name: "My POS",
     handler: async function (response) {
+      const invoiceWindow = window.open("", "_blank");
         const data={
            ...response,
            razorpay_order_id: response.razorpay_order_id,
@@ -565,18 +576,16 @@ const handleRazorpay = async () => {
         }
       const verifyData=await verifyPayment(data);
      const invoice = buildExchangeInvoice(result.data.invoice_no);
-     printInvoice(invoice);
-    // writeInvoiceToPrintWindow(invoice);
+    printInvoice(invoice);
      setCashOpen(false);
       setCart([]);
     },
-     modal: {
-      ondismiss: () => {
-        printWindow.close(); // user closed payment popup
-      }
-    }
   };
   new window.Razorpay(options).open();
+}catch(error)
+{
+  console.log(error.response?.data?.message || error.message)
+}
 };
 
   return (
@@ -709,7 +718,10 @@ const handleRazorpay = async () => {
           <div className="d-flex gap-2 mt-3">
           <button
             className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
-            style={getButtonStyle("cash")} onClick={() =>setShowApproval(true)}>
+            style={getButtonStyle("cash")} onClick={() => {
+                setApprovalType("refund");
+                setShowApproval(true);
+              }}>
             <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
             Refund
           </button>
@@ -723,6 +735,7 @@ const handleRazorpay = async () => {
             style={getButtonStyle("cash")}
             onClick={() => {
     setActive("cash");
+     setApprovalType("exchange");
     setShowApproval(true);
   }}
           >
@@ -732,9 +745,10 @@ const handleRazorpay = async () => {
 
           <button
             className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
-            style={getButtonStyle("credit")}
+            style={getButtonStyle("cash")}
             onClick={() =>{
-               setActive("credit")
+               setActive("cash")
+              setApprovalType("credit");
               handleRazorpay()
               }} >
             <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
@@ -903,7 +917,7 @@ const handleRazorpay = async () => {
       </DialogContent>
       <DialogContent>
      <input
-    type="text"
+    type="password"
     placeholder="Manager Passsword"
      className="form-control mt-2"
     value={managerPass}
