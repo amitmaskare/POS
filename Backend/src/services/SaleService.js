@@ -10,6 +10,7 @@ export const SaleService={
       sale.id,
       sale.invoice_no,
       DATE_FORMAT(sale.created_at, '%Y-%m-%d') AS sale_date,
+      DATE_FORMAT(sale.created_at, '%h:%i %p') AS sale_time,
       COUNT(
         DISTINCT CASE 
           WHEN si.is_returned = 'no' THEN si.id 
@@ -17,7 +18,8 @@ export const SaleService={
         END
       ) AS total_items,
       sale.total AS amount,
-      UPPER(sale.status) AS status
+      UPPER(sale.status) AS status,
+      UPPER(sale.payment_method) AS paymentMethod
     FROM sales AS sale
     LEFT JOIN sales_items AS si 
       ON si.sale_id = sale.id

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -25,6 +26,7 @@ import SalesHistoryModal from "../components/HeaderComponents/SalesHistory";
 import CheckPriceModal from "../components/HeaderComponents/CheckPrice";
 import SaleReturnModal from "../components/HeaderComponents/SaleReturn"
 export default function Header({ sidebarState }) {
+  const navigate = useNavigate();
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [openAadhaar, setOpenAadhaar] = useState(false);
@@ -132,15 +134,15 @@ export default function Header({ sidebarState }) {
         <Button variant="outlined"  size="small" startIcon={<LocalOfferIcon />}>
           Offers
         </Button>
-             {/* <Button variant="outlined" size="small" onClick={() => setopenSaleReturn(true)} startIcon={<HistoryIcon />}>
+             <Button variant="outlined" size="small" startIcon={<HistoryIcon />} onClick={() => navigate("/salereturn")}>
           Sale Return
-        </Button> */}
-          <ListItemButton to="/salereturn" variant="outlined" startIcon={<HistoryIcon />}>
+        </Button> 
+          {/* <ListItemButton to="/salereturn" variant="outlined" startIcon={<HistoryIcon />}>
           <ListItemText primary="Sale Return" />
-        </ListItemButton>
-        {/* <Button variant="outlined"  size="small" onClick={() => setopenSalesHistory(true)} startIcon={<HistoryIcon />}>
+        </ListItemButton> */}
+        <Button variant="outlined"  size="small" onClick={() => setopenSalesHistory(true)} startIcon={<HistoryIcon />}>
           Sales History
-        </Button> */}
+        </Button>
       </Box>
       <Aadhaar open={openAadhaar} onClose={handleCloseAadhaar} />
 

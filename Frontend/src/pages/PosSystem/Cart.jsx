@@ -484,7 +484,11 @@ const handleRazorpay = async () => {
 
   return (
     <>
-    <aside className="cart p-3">
+    <aside className="cart p-3"  style={{
+    flex: 1,
+    overflowY: "auto",
+    paddingRight: "4px",
+  }}>
       <h3 className="fw-bold mb-4" style={{color:"#5A8DEE"}}>Cart</h3>
 
       {/* Product List */}
@@ -646,8 +650,6 @@ const handleRazorpay = async () => {
         </div>
       </div>
     </aside>
-
-
 
     <Dialog open={openHoldModal} onClose={() => setOpenHoldModal(false)}>
   <DialogTitle>Hold Sale</DialogTitle>

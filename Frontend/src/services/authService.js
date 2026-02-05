@@ -18,9 +18,7 @@ export const forgot_password=async(passwordData)=>{
          const email = new URLSearchParams(window.location.search).get("email");
         const response=await axios.post(`${apiUrl}/forgot-password?email=${encodeURIComponent(email)}`,passwordData)
         return response.data
-    }catch(error)
-    {
-   
-        throw error
+    }catch(error){
+    throw error
     }
 }

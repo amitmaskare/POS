@@ -1,248 +1,194 @@
 import React, { useState,useEffect } from "react";
-import {useNavigate} from "react-router-dom"
-import { LuStore } from "react-icons/lu";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardHeader,
   CardContent,
-  InputLabel,
-  Select,
-  MenuItem,
   Button,
-  Input,
   Typography,
   FormControl,
-  Link ,
-  Box,
   TextField,
-  Avatar
+  Box,
+  Link,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from "@mui/material";
-import { FaUserTie, FaCashRegister, FaUserCog } from "react-icons/fa";
-import axios from "axios";
-import { login,forgot_password } from "../../services/authService";
+import { LuStore } from "react-icons/lu";
+import { login, forgot_password } from "../../services/authService";
 
 
 export default function Login({ onLogin }) {
-  const [role, setRole] = useState("");
+ const navigate = useNavigate();
+
   const [user_id, setUser_id] = useState("");
   const [password, setPassword] = useState("");
-  const[email,setEmail]=useState("")
-  const [success,setSuccess]=useState("")
-  const[error,setError]=useState("")
-  const navigate=useNavigate()
- const roles = [
-  { value: "1", label: "Admin", icon: <FaUserTie color="#5A8DEE" /> },
-  { value: "2", label: "Cashier", icon: <FaCashRegister color="#5A8DEE" /> },
-  { value: "3", label: "Manager", icon: <FaUserCog color="#5A8DEE" /> },
-];
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [openForgot, setOpenForgot] = useState(false);
+ 
+  useEffect(() => {
+  if (error || success) {
+    const timer = setTimeout(() => {
+      setError("");
+      setSuccess("");
+    }, 3000);
 
- const actionLogin = async () => {
-    const loginData = { user_id, password };
-    setSuccess(null);
-    setError(null);
+    return () => clearTimeout(timer);
+  }
+}, [error, success]);
+
+ const actionLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
     try {
-     const result= await login(loginData)
-      if (result.status === true) {
-        setSuccess(result.message);
-        const token = result.data.token;
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(result.data.user));
-         onLogin();
-        navigate('dashboard');
-      } else {
-        setError(result.message);
-      }
-    } catch (error) {
-      setError(error.response?.data?.message || error.message);
-    }
-  };
+      const result = await login({ user_id, password });
 
-   const generateForgotPasswordLink=async()=>{
-      setSuccess(null);
-      setError(null);
+      if (result?.status) {
+        localStorage.setItem("token", result.data.token);
+        localStorage.setItem("user", JSON.stringify(result.data.user));
+        onLogin?.();
+        navigate("/dashboard");
+      } else {
+        setError(result?.message || "Invalid credentials");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+   const handleForgotPassword=async()=>{
+      setSuccess("");
+      setError("");
      const emailData={email}
       try{
         const result=await forgot_password(emailData)
-        if (result.status === true) {
-          setSuccess(result.message)
-        } else {
-          setError(result.message);
-        }
-      }catch(error)
-      {
-        setError(error.response.data.message || "An unexpected error occured");
+         result.status === true ? setSuccess(result.message):setError(result.message);
+       }catch(error){
+        setError(error?.response?.data?.message || "An unexpected error occured");
       }
     }
-  return (
-    <>
-    <div
-      style={{
+ return (
+    <Box
+      sx={{
         minHeight: "100vh",
-        background: "linear-gradient(to bottom right, #e3f2fd, #ede7f6)",
+        background: "linear-gradient(135deg, #e3f2fd, #ede7f6)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "1rem",
+        p: 2,
       }}
     >
-      <Card sx={{ width: "100%", maxWidth: 470, p: 2, boxShadow: 3 , borderRadius:5}}>
+      <Card sx={{ maxWidth: 450, width: "100%", borderRadius: 4, boxShadow: 4 }}>
         <CardHeader
           title={
-            <>
-            <Box display="flex" flexDirection="column" alignItems="center" gap={2} textAlign="center">
-            <Box sx={{ display: "inline-flex",alignItems: "center",justifyContent: "center", width: 64, height: 64, borderRadius: "50%",  backgroundColor: "#E8F0FF"}}>
-              <LuStore size={32} color="#5A8DEE" />
+            <Box textAlign="center">
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  mx: "auto",
+                  mb: 1,
+                  borderRadius: "50%",
+                  bgcolor: "#E8F0FF",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <LuStore size={30} color="#5A8DEE" />
+              </Box>
+              <Typography variant="h5" fontWeight="bold">
+                POS System
+              </Typography>
             </Box>
-            <Typography variant="h5" align="center" fontWeight="bold">
-              POS System
-            </Typography>
-            </Box>
-            </>
           }
           subheader={
-            <Typography variant="body2" align="center" color="text.secondary" marginTop={1}>
+            <Typography align="center" variant="body2" color="text.secondary">
               Sign in to access your point of sale system
             </Typography>
           }
         />
-        {error && (
-                    <h5 className="text-center alert alert-danger">{error}</h5>
-                  )}
-                  {success && (
-                    <h5 className="text-center alert alert-success">
-                      {success}
-                    </h5>
-                  )}
+
         <CardContent>
-          <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-           
-          {/* <FormControl fullWidth>
-                <InputLabel id="role-label">Role</InputLabel>
-                <Select
-                  labelId="role-label"
-                  id="role"
-                  value={role}
-                  label="Role"
-                  onChange={(e) => setRole(e.target.value)}
-                  renderValue={(selected) => {
-                    const selectedRole = roles.find((r) => r.value === selected);
-                    if (!selectedRole) return null;
-                    return (
-                      <Box display="flex" alignItems="center" gap={1}>                    
-                          {selectedRole.icon}
-                        <Typography>{selectedRole.label}</Typography>
-                      </Box>
-                    );
-                  }}
-                 
-                >
-                  {roles.map((r) => (
-                    <MenuItem key={r.value} value={r.value}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                       {r.icon}
-                        <Typography>{r.label}</Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl> */}
-            {/* Username */}
-            
+          {error && <Alert severity="error">{error}</Alert>}
+          {success && <Alert severity="success">{success}</Alert>}
 
-            <FormControl fullWidth>
-              <Typography variant="subtitle1"  gutterBottom>
-                Username
-              </Typography>
+          <Box component="form" mt={2} onSubmit={actionLogin}>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <TextField
+                label="Username"
+                value={user_id}
+                onChange={(e) => setUser_id(e.target.value)}
+                required
+              />
+            </FormControl>
 
-             <TextField
-              id="username"
-              label="Enter Your Username"
-              variant="outlined" 
-              placeholder="Enter your username"
-              required
-              autoComplete="off"
-              onChange={(e) => setUser_id(e.target.value)}
-             />
+            <FormControl fullWidth sx={{ mb: 1 }}>
+              <TextField
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </FormControl>
-            {/* Password */}
-            <FormControl fullWidth>
-            <Typography variant="subtitle1">
-            Password
-            </Typography>
-            <TextField
-            type="password"
-              id="password"
-              label="Enter Your Password"
-              variant="outlined"  
-              placeholder="Enter your password"
-              required
-              autoComplete="off"
-              onChange={(e)=>setPassword(e.target.value)}
-            />
-            </FormControl>
-             {/* Forgot Password link */}
-            <Typography
-              variant="body2"
-              align="right"
-              sx={{ marginTop: "-0.5rem" }}
-            >
-              <Link
-                href="#"
-                underline="hover"
-                color="primary"
-                fontWeight="medium"
-                data-bs-toggle="modal" data-bs-target="#exampleModal"
-              >
+
+            <Typography align="right" variant="body2">
+              <Link component="button" onClick={() => setOpenForgot(true)}>
                 Forgot Password?
               </Link>
             </Typography>
-            {/* Submit Button */}
-            <Button type="button" variant="contained" color="primary" fullWidth onClick={actionLogin}>
-             Sign In
-            </Button>
-          </form>
 
-          <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid #ddd" }}>
-            <Typography variant="caption" color="text.secondary" align="center" display="block">
-              Demo Credentials:
-              <br />
-              <span style={{ fontFamily: "monospace" }}>cashier/cashier123</span> |{" "}
-              <span style={{ fontFamily: "monospace" }}>manager/manager123 admin/admin123</span> |{" "}
-              {/* <span style={{ fontFamily: "monospace" }}>admin/admin123</span> */}
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 2, py: 1.2 }}
+              disabled={loading}
+            >
+              {loading ? "Signing In..." : "Sign In"}
+            </Button>
+          </Box>
+
+          <Box mt={3} pt={2} borderTop="1px solid #eee">
+            <Typography variant="caption" align="center" display="block">
+              Demo Credentials<br />
+              <code>cashier / cashier123</code> | <code>manager / manager123</code> | <code>admin / admin123</code>
             </Typography>
-          </div>
+          </Box>
         </CardContent>
       </Card>
-    </div>
-    
-   <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Forgot Password</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-         {error && (
-                    <h5 className="text-center text-danger">{error}</h5>
-                  )}
-                  {success && (
-                    <h5 className="text-center text-success">
-                      {success}
-                    </h5>
-                  )}
-        <label>Email<span className="text-danger">*</span></label>
-        <input type="text" className="form-control" name="email" placeholder="Enter Email" value={email} onChange={(e)=>setEmail(e.target.value)}/>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" onClick={generateForgotPasswordLink}>Submit</button>
-      </div>
-    </div>
-  </div>
-</div>
 
-</>
+      {/* Forgot Password Dialog */}
+      <Dialog open={openForgot} onClose={() => setOpenForgot(false)}>
+        <DialogTitle>Forgot Password</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Email"
+            margin="dense"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenForgot(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleForgotPassword}>
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 

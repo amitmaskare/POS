@@ -49,3 +49,26 @@ body {
       background: #e9f1ff;
       border-radius: 6px;
     }
+
+    .cart::-webkit-scrollbar,
+.cart div::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cart::-webkit-scrollbar-thumb,
+.cart div::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.cart::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+    @media (max-width: 768px) {
+  .cart {
+    height: calc(100vh - 60px); /* navbar height adjust */
+  }
+}
+

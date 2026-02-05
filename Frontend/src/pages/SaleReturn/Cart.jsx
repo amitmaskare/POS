@@ -590,7 +590,11 @@ const handleRazorpay = async () => {
 
   return (
     <>
-    <aside className="cart p-3">
+    <aside className="cart p-3" style={{
+    flex: 1,
+    overflowY: "auto",
+    paddingRight: "4px",
+  }}>
       <h3 className="fw-bold mb-4" style={{color:"#5A8DEE"}}>Sale Return </h3>
 
       {/* Product List */}
