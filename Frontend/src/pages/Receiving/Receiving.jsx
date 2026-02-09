@@ -14,6 +14,7 @@ import { statsData } from "./StatsData";
 import { statsData1 } from "./StatsData1";
 import TableLayout from "../../components/MainContentComponents/Table";
 import NewPurchaseOrderModal from "./Modal";
+import Toast from "../../components/Toast/Toast";
 import { FaRegSquarePlus } from "react-icons/fa6";
 import { rows } from "./rows";
 import { columns } from "./columns";
@@ -22,7 +23,7 @@ import {receiveItems,getById} from "../../services/purchaseService"
 
 export default function Receiving() {
 
-  const [openModal, setOpenModal] = React.useState(false);
+  const [openModal, setOpenModal] =useState(false);
    const[data,setData]=useState([])
     const[success,setSuccess]=useState('')
     const[error,setError]=useState('')
@@ -32,46 +33,49 @@ export default function Receiving() {
       fetchPurchaseList()
       },[])
       
-        const fetchPurchaseList =async()=>{
-          setSuccess(null)
-          setError(null)
-          try{
-            const result=await receiveItems()
-            if(result.status===true)
-            {
-              setSuccess(result.message)
-              setData(result.data)
-            }else{
-              setError(result.message)
+        const fetchPurchaseList = async() => {
+          setSuccess(null);
+          setError(null);
+          try {
+            const result = await receiveItems();
+            if (result?.status === true && Array.isArray(result?.data)) {
+              setSuccess(result.message || 'Purchases loaded');
+              setData(result.data);
+            } else {
+              setError(result?.message || 'Failed to load purchases');
+              setData([]);
             }
-          }catch(error)
-          {
-              setError(error.response?.data?.message || error.message);
+          } catch(error) {
+            console.error('Fetch error:', error);
+            setError(error?.response?.data?.message || error?.message || 'Something went wrong');
+            setData([]);
           }
         }
       const rows = data
 
-       const handleEdit =async(id) => {
-                         setSuccess('')
-                          setError('')
-                        try{
-                          
-                          const result=await getById(id)
-                           //console.log(result.data.purchase); return false;
-                          if(result.status===true)
-                          {
-                            setSuccess(result.message)
-                           setEditData(result.data);
-                           setOpenModal(true);
-                          }else{
-                            setError(result.message)
-                          }
-                        }
-                      catch(error)
-                        {
-                          setError(error.response?.data?.message || error.message)
-                        }
-                  };
+      const handleEdit = async(id) => {
+        setSuccess('');
+        setError('');
+        try {
+          if (!id) {
+            setError('Invalid purchase ID');
+            return;
+          }
+          
+          const result = await getById(id);
+          
+          if (result?.status === true && result?.data) {
+            setSuccess(result.message || 'Purchase loaded');
+            setEditData(result.data);
+            setOpenModal(true);
+          } else {
+            setError(result?.message || 'Failed to load purchase');
+          }
+        } catch(error) {
+          console.error('Edit error:', error);
+          setError(error?.response?.data?.message || error?.message || 'Something went wrong');
+        }
+      };
   return (
     <Box sx={{ minHeight: "100vh" }}>
       {/* <Title
@@ -90,7 +94,7 @@ export default function Receiving() {
       /> */}
       {/* TOP CARDS */}
       <Box mb={3} mt={3}>
-        <Stats stats={statsData} />
+        <Stats stats={statsData || []} />
       </Box>
 
      
@@ -128,7 +132,8 @@ export default function Receiving() {
 
       </Paper>
       <NewPurchaseOrderModal open={openModal} onClose={() => setOpenModal(false)} onSaved={fetchPurchaseList} editData={editData}/>
-
+      <Toast show={!!success} message={success} type="success" />
+      <Toast show={!!error} message={error} type="error" />
     </Box>
   );
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Grid,
@@ -6,23 +6,188 @@ import {
   Card,
   CardContent,
   Button,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
-
 import BarChartIcon from "@mui/icons-material/BarChart";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DownloadIcon from "@mui/icons-material/Download";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import Header from "../../components/MainContentComponents/Title";
 import Stats from "../../components/MainContentComponents/Stats";
-import { statsData } from "./StatsData";
-import { statsData1 } from "./StatsData1";
-
-
+import {
+  getSalesReport,
+  getTransactionList,
+  getSalesList,
+  getProductList,
+  calculateStats,
+  getSalesChartData,
+  getProductPerformanceData,
+  downloadReport,
+  getRecentReports,
+} from "../../services/reportService";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/Toast/Toast";
 
 const Reports = () => {
+  const [statsData, setStatsData] = useState([]);
+  const [salesChartData, setSalesChartData] = useState([]);
+  const [productChartData, setProductChartData] = useState([]);
+  const [recentReports, setRecentReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [viewData, setViewData] = useState([]);
+
+  const { showToast, toastMessage, toastType, showToastNotification } =
+    useToast();
+
+  const COLORS = ["#6ca0fe", "#ffc44d", "#52c41a", "#ff7a45", "#1890ff"];
+
+  // Fetch all report data on component mount
+  useEffect(() => {
+    fetchReportData();
+  }, []);
+
+  const fetchReportData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch sales and transaction data
+      const [salesRes, productsRes] = await Promise.all([
+        getSalesList(),
+        getProductList(),
+      ]);
+
+      // Calculate stats
+      if (salesRes.status && salesRes.data) {
+        const stats = calculateStats(salesRes.data);
+        const chartData = getSalesChartData(salesRes.data);
+
+        setStatsData([
+          {
+            title: "Total Sales",
+            value: `$${stats.totalSales}`,
+            change: "+12.5%",
+            color: "#6ca0fe",
+            icon: <BarChartIcon sx={{ fontSize: 30, color: "#6ca0fe" }} />,
+          },
+          {
+            title: "Transactions",
+            value: stats.transactions.toString(),
+            change: "+4.2%",
+            color: "green",
+            icon: (
+              <BarChartIcon sx={{ fontSize: 30, color: "green" }} />
+            ),
+          },
+          {
+            title: "Average Transaction",
+            value: `$${stats.avgTransaction}`,
+            change: "+3.1%",
+            color: "#ffc44d",
+            icon: <TrendingUpIcon sx={{ fontSize: 30, color: "#ffc44d" }} />,
+          },
+          {
+            title: "Top Product",
+            value: stats.topProduct,
+            sub: "15 sold",
+            color: "#6ca0fe",
+            icon: <BarChartIcon sx={{ fontSize: 30, color: "#6ca0fe" }} />,
+          },
+        ]);
+
+        setSalesChartData(chartData);
+      }
+
+      // Set product chart data
+      if (productsRes.status && productsRes.data) {
+        const productData = getProductPerformanceData(productsRes.data);
+        setProductChartData(productData);
+      }
+
+      // Set recent reports
+      setRecentReports(getRecentReports());
+
+      showToastNotification("Reports loaded successfully", "success");
+    } catch (error) {
+      console.error("Error fetching report data:", error);
+      showToastNotification(
+        error?.message || "Failed to load reports",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewReport = (report) => {
+    setSelectedReport(report);
+    setViewDialogOpen(true);
+
+    // Set appropriate data based on report type
+    switch (report.type) {
+      case "sales":
+        setViewData(salesChartData);
+        break;
+      case "products":
+        setViewData(productChartData);
+        break;
+      default:
+        setViewData([]);
+    }
+  };
+
+  const handleDownloadReport = async (report) => {
+    try {
+      showToastNotification("Preparing download...", "info");
+      let dataToDownload = [];
+
+      switch (report.type) {
+        case "sales":
+          dataToDownload = salesChartData;
+          break;
+        case "products":
+          dataToDownload = productChartData;
+          break;
+        default:
+          dataToDownload = [];
+      }
+
+      if (dataToDownload.length === 0) {
+        showToastNotification("No data to download", "warning");
+        return;
+      }
+
+      await downloadReport(report.type, dataToDownload);
+      showToastNotification("Report downloaded successfully", "success");
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      showToastNotification(error?.message || "Failed to download report", "error");
+    }
+  };
+
   return (
     <Box sx={{ minHeight: "100vh" }}>
-
       <Header
         title="Reports"
         subtitle="Analytics and business insights"
@@ -40,134 +205,214 @@ const Reports = () => {
         ]}
       />
 
+      {loading ? (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "400px",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {/* Stats Cards */}
+          <Box sx={{ mt: 3 }}>
+            <Stats stats={statsData} />
+          </Box>
 
-
-      {/* stats */}
-      <Box sx={{ mt: 3 }}>
-      <Stats stats={statsData} />;
-      </Box>
-
-      {/* grid */}
-      <Grid container spacing={3} mb={4} justifyContent={"space-around"}>
-        <Grid item xs={12} md={6}>
-          <Card
-            sx={{
-
-              border: "1px solid #5A8DEE",
-              height: 300,
-              width:500,
-              borderRadius: 2,
-            }}
-          >
-            <CardContent>
-              <Typography fontWeight={600} mb={10} color= "#5A8DEE">
-                Sales Overview
-              </Typography>
-
-              <Box
-                textAlign="center"
-               
-                mt={6}
-                color={"black"}
+          {/* Charts */}
+          <Grid container spacing={3} mb={4} justifyContent="space-around">
+            {/* Sales Overview Chart */}
+            <Grid item xs={12} md={6}>
+              <Card
+                sx={{
+                  border: "1px solid #5A8DEE",
+                  borderRadius: 2,
+                }}
               >
-                <BarChartIcon sx={{ fontSize: 50, color: "#6ca0fe" }} />
+                <CardContent>
+                  <Typography fontWeight={600} mb={2} color="#5A8DEE">
+                    Sales Overview
+                  </Typography>
 
-                <Typography mt={1}>Sales chart would be displayed here</Typography>
-                <Typography variant="body2" sx={{color:"black" }}>
-                  Integration with chart library needed
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+                  {salesChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={salesChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value) => `$${value.toFixed(2)}`}
+                        />
+                        <Legend />
+                        <Bar dataKey="sales" fill="#6ca0fe" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <Box textAlign="center" mt={6}>
+                      <BarChartIcon
+                        sx={{ fontSize: 50, color: "#6ca0fe" }}
+                      />
+                      <Typography mt={1}>No sales data available</Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Card
-            sx={{
+            {/* Product Performance Chart */}
+            <Grid item xs={12} md={6}>
+              <Card
+                sx={{
+                  border: "1px solid #5A8DEE",
+                  borderRadius: 2,
+                }}
+              >
+                <CardContent>
+                  <Typography fontWeight={600} mb={2} color="#5A8DEE">
+                    Product Performance
+                  </Typography>
 
-              border: "1px solid #5A8DEE",
-              height: 300,
-              width:500,
-              borderRadius: 2,
-            }}
-          >
+                  {productChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={productChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => value.toFixed(2)} />
+                        <Legend />
+                        <Bar dataKey="value" fill="#52c41a" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <Box textAlign="center" mt={6}>
+                      <TrendingUpIcon
+                        sx={{ fontSize: 50, color: "green" }}
+                      />
+                      <Typography mt={1}>
+                        No product data available
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Recent Reports Section */}
+          <Card sx={{ borderRadius: 2, mb: 4 }}>
             <CardContent>
-              <Typography fontWeight={600} mb={10} color= "#5A8DEE">
-                Product Performance
+              <Typography fontWeight={600} mb={2} color="#5A8DEE">
+                Recent Reports
               </Typography>
 
-              <Box textAlign="center"  mt={6}>
-                <TrendingUpIcon sx={{ fontSize: 50, color: "green" }} />
+              {recentReports.map((report) => (
+                <Box
+                  key={report.id}
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  p={2}
+                  border="1px solid grey"
+                  mb={1}
+                  borderRadius={1}
+                >
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <DescriptionIcon />
+                    <Box>
+                      <Typography fontWeight={600}>
+                        {report.title}
+                      </Typography>
+                      <Typography variant="body2">{report.desc}</Typography>
+                    </Box>
+                  </Box>
 
-                <Typography mt={1}>
-                  Product performance chart would be displayed here
-                </Typography>
-                <Typography variant="body2" >
-                  Integration with chart library needed
-                </Typography>
-              </Box>
+                  <Box display="flex" gap={2}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<VisibilityIcon />}
+                      sx={{ borderColor: "#5A8DEE", color: "#5A8DEE" }}
+                      onClick={() => handleViewReport(report)}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DownloadIcon />}
+                      sx={{ borderColor: "#5A8DEE", color: "#5A8DEE" }}
+                      onClick={() => handleDownloadReport(report)}
+                    >
+                      Download
+                    </Button>
+                  </Box>
+                </Box>
+              ))}
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </>
+      )}
 
-      {/* RECENT REPORTS */}
-      <Card
-        sx={{
-
-          borderRadius: 2,
-          mb: 4,
-        }}
+      {/* View Report Dialog */}
+      <Dialog
+        open={viewDialogOpen}
+        onClose={() => setViewDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
       >
-        <CardContent>
-          <Typography fontWeight={600} mb={2} color="#5A8DEE">
-            Recent Reports
-          </Typography>
-          {[
-            {
-              title: "Daily Sales Report",
-              desc: "Sales • Generated on 2024-08-30",
-            },
-            {
-              title: "Product Performance",
-              desc: "Products • Generated on 2024-08-29",
-            },
-            {
-              title: "Customer Analytics",
-              desc: "Customers • Generated on 2024-08-28",
-            },
-            {
-              title: "Inventory Summary",
-              desc: "Inventory • Generated on 2024-08-27",
-            },
-          ].map((r, i) => (
-            <Box key={i} display="flex" justifyContent="space-between" alignItems="center" p={2}  border={ "1px solid grey" }>
-              <Box display="flex" alignItems="center" gap={2}>
-                <DescriptionIcon  />
-                <Box>
-                  <Typography fontWeight={600} >{r.title}</Typography>
-                  <Typography variant="body2">
-                    {r.desc}
-                  </Typography>
-                </Box>
-              </Box>
+        <DialogTitle>
+          {selectedReport ? selectedReport.title : "Report"} Details
+        </DialogTitle>
+        <DialogContent>
+          {viewData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={viewData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey={
+                    selectedReport?.type === "sales"
+                      ? "date"
+                      : "name"
+                  }
+                />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                {selectedReport?.type === "sales" ? (
+                  <Line type="monotone" dataKey="sales" stroke="#6ca0fe" />
+                ) : (
+                  <Line type="monotone" dataKey="value" stroke="#52c41a" />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <Typography>No data available for this report</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+          {selectedReport && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => {
+                handleDownloadReport(selectedReport);
+                setViewDialogOpen(false);
+              }}
+              startIcon={<DownloadIcon />}
+            >
+              Download
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
 
-              <Box display="flex" gap={2}>
-                <Button variant="outlined" size="small" sx={{borderColor: "#5A8DEE"}}>View</Button>
-                <Button variant="outlined" size="small" startIcon={<DownloadIcon />}sx={{borderColor: "#5A8DEE"}}>Download</Button>
-              </Box>
-            </Box>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* GENERATE REPORTS */}
-        <Typography fontWeight={600} mb={2} color="#5A8DEE">
-          Generate New Report
-        </Typography>
-
-        <Stats stats={statsData1} />;
-    
+      {/* Toast Notification */}
+      <Toast show={!!toastMessage} message={toastMessage} type={toastType} />
     </Box>
   );
 };

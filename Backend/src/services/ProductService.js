@@ -3,7 +3,7 @@ import { CommonModel } from "../models/CommonModel.js";
 
 export const ProductService = {
 
-  list: async () => {
+  list: async (storeId) => {
     const query = `
     SELECT 
     p.id,
@@ -26,30 +26,33 @@ export const ProductService = {
   LEFT JOIN suppliers s ON p.supplier_id = s.id
   LEFT JOIN categories cat ON p.category_id = cat.id
   LEFT JOIN stocks st ON st.product_id = p.id
+  WHERE p.store_id = ?
   GROUP BY p.id
   HAVING stock > 0
   ORDER BY p.id DESC;
   `;
-    return await CommonModel.rawQuery(query);
+    return await CommonModel.rawQuery(query, [storeId]);
   },
   
-  add: async (productData) => {
+  add: async (productData, storeId) => {
     const result = await CommonModel.insertData({
       table: "products",
       data: productData,
+      storeId,
     });
     return result;
   },
 
-  getById: async (id) => {
+  getById: async (id, storeId) => {
     const result = await CommonModel.getSingle({
       table: "products",
       conditions: { id },
+      storeId,
     });
     return result;
   },
 
-  update: async (productData) => {
+  update: async (productData, storeId) => {
     if (!productData || typeof productData !== "object") {
       throw new Error("Invalid product data");
     }
@@ -61,20 +64,22 @@ export const ProductService = {
     return await CommonModel.updateData({
       table: "products",
       data: updateFields,
-      conditions: { id }
+      conditions: { id },
+      storeId,
     });
    
   },
 
-  deleteData: async (id) => {
+  deleteData: async (id, storeId) => {
     const result = await CommonModel.deleteData({
       table: "products",
       conditions: { id },
+      storeId,
     });
     return result;
   },
 
-  searchProduct: async (search) => {
+  searchProduct: async (search, storeId) => {
     const query = `
       SELECT 
         p.id,
@@ -97,12 +102,7 @@ export const ProductService = {
     return await CommonModel.rawQuery(query, [search]);
   },
 
-  categoryWiseSubcategoryData:async(categoryId)=>{
-    const result=await CommonModel.getAllData({table:"subcategories", fields: ["*"],conditions:{categoryId :`${categoryId}`}})
-    return result
-  },
-
-  favouriteList: async () => {
+  favouriteList: async (storeId) => {
     const query = `
     SELECT 
     p.id,
@@ -119,12 +119,12 @@ export const ProductService = {
   LEFT JOIN offers o ON o.product_id = p.id
     AND o.status = 'active'
     AND CURDATE() BETWEEN o.start_date AND o.end_date 
-    WHERE p.favourite='yes'
-    ORDER BY p.id DESC`
-    return await CommonModel.rawQuery(query);
+    WHERE p.favourite='yes' AND p.store_id = ?
+    ORDER BY p.id DESC`;
+    return await CommonModel.rawQuery(query, [storeId]);
   },
 
-  looseItemList: async () => {
+  looseItemList: async (storeId) => {
     const query = `
     SELECT 
     p.id,
@@ -140,12 +140,12 @@ export const ProductService = {
   LEFT JOIN offers o ON o.product_id = p.id
     AND o.status = 'active'
     AND CURDATE() BETWEEN o.start_date AND o.end_date 
-    WHERE p.favourite='loose'
-    ORDER BY p.id DESC`
-    return await CommonModel.rawQuery(query);
+    WHERE p.favourite='loose' AND p.store_id = ?
+    ORDER BY p.id DESC`;
+    return await CommonModel.rawQuery(query, [storeId]);
   },
 
-  inventoryList: async () => {
+  inventoryList: async (storeId) => {
     const query = `
       SELECT 
         p.id,
@@ -168,10 +168,11 @@ export const ProductService = {
       LEFT JOIN suppliers s ON p.supplier_id = s.id
       LEFT JOIN categories cat ON p.category_id = cat.id
       LEFT JOIN stocks st ON st.product_id = p.id
+      WHERE p.store_id = ?
       GROUP BY p.id
       ORDER BY p.id DESC
     `;
-    return await CommonModel.rawQuery(query);
+    return await CommonModel.rawQuery(query, [storeId]);
   },
 
 

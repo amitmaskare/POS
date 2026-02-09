@@ -5,7 +5,7 @@ export const columns = [
     label: "Image",
     render: (row) => (
       <img
-        src={row.image}
+        src={row?.image || ""}
         alt="product"
         width={45}
         height={45}

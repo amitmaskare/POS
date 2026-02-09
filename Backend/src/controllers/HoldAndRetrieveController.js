@@ -1,11 +1,14 @@
 import { HoldAndRetrieveService } from "../services/HoldAndRetrieveService.js";
 import {sendResponse} from "../utils/sendResponse.js"
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
+import { CommonModel } from "../models/CommonModel.js";
 
 
 export const HoldAndRetrieveController={
     list:async(req,resp)=>{
         try{
-            const result=await HoldAndRetrieveService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await HoldAndRetrieveService.list(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -20,6 +23,7 @@ export const HoldAndRetrieveController={
     holdsale:async(req,resp)=>{
       
         try {
+            const storeId = getStoreIdFromRequest(req);
             const requiredFields = [
             "customer_mobile","subtotal", "tax", "total","cart"
             ];
@@ -43,7 +47,7 @@ export const HoldAndRetrieveController={
               return sendResponse(resp, false, 400, "cart cannot be empty");
             }
         
-            const hold_code = await HoldAndRetrieveService.generateHoldNumber();
+            const hold_code = await HoldAndRetrieveService.generateHoldNumber(storeId);
            const userId = req.user.userId;
                   const holdSale  = {
                     hold_code: hold_code,
@@ -53,7 +57,7 @@ export const HoldAndRetrieveController={
                      tax,
                      total,
                   };
-            const result = await HoldAndRetrieveService.holdSale(holdSale);
+            const result = await HoldAndRetrieveService.holdSale(holdSale, storeId);
              
             if (!result) {
               return sendResponse(resp, false, 400, "Something went wrong");
@@ -71,7 +75,7 @@ export const HoldAndRetrieveController={
         image: item.image,
         total: item.price * item.qty
               };
-              await HoldAndRetrieveService.holdItem(itemData)
+              await HoldAndRetrieveService.holdItem(itemData, storeId)
         }
             return sendResponse(resp, true, 201, "Hold Sale successful",hold_code);
           } catch (error) {
@@ -86,6 +90,7 @@ export const HoldAndRetrieveController={
 
     retrieveCart: async (req, resp) => {
         try {
+          const storeId = getStoreIdFromRequest(req);
           const { customer_mobile } = req.body;
       
           if (!customer_mobile) {
@@ -93,14 +98,14 @@ export const HoldAndRetrieveController={
           }
       
           // 🔹 Fetch hold sale
-          const sale = await HoldAndRetrieveService.retrieveHoldSale(customer_mobile);
+          const sale = await HoldAndRetrieveService.retrieveHoldSale(customer_mobile, storeId);
          
           if (!sale) {
             return sendResponse(resp, false, 404, "Hold sale not found");
           }
       
           // 🔹 Fetch items
-          const items = await HoldAndRetrieveService.retrieveHoldSaleItem(sale.id);
+          const items = await HoldAndRetrieveService.retrieveHoldSaleItem(sale.id, storeId);
       
           return sendResponse(resp, true, 200, "Hold sale retrieved successfully", {
             sale,
@@ -119,11 +124,20 @@ export const HoldAndRetrieveController={
 
       retrieveHoldItem: async (req, resp) => {
         try {
+          const storeId = getStoreIdFromRequest(req);
           const {id}=req.params
           if(!id)
           return sendResponse(resp, false, 400, "id not found");
-          const items = await HoldAndRetrieveService.retrieveHoldSaleItem(id);
+          
+          // 🔥 FIX: Fetch sale data by hold_sale_id using rawQuery
+          const [sale] = await CommonModel.rawQuery(
+            `SELECT id, customer_mobile, subtotal, tax, total FROM hold_sales WHERE id = ? AND store_id = ?`,
+            [id, storeId]
+          );
+          
+          const items = await HoldAndRetrieveService.retrieveHoldSaleItem(id, storeId);
           return sendResponse(resp, true, 200, "Hold sale retrieved successfully", {
+            sale,  // 🔥 Include sale object with id
             items: items || []
           });
       

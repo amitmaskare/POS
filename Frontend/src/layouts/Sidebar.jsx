@@ -30,7 +30,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { getUser } from "../utils/Auth.js";
 
 const menuItems = [
-  { title: "POS System", icon: <ShoppingCartIcon />, path: "/dashboard", permission: "view-pos" },
+  { title: "POS System", icon: <ShoppingCartIcon />, path: "/dashboard", permission: "view-dashboard" },
   { title: "Products", icon: <CategoryIcon />, path: "/products", permission: "view-product" },
   { title: "Purchases", icon: <ShoppingBagIcon />, path: "/purchases", permission: "view-purchase" },
   { title: "Receiving", icon: <ShoppingBagIcon />, path: "/receiving", permission: "view-receiving" },

@@ -1,5 +1,6 @@
 import { sendResponse } from "../utils/sendResponse.js";
 import { ProductService } from "../services/ProductService.js";
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 import fs from "fs";
 import dotenv from "dotenv";
 import createuploadFile from "../utils/uploadFile.js";
@@ -13,7 +14,8 @@ export const ProductController = {
     
   list: async (req, resp) => {
     try {
-      const result = await ProductService.list();
+      const storeId = getStoreIdFromRequest(req);
+      const result = await ProductService.list(storeId);
     
       if (!result || result.length === 0) {
         return sendResponse(resp, false, 400, "No Data Found");
@@ -55,6 +57,7 @@ export const ProductController = {
         }
       }
    try{
+      const storeId = getStoreIdFromRequest(req);
       const stockFields = [
         "initial_stock"
       ];
@@ -64,9 +67,10 @@ export const ProductController = {
       const imageUrl = req.file ? req.file.filename : null;
       const payLoad={
         ...req.body,
-        image: imageUrl
+        image: imageUrl,
+        store_id: storeId
       }
-      const result = await ProductService.add(payLoad);
+      const result = await ProductService.add(payLoad, storeId);
         if (!result) {
           return sendResponse(resp, false, 400, "Something went wrong");
         }
@@ -94,10 +98,14 @@ export const ProductController = {
   getById: async (req, resp) => {
     try {
       const { id } = req.params;
-      const result = await ProductService.getById(id);
+      const storeId = getStoreIdFromRequest(req);
+      const result = await ProductService.getById(id, storeId);
+      if (!result) {
+        return sendResponse(resp, false, 404, "Product not found");
+      }
       const data = {
         ...result,
-        image: result.image
+        image: result && result.image
           ? `${baseUrl}/public/uploads/product/${result.image}`
           : null,
       };
@@ -110,6 +118,7 @@ export const ProductController = {
   update: async (req, resp) => {
     upload.single("image")(req, resp, async (err) => {
     try{
+      const storeId = getStoreIdFromRequest(req);
       if (err) {
         return sendResponse(resp, false, 400, `Upload Error: ${err.message}`);
       }
@@ -138,7 +147,7 @@ export const ProductController = {
           return sendResponse(resp, false, 400, `${field} is required`);
         }
       }  
-      const existingItem = await ProductService.getById(id);
+      const existingItem = await ProductService.getById(id, storeId);
       if (!existingItem) {
         return sendResponse(resp, false, 404, "Product not found");
       }
@@ -159,9 +168,10 @@ export const ProductController = {
       }  
       const payLoad={
         ...req.body,
-        image:imageUrl
+        image:imageUrl,
+        store_id: storeId
       }
-          const result = await ProductService.update(payLoad);
+          const result = await ProductService.update(payLoad, storeId);
           if (!result || result.affectedRows === 0) {
             return sendResponse(resp, false, 400, "Product update failed");
           }
@@ -180,7 +190,8 @@ export const ProductController = {
   deleteData: async (req, resp) => {
     try {
       const { id } = req.params;
-      const result = await ProductService.deleteData(id);
+      const storeId = getStoreIdFromRequest(req);
+      const result = await ProductService.deleteData(id, storeId);
       return sendResponse(resp, true, 200, "Product item deleted successful");
     } catch (error) {
       return sendResponse(resp, false, 500, `Error : ${error.message}`);
@@ -256,7 +267,7 @@ export const ProductController = {
        }
        const {barcode,product_name,selling_price}=req.body
          const result = await ProductService.add(req.body);
-         const getImage=await CommonModel.getSingle({table:"products",fields:['id,image'],conditions:{id:result}})
+         const getImage=await CommonModel.getSingle({table:"products",fields:['id','image'],conditions:{id:result}})
          if (!result) {
            return sendResponse(resp, false, 400, "Something went wrong");
          }
@@ -268,7 +279,7 @@ export const ProductController = {
            price:selling_price,
            qty:1,
            tax:0,
-           image: getImage.image
+           image: (getImage && getImage.image)
            ? `${baseUrl}/public/uploads/product/${getImage.image}`
            : null,
            //min_qty:item.min_qty,
@@ -288,7 +299,8 @@ export const ProductController = {
 
    favouriteList: async (req, resp) => {
     try {
-      const result = await ProductService.favouriteList();
+      const storeId = getStoreIdFromRequest(req);
+      const result = await ProductService.favouriteList(storeId);
     
       if (!result || result.length === 0) {
         return sendResponse(resp, false, 400, "No Data Found");
@@ -313,7 +325,8 @@ export const ProductController = {
 
   looseItemList: async (req, resp) => {
     try {
-      const result = await ProductService.looseItemList();
+      const storeId = getStoreIdFromRequest(req);
+      const result = await ProductService.looseItemList(storeId);
     
       if (!result || result.length === 0) {
         return sendResponse(resp, false, 400, "No Data Found");
@@ -339,7 +352,8 @@ export const ProductController = {
 
   inventoryList: async (req, resp) => {
     try {
-      const result = await ProductService.inventoryList();
+      const storeId = getStoreIdFromRequest(req);
+      const result = await ProductService.inventoryList(storeId);
     
       if (!result || result.length === 0) {
         return sendResponse(resp, false, 400, "No Data Found");
@@ -358,6 +372,7 @@ export const ProductController = {
 
   addStock:async(req,resp)=>{
     try{
+      const storeId = getStoreIdFromRequest(req);
       const{stock,product_id}=req.body
       if(!product_id)
       {
@@ -374,7 +389,8 @@ export const ProductController = {
             stock: stock,
             type:'credit',
             note:'Add Product',
-          }
+          },
+          storeId
         });
         return sendResponse(resp, true, 201, "Stock added successful");
       } catch (error) {
@@ -382,7 +398,7 @@ export const ProductController = {
           resp,
           false,
           500,
-          error.message || "Something wennt Wrong"
+          error.message || "Something went wrong"
         );
       }
   }

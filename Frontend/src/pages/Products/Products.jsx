@@ -14,6 +14,8 @@ import IconButton from "@mui/material/IconButton";
 import { statsData } from "./StatsData";
 import { columns } from "./columns";
 import {productList,inventoryList,getById,deleteProduct,addStock} from "../../services/productService"
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/Toast/Toast";
 import { getUser } from "../../utils/Auth.js";
 
 const Products = () => {
@@ -21,6 +23,7 @@ const Products = () => {
   const[data,setData]=useState([])
   const[success,setSuccess]=useState('')
   const[error,setError]=useState('')
+  const { showToast, toastMessage, toastType, showToastNotification } = useToast();
   const[loading,setLoading]=useState(false)
   const [editData, setEditData] = useState(null);
   const [openStock, setOpenStock] = useState(false);
@@ -39,14 +42,13 @@ fetchProductList()
       const result=await inventoryList()
       if(result.status===true)
       {
-        setSuccess(result.message)
         setData(result.data)
       }else{
-        setError(result.message)
+        showToastNotification(result.message, "error")
       }
     }catch(error)
     {
-        setError(error.response?.data?.message || error.message);
+        showToastNotification(error.response?.data?.message || error.message, "error");
     }
   }
   const rows = data
@@ -62,15 +64,15 @@ fetchProductList()
       const result=await deleteProduct(id)
       if(result.status===true)
       {
-        setSuccess(result.message)
+        showToastNotification(result.message, "success")
         fetchProductList()
       }else{
-        setError(result.message)
+        showToastNotification(result.message, "error")
       }
     }
     }catch(error)
     {
-      setError(error.response?.data?.message || error.message)
+      showToastNotification(error.response?.data?.message || error.message, "error")
     }
   };
 
@@ -83,16 +85,16 @@ fetchProductList()
                       
                       if(result.status===true)
                       {
-                        setSuccess(result.message)
+                        showToastNotification(result.message, "info")
                       setEditData(result.data);
                        setOpen(true);
                       }else{
-                        setError(result.message)
+                        showToastNotification(result.message, "error")
                       }
                     }
                   catch(error)
                     {
-                      setError(error.response?.data?.message || error.message)
+                      showToastNotification(error.response?.data?.message || error.message, "error")
                     }
               };
       const handleStock =async(id) => {
@@ -115,17 +117,17 @@ const SaveStock=async()=>{
                       const result=await addStock(data) 
                       if(result.status===true)
                       {
-                        setSuccess(result.message)
+                        showToastNotification(result.message, "success")
                          setOpenStock(false);
                          setProductId("")
                           setStock("")
                       }else{
-                        setError(result.message)
+                        showToastNotification(result.message, "error")
                       }
                     }
                   catch(error)
                     {
-                      setError(error.response?.data?.message || error.message)
+                      showToastNotification(error.response?.data?.message || error.message, "error")
                     }
 }
   return (
@@ -155,8 +157,7 @@ const SaveStock=async()=>{
       <Box sx={{ width: "100%", px: 3, py: 2 }}>
         <Stats stats={statsData} />
       </Box>
-        {success && <Typography color="green" className="text-center">{success}</Typography>}
-        {error && <Typography color="red">{error}</Typography>}
+        
       <TableLayout columns={columns} rows={rows}  extra={{ stock:handleStock,deleteItem: handleDelete, edit: handleEdit }} actionButtons={
       [
         {
@@ -204,6 +205,7 @@ const SaveStock=async()=>{
         </Button>
       </DialogContent>
     </Dialog>
+    <Toast show={showToast} message={toastMessage} type={toastType} />
     </>
   );
 };

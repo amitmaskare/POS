@@ -14,6 +14,7 @@ import { statsData } from "./StatsData";
 import { statsData1 } from "./StatsData1";
 import TableLayout from "../../components/MainContentComponents/Table";
 import NewPurchaseOrderModal from "./Modal";
+import Toast from "../../components/Toast/Toast";
 import { FaRegSquarePlus } from "react-icons/fa6";
 import { rows } from "./rows";
 import { columns } from "./columns";
@@ -130,7 +131,8 @@ export default function Purchases() {
 
       </Paper>
       <NewPurchaseOrderModal open={openModal} onClose={() => setOpenModal(false)} onSaved={fetchPurchaseList} editData={editData}/>
-
+      <Toast show={!!success} message={success} type="success" />
+      <Toast show={!!error} message={error} type="error" />
     </Box>
   );
 }

@@ -4,7 +4,7 @@ import pool from "../config.js"
 
 export const ReturnService={
 
-    scanProduct:async(data)=>{
+    scanProduct:async(data, storeId)=>{
         const{barcode,invoice_no}=data
       const query = `
       SELECT 
@@ -19,13 +19,13 @@ export const ReturnService={
     FROM sales s
     JOIN sales_items si ON si.sale_id = s.id
     JOIN products p ON p.id = si.product_id
-    WHERE p.barcode = ? AND s.invoice_no = ? LIMIT 1`;
-    return await CommonModel.rawQuery(query, [barcode,invoice_no]);   
+    WHERE p.barcode = ? AND s.invoice_no = ? AND s.store_id = ? LIMIT 1`;
+    return await CommonModel.rawQuery(query, [barcode,invoice_no, storeId]);   
     },
 
    
-      createSale:async(data)=>{
-        const result=await CommonModel.insertData({table:"sales",data:data})
+      createSale:async(data, storeId)=>{
+        const result=await CommonModel.insertData({table:"sales",data:data, storeId})
         return result
     },
 
@@ -36,17 +36,17 @@ export const ReturnService={
         });
       },
 
-      getSaleById :async(id)=>{
-        const result=await CommonModel.getSingle({table:"sales", conditions: { id }})
+      getSaleById :async(id, storeId)=>{
+        const result=await CommonModel.getSingle({table:"sales", conditions: { id }, storeId})
         return result
       },
 
-      getSale :async(invoice_no)=>{
-        const result=await CommonModel.getSingle({table:"sales", conditions: { invoice_no:invoice_no }})
+      getSale :async(invoice_no, storeId)=>{
+        const result=await CommonModel.getSingle({table:"sales", conditions: { invoice_no:invoice_no }, storeId})
         return result
       },
 
-      list: async () => {
+      list: async (storeId) => {
         const query = `
           SELECT 
             r.id,
@@ -60,15 +60,16 @@ export const ReturnService={
             ON s.id = r.sale_id
           LEFT JOIN return_items AS ri 
             ON ri.return_id = r.id
+          WHERE r.store_id = ?
           GROUP BY 
             r.id, s.invoice_no, r.created_at, r.refund_amount, r.return_type
           ORDER BY r.id DESC
         `;
         
-        return await CommonModel.rawQuery(query);    
+        return await CommonModel.rawQuery(query, [storeId]);    
       },
 
-      getReturnById :async(id)=>{
+      getReturnById :async(id, storeId)=>{
         const query = `
         SELECT 
         r.id,
@@ -76,10 +77,11 @@ export const ReturnService={
       FROM returns AS r
       LEFT JOIN sales AS s 
         ON s.id = r.sale_id
+      WHERE r.store_id = ?
       ORDER BY r.id DESC
       `;
-      return await CommonModel.rawQuery(query, [id]);
-       // const result=await CommonModel.getSingle({table:"returns", conditions: { id }})
+      return await CommonModel.rawQuery(query, [storeId]);
+       // const result=await CommonModel.getSingle({table:"returns", conditions: { id }, storeId})
        // return result
       },
       

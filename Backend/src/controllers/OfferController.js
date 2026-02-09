@@ -1,12 +1,14 @@
 import { OfferService } from "../services/OfferService.js";
 import {sendResponse} from "../utils/sendResponse.js"
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 
 export const OfferController={
 
     list:async(req,resp)=>{
         try{
-            const result=await OfferService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await OfferService.list(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -19,6 +21,7 @@ export const OfferController={
     },
     add:async(req,resp)=>{
         try{
+           const storeId = getStoreIdFromRequest(req);
            const requiredFields = [
         "offer_name",
         "product_id",
@@ -36,7 +39,7 @@ export const OfferController={
         }
       }
 
-            const result= await OfferService.add(req.body)
+            const result= await OfferService.add(req.body, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
@@ -48,13 +51,13 @@ export const OfferController={
         }
     },
     getById:async(req,resp)=>{
-        try{
+        try{storeId = getStoreIdFromRequest(req);
             const {id}=req.params
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
             }
-            const result=await OfferService.getById(id)
+            const result=await OfferService.getById(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -67,6 +70,7 @@ export const OfferController={
     },
     update:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
               const requiredFields = [
                   "id",
                 "offer_name",
@@ -84,7 +88,7 @@ export const OfferController={
           return sendResponse(resp, false, 400, `${field} is required`);
         }
       }
-                        const result= await OfferService.update(req.body)
+                        const result= await OfferService.update(req.body, storeId)
                         if(!result)
                         {
                             return sendResponse(resp,false,400,"Something went wrong")
@@ -98,8 +102,9 @@ export const OfferController={
     },
     deleteData:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
-            const result=await OfferService.deleteData(id)
+            const result=await OfferService.deleteData(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"ID not found")

@@ -29,18 +29,22 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
     setOrderBy(columnId);
   };
   /** Filter rows based on search */
-  const filteredRows = rows.filter((row) =>
-    Object.values(row).some((value) =>
+  const filteredRows = rows.filter((row) => {
+    if (!row || typeof row !== 'object') return false;
+    
+    return Object.values(row).some((value) =>
       String(
         typeof value === "object" ? JSON.stringify(value) : value
       )
         .toLowerCase()
         .includes(search.toLowerCase())
-    )
-  );
+    );
+  });
 
   /** Sort Rows */
   const sortedRows = [...filteredRows].sort((a, b) => {
+    if (!a || !b) return 0;
+    
     const A = a[orderBy];
     const B = b[orderBy];
 
@@ -48,8 +52,8 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
     const valB = typeof B === "object" ? JSON.stringify(B) : B;
 
     return order === "asc"
-      ? String(valA).localeCompare(String(valB))
-      : String(valB).localeCompare(String(valA));
+      ? String(valA || "").localeCompare(String(valB || ""))
+      : String(valB || "").localeCompare(String(valA || ""));
   });
 
   /** Pagination Logic */
@@ -132,29 +136,22 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
           </TableHead>
 
           <TableBody>
-            {paginatedData.map((row, index) => (
+            {paginatedData && paginatedData.length > 0 ? paginatedData.map((row, index) => {
+              if (!row || typeof row !== 'object') return null; // Skip invalid rows
+              
+              return (
               <TableRow hover key={index}>
                 {columns.map((col) => (
-//                   <TableCell key={col.id}>
-                  
-//                     {col.render ? col.render(row[col.id], row) : row[col.id]
-// }
-                    
-
-//                   </TableCell>
-<TableCell key={col.id}>
-                     {col.render ? col.render(row, extra) : row[col.id]}
+                  <TableCell key={col.id}>
+                    {col.render ? col.render(row, extra) : (row[col.id] ?? "-")}
                   </TableCell>
-              
                 ))}
               </TableRow>
-            ))}
-
-            {/* Show empty text when no results */}
-            {paginatedData.length === 0 && (
+            );
+            }) : (
               <TableRow>
                 <TableCell colSpan={columns.length} align="center">
-                  <Typography mt={2}>No results found</Typography>
+                  <Typography mt={2}>No data available</Typography>
                 </TableCell>
               </TableRow>
             )}

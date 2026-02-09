@@ -27,17 +27,22 @@ import { Box,
   DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
 import { checkout_sale,verifyPayment } from "../../services/saleService";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/Toast/Toast";
 
 export default function Cart({ cart, setCart }) {
   const [active, setActive] = useState(""); 
   const [editingPriceId, setEditingPriceId] = useState(null);
   const [mobile, setMobile] = useState("");
-const [openHoldModal, setOpenHoldModal] = useState(false);
-const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
-const [cashOpen, setCashOpen] = useState(false);
-const [receivedAmount, setReceivedAmount] = useState("");
-const [returnAmount, setReturnAmount] = useState(0);
-const [holdItem, setHoldItem] = useState([]);
+  const [openHoldModal, setOpenHoldModal] = useState(false);
+  const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
+  const [cashOpen, setCashOpen] = useState(false);
+  const [receivedAmount, setReceivedAmount] = useState("");
+  const [returnAmount, setReturnAmount] = useState(0);
+  const [holdItem, setHoldItem] = useState([]);
+  
+  // Use custom toast hook
+  const { showToast, toastMessage, toastType, showToastNotification } = useToast();
   // Handle Quantity
  const updateQty = (id, action) => {
   setCart((prev) =>
@@ -90,7 +95,7 @@ const [holdItem, setHoldItem] = useState([]);
      try{
 
   if (mobile.length !== 10) {
-    alert("Enter valid mobile number");
+    showToastNotification("Enter valid mobile number", "warning");
     return;
   }
 
@@ -99,7 +104,8 @@ const payload={customer_mobile: mobile}
   const result= await retrieveHoldSale(payload);
   if(result.status===true)
   {
-    const { items } = result.data;
+    const { items, sale } = result.data;
+    const saleId = sale?.id || null;
       setCart(
     items.map(item => ({
       id: item.product_id || item.id,
@@ -109,15 +115,15 @@ const payload={customer_mobile: mobile}
       price: item.price,
       image: item.image,
       tax:item.tax,
+      sale_id: saleId
     }))
      );
   setOpenRetrieveModal(false);
   setMobile("");
   }
-  }catch(error)
-    {
-      console.log(error.message)
-    } 
+  } catch(error) {
+    showToastNotification(error?.message || "Failed to retrieve sale", "error");
+  } 
   };
 
   // Payment Button Style
@@ -151,12 +157,12 @@ const total = subtotal + tax;
     try{
 
   if (mobile.length !== 10) {
-    alert("Enter valid mobile number");
+    showToastNotification("Enter valid mobile number", "warning");
     return;
   }
 
   if (cart.length === 0) {
-    alert("Cart is empty");
+    showToastNotification("Cart is empty", "warning");
     return;
   }
 
@@ -176,22 +182,21 @@ const total = subtotal + tax;
   };
 
   const result= await holdSale(payload);
-  if(result.status===true)
-  {
-     setCart([]);        // clear cart
-  setMobile("");      // reset
-  setOpenHoldModal(false);
+  if(result.status===true) {
+    setCart([]);
+    setMobile("");
+    setOpenHoldModal(false);
+    showToastNotification("Sale held successfully", "success");
   }
-  }catch(error)
-    {
-      console.log(error.message)
-    }
+  } catch(error) {
+    showToastNotification(error?.message || "Failed to hold sale", "error");
+  }
  
 };
 
 const buildExchangeInvoice = (apiResult) => {
   return {
-    shop_name: "My Super Store",
+    shop_name: apiResult.shop_name || "Dmart",
     invoice_no: apiResult.invoice_no,
     date: new Date().toLocaleString(),
     items: cart.map(item => ({
@@ -207,7 +212,9 @@ const buildExchangeInvoice = (apiResult) => {
     subtotal,
     tax,
     total,
-    difference: apiResult.difference
+    totalTax: totalTax,
+    difference: apiResult.difference,
+    message: apiResult.message || `${apiResult.shop_name || "Dmart"} - Tax Invoice`
   };
 };
 let printWindow=null;
@@ -224,10 +231,14 @@ const printInvoice = (invoice) => {
         <style>
           body { font-family: monospace; font-size: 12px; }
           h3, h4 { text-align: center; margin: 4px 0; }
-          table { width: 100%; border-collapse: collapse; }
-          td { padding: 4px 0; }
+          .shop { text-align: center; font-weight: bold; font-size: 16px; }
+          .subtitle { text-align: center; font-size: 12px; color: #333; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th, td { padding: 6px 4px; border-bottom: 1px dashed #ddd; }
+          th { text-align: left; }
           .right { text-align: right; }
           .line { border-top: 1px dashed #000; margin: 8px 0; }
+          .totals td { padding: 4px 0; }
         </style>
 
         <!-- JsBarcode CDN -->
@@ -235,10 +246,9 @@ const printInvoice = (invoice) => {
       </head>
 
       <body>
-        <h3>${invoice.shop_name}</h3>
-        <h4>Exchange Invoice</h4>
-
-        <p>
+        <div class="shop">${invoice.shop_name}</div>
+        <div class="subtitle">TAX INVOICE</div>
+        <p style="text-align:center; margin:6px 0 10px 0;">
           Invoice: ${invoice.invoice_no}<br/>
           <svg id="barcode"></svg><br/>
           Date: ${invoice.date}
@@ -247,48 +257,54 @@ const printInvoice = (invoice) => {
         <div class="line"></div>
 
         <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="right">Qty</th>
+              <th class="right">Price</th>
+              <th class="right">Tax</th>
+              <th class="right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
           ${invoice.items
-            .map(
-              i => `
+            .map(i => {
+              const itemTotal = (i.price || 0) * (i.qty || 0);
+              const itemTax = (i.tax || 0) ? (itemTotal * (i.tax / 100)) : 0;
+              return `
                 <tr>
-                  <td>${i.name} (${i.qty})</td>
-                  <td class="right">${i.total.toFixed(2)}</td>
+                  <td>${i.name}</td>
+                  <td class="right">${i.qty}</td>
+                  <td class="right">${Number(i.price).toFixed(2)}</td>
+                  <td class="right">${itemTax.toFixed(2)}</td>
+                  <td class="right">${(itemTotal + itemTax).toFixed(2)}</td>
                 </tr>
               `
-            )
+            })
             .join("")}
+          </tbody>
         </table>
 
         <div class="line"></div>
 
-        <table>
+        <table class="totals" style="width:100%;">
           <tr>
             <td>Subtotal</td>
-            <td class="right">${invoice.subtotal.toFixed(2)}</td>
+            <td class="right">${Number(invoice.subtotal).toFixed(2)}</td>
           </tr>
           <tr>
-            <td>Tax</td>
-            <td class="right">${invoice.tax.toFixed(2)}</td>
+            <td>Total Tax</td>
+            <td class="right">${Number(invoice.tax).toFixed(2)}</td>
           </tr>
           <tr>
-            <td><b>Total</b></td>
-            <td class="right"><b>${invoice.total.toFixed(2)}</b></td>
+            <td><b>Grand Total</b></td>
+            <td class="right"><b>${Number(invoice.total).toFixed(2)}</b></td>
           </tr>
         </table>
 
         <div class="line"></div>
 
-        <p style="text-align:center;">
-          ${
-            invoice.difference > 0
-              ? `Customer Pays ₹${invoice.difference}`
-              : invoice.difference < 0
-              ? `Refund ₹${Math.abs(invoice.difference)}`
-              : "Even Exchange"
-          }
-        </p>
-
-        <p style="text-align:center;">Thank You!</p>
+        <p style="text-align:center; margin:8px 0;">${invoice.message || `Thank you for shopping at ${invoice.shop_name}`}</p>
 
         <script>
           window.onload = function () {
@@ -331,19 +347,17 @@ const checkoutSale = async () => {
   };
 
   const result= await checkout_sale(payload)
-  if(result.status===true)
-  {
-  //alert("Sale completed");
-  const invoice = buildExchangeInvoice(result.data);
+  if(result.status===true) {
+    showToastNotification("Sale completed successfully", "success");
+    const invoice = buildExchangeInvoice(result.data);
     printInvoice(invoice);
-     setCashOpen(false);
-      setCart([]);
-      setReceivedAmount("");
-      setReturnAmount(0);
+    setCashOpen(false);
+    setCart([]);
+    setReceivedAmount("");
+    setReturnAmount(0);
   }
-}catch(error)
-{
-  console.log(error.message)
+} catch(error) {
+  showToastNotification(error?.message || "Sale failed", "error");
 }
 };
 
@@ -361,125 +375,179 @@ const holdlist=async()=>{
     else{
        setHoldItem([])
     }
-  }catch(error)
-  {
-    console.log(error.message)
+  } catch(error) {
+    showToastNotification(error?.message || "Failed to load holds", "error");
   }
 }
 
 const retrieveItem=async(id)=>{
    try{
   const result= await retrieveHoldItem(id);
-  if(result.status===true)
-  {
-    const { items } = result.data;
-      setCart(
-     items.map(item => ({
-      id: item.product_id || item.id,
-      product_id: item.product_id || item.id,
-      product_name: item.product_name,
-      qty: item.qty,
-      price: item.price,
-      image: item.image,
-      tax: item.tax,
-    }))
-     );
-  setOpenRetrieveModal(false);
-  setMobile("");
+  if(result.status===true) {
+    const { items, sale } = result.data;
+    const saleId = sale?.id || id;
+    setCart(
+      items.map(item => ({
+        id: item.product_id || item.id,
+        product_id: item.product_id || item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        price: item.price,
+        image: item.image,
+        tax: item.tax,
+        sale_id: saleId,
+      }))
+    );
+    setOpenRetrieveModal(false);
+    setMobile("");
+    showToastNotification("Sale retrieved successfully", "success");
+  } else {
+    showToastNotification("Hold Item Not Found", "warning");
+    setOpenRetrieveModal(false);
   }
-  else{
-    alert("Hold Item Not Found")
-  setOpenRetrieveModal(false);
+  } catch(error) {
+    showToastNotification(error?.message || "Failed to retrieve item", "error");
   }
-  }catch(error)
-    {
-      console.log(error.message)
-    }
 }
 
  const loadRazorpay = () => {
   return new Promise((resolve) => {
+    // If Razorpay already loaded
+    if (window.Razorpay) {
+      console.log("✅ Razorpay already loaded");
+      resolve(true);
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+    script.async = true;
+    
+    script.onload = () => {
+      console.log("✅ Razorpay SDK loaded");
+      resolve(true);
+    };
+    
+    script.onerror = () => {
+      console.error("❌ Failed to load Razorpay");
+      resolve(false);
+    };
+    
     document.body.appendChild(script);
   });
 };
 
 const handleRazorpay = async () => {
-  const res = await loadRazorpay();
-  if (!res) {
-    alert("Razorpay SDK failed to load");
-    return;
-  }
+  try {
+    console.log("🔵 Starting Razorpay...");
+    
+    // Load SDK
+    const loaded = await loadRazorpay();
+    if (!loaded || !window.Razorpay) {
+      showToastNotification("Failed to load Razorpay SDK", "error");
+      return;
+    }
+    console.log("✅ SDK ready");
 
-  // Step 1: Create Sale + Razorpay Order (Backend)
-  const payload = {
-    payment_method: "credit",
-    subtotal,
-    tax,
-    total,
-    cart: cart.map(item => ({
-      product_id: item.id,
-      product_name: item.product_name,
-      qty: item.qty,
-      price: item.price,
-      tax: item.tax,
-      total: item.price * item.qty,
-      image: item.image,
-    })),
-  };
+    // Build payload
+    const payload = {
+      payment_method: "credit",
+      subtotal,
+      tax,
+      total,
+      cart: cart.map(item => ({
+        product_id: item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        price: item.price,
+        tax: item.tax,
+        total: item.price * item.qty,
+        image: item.image,
+      })),
+    };
 
-  const result = await checkout_sale(payload);
-  if (!result.status) return;
+    console.log("📤 Calling checkout_sale...");
+    const result = await checkout_sale(payload);
+    
+    if (!result?.status) {
+      showToastNotification(result?.message || "Payment initialization failed", "error");
+      return;
+    }
 
-  // Step 2: Razorpay Options
-  const options = {
-    key: "rzp_test_RvRduZ5UNffoaN",
-    amount: result.data.data.amount * 100,
-    currency: "INR",
-    order_id: result.data.data.razorpayOrderId,
-    name: "My POS",
+    console.log("✅ API Success:", result);
 
-    handler: async function (response) {
-      const invoiceWindow = window.open("", "_blank");
-      try {
-        // Step 3: Verify Payment
-        const verifyPayload = {
-          razorpay_order_id: response.razorpay_order_id,
-          razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_signature: response.razorpay_signature,
-          saleId: result.data.data.saleId,
-          amount: result.data.data.amount,
-        };
+    const payloadData = result.data?.data || result.data || {};
+    const amount = payloadData.amount || payloadData.total_amount || 0;
+    const razorpayOrderId = payloadData.razorpayOrderId || payloadData.razorpay_order_id || payloadData.order_id;
+    const saleId = payloadData.saleId || payloadData.sale_id;
 
-        const verifyRes = await verifyPayment(verifyPayload);
-        // ✅ Step 4: Print ONLY if verified
-        if (verifyRes.status === true) {
-          const invoice = buildExchangeInvoice(result.data.saleData);
-          printInvoice(invoice);
+    if (!razorpayOrderId || !amount || amount <= 0) {
+      console.error("❌ Invalid data:", { razorpayOrderId, amount });
+      showToastNotification("Invalid payment data", "error");
+      return;
+    }
 
-          // Reset POS
-          setCashOpen(false);
-          setCart([]);
-        } else {
-           invoiceWindow.close();
-          alert("Payment verification failed");
+    const amountInPaise = Math.round(amount * 100);
+    console.log("💳 Opening Razorpay - Amount:", amountInPaise);
+
+    // Razorpay Options
+    const options = {
+      key: "rzp_test_RvRduZ5UNffoaN",
+      amount: amountInPaise,
+      currency: "INR",
+      order_id: razorpayOrderId,
+      name: "POS System",
+      description: `Payment - Order ${razorpayOrderId}`,
+
+      prefill: {
+        contact: "9999999999",
+      },
+
+      handler: async function (response) {
+        console.log("✅ Payment success:", response);
+        try {
+          // Verify Payment
+          const verifyPayload = {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            saleId: saleId,
+            amount: amount,
+          };
+
+          const verifyRes = await verifyPayment(verifyPayload);
+          
+          if (verifyRes.status === true) {
+            console.log("✅ Verified");
+            showToastNotification("Payment verified successfully", "success");
+            const invoice = buildExchangeInvoice(result.data.saleData || result.data);
+            printInvoice(invoice);
+            setCashOpen(false);
+            setCart([]);
+          } else {
+            showToastNotification(verifyRes.message || "Payment verification failed", "error");
+          }
+        } catch (err) {
+          console.error('Verification error:', err);
+          showToastNotification(err?.message || "Payment verification error", "error");
         }
-      } catch (err) {
-        console.error("Verification Error", err);
-        alert("Payment verification error");
-      }
-    },
+      },
 
-    theme: {
-      color: "#2e86de",
-    },
-  };
+      theme: {
+        color: "#2e86de",
+      },
+    };
 
-  const rzp = new window.Razorpay(options);
-  rzp.open();
+    console.log("🎯 Creating Razorpay instance...");
+    const rzp = new window.Razorpay(options);
+    console.log("📞 Opening modal...");
+    rzp.open();
+    console.log("✅ Modal opened");
+
+  } catch (err) {
+    console.error('Error:', err);
+    showToastNotification(err?.message || "Payment failed", "error");
+  }
 };
 
   return (
@@ -505,7 +573,7 @@ const handleRazorpay = async () => {
             }}
           >
            <img
-             src={item.image}
+             src={item?.image || ""}
               alt="product"
               className="rounded-3"
               style={{ width: 55, height: 55, objectFit: "cover" }}
@@ -768,6 +836,9 @@ const handleRazorpay = async () => {
     </Button>
   </DialogActions>
 </Dialog>
+
+    {/* Toast Notification */}
+    <Toast show={showToast} message={toastMessage} type={toastType} />
 
     </>
   );

@@ -24,36 +24,42 @@ import { columns } from "./columns";
 import { rows } from "./rows";
 import { searchProduct,add_product,favouriteList,looseItemList } from "../../services/productService";
 import { useOutletContext } from "react-router-dom";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/Toast/Toast";
 
 export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState("All");
-  const filters = ["Favourite","Loose Items"];
-   const { addToCart } = useOutletContext();
-   const[data,setData]=useState([])
-      const[success,setSuccess]=useState('')
-      const[error,setError]=useState('')
-      const[loading,setLoading]=useState(false)
-       const [confirmAdd, setConfirmAdd] = useState(false);
-const [openAddModal, setOpenAddModal] = useState(false);
-const [barcode, setBarcode] = useState("");
-const [product_name, setProduct_name] = useState("");
-const [selling_price, setSelling_price] = useState("");
-const [favourites, setFavourites] = useState([]); 
-const [looseItems, setLooseItems] = useState([]); 
+  const filters = ["All", "Favourite","Loose Items"];
+  const { addToCart } = useOutletContext();
+  const[data,setData]=useState([])
+  const[loading,setLoading]=useState(false)
+  const [confirmAdd, setConfirmAdd] = useState(false);
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [barcode, setBarcode] = useState("");
+  const [product_name, setProduct_name] = useState("");
+  const [selling_price, setSelling_price] = useState("");
+  const [favourites, setFavourites] = useState([]); 
+  const [looseItems, setLooseItems] = useState([]);
+  
+  // Use custom toast hook for notifications
+  const { showToast, toastMessage, toastType, showToastNotification } = useToast(); 
 
 const BARCODE_LENGTH = 13;
 const handleBarcodeChange = async (value) => {
-  setBarcode(value);
-   if (!value || value.length !== BARCODE_LENGTH) {
-    setConfirmAdd(false);
+  const trimmedValue = value.trim();
+  setBarcode(trimmedValue);
+  
+  if (!trimmedValue || trimmedValue.length !== BARCODE_LENGTH) {
     return;
   }
+  
   try {
-    const payload={
-      search: value
-    }
+    const payload = {
+      search: trimmedValue
+    };
     const result = await searchProduct(payload);
     if (result.status === true) {
+      showToastNotification("Product added to cart", "success");
       addToCart(result.data);
       setBarcode("");  
       setConfirmAdd(false); 
@@ -62,7 +68,7 @@ const handleBarcodeChange = async (value) => {
       setConfirmAdd(true); 
     }
   } catch (error) {
-    console.log(error.response?.data?.message || error.message);
+    showToastNotification(error.response?.data?.message || "Failed to search product", "error");
     setConfirmAdd(true);
   }
 };
@@ -72,23 +78,35 @@ const handleSelectItem =(row)=>{
   addToCart(row);
 }
 const addProduct=async()=>{
-  setError("")
-  setSuccess("")
-   try{
-    const data={barcode,product_name,selling_price}
+  // Validation
+  if (!barcode.trim()) {
+    showToastNotification("Barcode is required", "warning");
+    return;
+  }
+  if (!product_name.trim()) {
+    showToastNotification("Product name is required", "warning");
+    return;
+  }
+  if (!selling_price || Number(selling_price) <= 0) {
+    showToastNotification("Valid selling price is required", "warning");
+    return;
+  }
+  
+  try{
+    const data={barcode: barcode.trim(), product_name: product_name.trim(), selling_price: Number(selling_price)}
     const result=await add_product(data)
    if (result.status === true) {
-      setSuccess("Product added successfully");
+      showToastNotification("Product added successfully", "success");
        addToCart(result.data);
       setBarcode("");
       setProduct_name("");
       setSelling_price("");
       setOpenAddModal(false);
     } else {
-      setError(result?.message || "Failed to add product");
+      showToastNotification(result?.message || "Failed to add product", "error");
     }
   } catch (error) {
-    setError("Something went wrong");
+    showToastNotification(error.response?.data?.message || "Something went wrong", "error");
   }
 }
  useEffect(()=>{
@@ -97,45 +115,45 @@ fetchLooseItemList()
 },[])
 
 const getFavouriteList=async()=>{
-setSuccess(null)
-    setError(null)
     try{
       const result=await favouriteList()
       if(result.status===true)
       {
-        setSuccess(result.message)
+        showToastNotification(result.message, "success");
         setFavourites(result.data)
       }else{
-        setError(result.message)
+        showToastNotification(result.message, "error");
       }
     }catch(error)
     {
-        setError(error.response?.data?.message || error.message);
+        showToastNotification(error.response?.data?.message || error.message, "error");
     }
 }
 
 const fetchLooseItemList=async()=>{
-setSuccess(null)
-    setError(null)
     try{
       const result=await looseItemList()
       if(result.status===true)
       {
-        setSuccess(result.message)
+        showToastNotification(result.message, "success");
         setLooseItems(result.data)
       }else{
-        setError(result.message)
+        showToastNotification(result.message, "error");
       }
     }catch(error)
     {
-        setError(error.response?.data?.message || error.message);
+        showToastNotification(error.response?.data?.message || error.message, "error");
     }
 }
 
-const filteredProducts = () => {
-  if (activeFilter === "All") return true;
-  if (activeFilter === "Favourite") return true;
-}
+const getFilteredProducts = () => {
+  if (activeFilter === "All") {
+    return [...favourites, ...looseItems];
+  }
+  if (activeFilter === "Favourite") return favourites;
+  if (activeFilter === "Loose Items") return looseItems;
+  return [];
+};
   return (
     <>
       <main
@@ -173,51 +191,33 @@ const filteredProducts = () => {
           ))}
       
         </div>
-          {activeFilter === "Favourite" && (
-             <div className="btn-group d-flex w-100">
-         <TableLayout columns={columns} rows={favourites}  extra={{ selectItem: handleSelectItem}} actionButtons={
-      [
-        {
-          label: "Filter",
-          variant: "outlined",
-        },
-        {
-          label: "Export",
-          variant: "outlined",
-
-        },
-        {
-          label: "Import",
-          variant: "outlined",
-
-        },
-      ]
-      }/>
-      </div>
-          )}
-
-           {activeFilter === "Loose Items" && (
-             <div className="btn-group d-flex w-100">
-         <TableLayout columns={columns} rows={looseItems}  extra={{ selectItem: handleSelectItem}} actionButtons={
-      [
-        {
-          label: "Filter",
-          variant: "outlined",
-        },
-        {
-          label: "Export",
-          variant: "outlined",
-
-        },
-        {
-          label: "Import",
-          variant: "outlined",
-
-        },
-      ]
-      }/>
-      </div>
-          )}
+        
+        {/* Toast Notification */}
+        <Toast show={showToast} message={toastMessage} type={toastType} />
+        
+        {/* Products Table */}
+        {getFilteredProducts().length > 0 ? (
+          <div className="btn-group d-flex w-100">
+            <TableLayout columns={columns} rows={getFilteredProducts()}  extra={{ selectItem: handleSelectItem}} actionButtons={
+              [
+                {
+                  label: "Filter",
+                  variant: "outlined",
+                },
+                {
+                  label: "Export",
+                  variant: "outlined",
+                },
+                {
+                  label: "Import",
+                  variant: "outlined",
+                },
+              ]
+            }/>
+          </div>
+        ) : (
+          <div className="alert alert-info mt-3">No products found in {activeFilter} category</div>
+        )}
   <Dialog open={confirmAdd} onClose={() => setConfirmAdd(false)}>
   <DialogTitle>Product Not Found</DialogTitle>
 
@@ -271,14 +271,16 @@ const filteredProducts = () => {
       type="number"
       fullWidth
       value={selling_price}
-    onChange={(e) => setSelling_price(e.target.value)}
+      onChange={(e) => setSelling_price(e.target.value)}
       margin="dense"
     />
 
   </DialogContent>
 
   <DialogActions>
-    <Button onClick={() => setOpenAddModal(false)}>Cancel</Button>
+    <Button onClick={() => {
+      setOpenAddModal(false);
+    }}>Cancel</Button>
 
     <Button variant="contained" color="primary" onClick={()=>addProduct()}>
       Save Product

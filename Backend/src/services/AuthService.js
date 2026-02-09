@@ -48,6 +48,11 @@ export const AuthService = {
     const checkPassword = await bcrypt.compare(password, user.password);
     if (!checkPassword) throw new Error("Invalid Password");
 
+    // ✅ VALIDATE STORE_ID EXISTS
+    if (!user.store_id) {
+      throw new Error("Store ID not assigned to this user. Contact administrator.");
+    }
+
     const role = await CommonModel.getSingle({
       table: "roles",
       conditions: { roleId: user.role }
@@ -110,7 +115,8 @@ export const AuthService = {
     return {
       ...user,
       role_name: role?.name || "admin",
-      permissions
+      permissions,
+      store_id: user.store_id
     };
   },
   

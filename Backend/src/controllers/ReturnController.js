@@ -1,6 +1,7 @@
 import { ReturnService } from "../services/ReturnService.js";
 import {sendResponse} from "../utils/sendResponse.js"
 import {CommonModel} from "../models/CommonModel.js"
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto"
 import razorpay from "../config/razorpay.js"
@@ -8,6 +9,7 @@ export const ReturnController={
 
    scanInvoice: async (req, res) => {
        try{
+        const storeId = getStoreIdFromRequest(req);
         const { invoice_no } = req.body;
 
         if (!invoice_no)
@@ -15,12 +17,15 @@ export const ReturnController={
       
         const sale = await CommonModel.getSingle({
           table: "sales",
-          conditions: { invoice_no:invoice_no }
+          conditions: { invoice_no },
+          storeId
         });
        
         const saleData=await CommonModel.getAllData({
-          table: "sales_items", fields:["id as sale_item_id,qty,returned_qty,product_id,price,product_name,image,is_returned"],
-          conditions: { sale_id:sale.id }
+          table: "sales_items", 
+          fields:["id as sale_item_id,qty,returned_qty,product_id,price,product_name,image,is_returned"],
+          conditions: { sale_id:sale.id },
+          storeId
         });
       
         if (!sale)
@@ -40,12 +45,13 @@ export const ReturnController={
 
 scanProduct: async (req, res) => {
     try{
+        const storeId = getStoreIdFromRequest(req);
         const {invoice_no,barcode } = req.body;
         if(!invoice_no)
         return sendResponse(res, false, 400, "invoice_no required");
         if(!barcode)
         return sendResponse(res, false, 400, "barcode required");
-        const result = await ReturnService.scanProduct(req.body)
+        const result = await ReturnService.scanProduct(req.body, storeId)
          
         if (!result.length)
           return sendResponse(res, false, 404, "Product not in invoice");
@@ -67,6 +73,7 @@ scanProduct: async (req, res) => {
 
   confirmReturn: async (req, res) => {
     try {
+      const storeId = getStoreIdFromRequest(req);
       const { sale_id, items, return_type,manager_id } = req.body;
   
       /* -------------------- VALIDATIONS -------------------- */
@@ -92,7 +99,8 @@ scanProduct: async (req, res) => {
         refund_amount: 0,
         approved_by: manager_id,
         approved_at: new Date()
-        }
+        },
+        storeId
       });
   
       /* -------------------- PROCESS ITEMS -------------------- */
@@ -132,7 +140,8 @@ scanProduct: async (req, res) => {
             stock:  i.qty,
             type:'credit',
             note:'Refund Product',
-          }
+          },
+          storeId
         });
         /* -------------------- INSERT RETURN ITEMS -------------------- */
         await CommonModel.insertData({
@@ -146,7 +155,8 @@ scanProduct: async (req, res) => {
             return_qty: i.qty,
             tax: i.tax,
             refund_amount: amount
-          }
+          },
+          storeId
         });
   
         /* -------------------- UPDATE SALES ITEMS -------------------- */
@@ -199,7 +209,8 @@ sale_id
 await CommonModel.updateData({
   table: "returns",
   data: { refund_amount: refundAmount },
-  conditions: { id: returnId }
+  conditions: { id: returnId },
+  storeId
 });
 
   await CommonModel.insertData({
@@ -210,7 +221,8 @@ await CommonModel.updateData({
     cashier_id: req.user.userId,
     manager_id: manager_id,
     action: 'refund'
-  }
+  },
+  storeId
 });
 
 
@@ -234,6 +246,7 @@ await CommonModel.updateData({
 
   confirmExchange: async (req, res) => {
     try {
+      const storeId = getStoreIdFromRequest(req);
       const { sale_id, return_items, exchange_items,payment_method } = req.body;
   
       /* ---------------- VALIDATION ---------------- */
@@ -248,8 +261,8 @@ await CommonModel.updateData({
   
       /* ---------------- FETCH SALE ---------------- */
       const [sale] = await CommonModel.rawQuery(
-        `SELECT subtotal, tax, total,invoice_no FROM sales WHERE id = ?`,
-        [sale_id]
+        `SELECT subtotal, tax, total,invoice_no FROM sales WHERE id = ? AND store_id = ?`,
+        [sale_id, storeId]
       );
       if (!sale)
         return sendResponse(res, false, 404, "Sale not found");
@@ -265,7 +278,8 @@ await CommonModel.updateData({
           payment_method,
           return_type: "exchange",
           refund_amount: 0
-        }
+        },
+        storeId
       });
   
       /* ---------------- RETURN ITEMS ---------------- */
@@ -292,7 +306,8 @@ await CommonModel.updateData({
             type:'credit',
             note:'Exchange Product',
             created_at:new Date(),
-          }
+          },
+          storeId
         });
 
         await CommonModel.insertData({
@@ -306,7 +321,8 @@ await CommonModel.updateData({
             return_qty: r.qty,
             tax: r.tax,
             refund_amount:amount
-          }
+          },
+          storeId
         });
   
         await CommonModel.rawQuery(
@@ -325,11 +341,13 @@ await CommonModel.updateData({
       }
       
     
-      /* ---------------- EXCHANGE ITEMS (NEW SALE ITEMS) ---------------- */
+      /* ✅ FIXED: EXCHANGE ITEMS (NEW SALE ITEMS) - NOW WITH STOREID ✅ */
       for (const e of exchange_items) {
         if (!e.product_id) continue;
         const amount = e.qty * e.price;
         exchangeAmount += amount;
+        
+        // ✅ FIX: Added storeId parameter
         await CommonModel.insertData({
           table: "stocks",
          data: {
@@ -338,22 +356,26 @@ await CommonModel.updateData({
             type:'debit',
             note:'Sale',
             created_at:new Date(),
-          }
+          },
+          storeId
         });
+        
+        // ✅ FIX: Added storeId parameter
         await CommonModel.insertData({
           table: "sales_items",
           data: {
             sale_id,
       product_id: e.product_id,
-      product_name: e.product_name,   // ✅ ADD
-      image: e.image,                 // ✅ ADD
+      product_name: e.product_name,
+      image: e.image,
       qty: e.qty,
       price: e.price,
       tax: e.tax,
       total: amount,
       returned_qty: 0,
       is_returned: "no"
-          }
+          },
+          storeId
         });
       }
   
@@ -378,39 +400,64 @@ await CommonModel.updateData({
         WHERE id = ?`,
        [difference < 0 ? Math.abs(difference) : 0, returnId]
       );
+      
+      /* ✅ FIXED: Only create Razorpay order if difference > 0 (customer owes money) ✅ */
       if (payment_method === "cash") {
-      return sendResponse(res, true, 200, "Exchange processed successfully", {
-        return_id: returnId,
-        invoice_no: sale.invoice_no,
-        returnAmount,
-        exchangeAmount,
-        difference
-      });
-    }else{
-      const order = await razorpay.orders.create({
-        amount: Math.round(exchangeAmount * 100),
-        currency: "INR",
-        receipt: `exchange_${sale_id}`,
-      });
-      const data={
-        razorpayOrderId: order.id,
-          saleId:sale_id,
-          amount:difference,
-        }
-        const invoiceData={
+        return sendResponse(res, true, 200, "Exchange processed successfully", {
+          return_id: returnId,
           invoice_no: sale.invoice_no,
-          data
+          returnAmount,
+          exchangeAmount,
+          difference
+        });
+      } else if (payment_method === "credit") {
+        // 🔥 FIX: No payment needed if difference <= 0
+        if (difference <= 0) {
+          return sendResponse(res, true, 200, "Exchange processed successfully", {
+            return_id: returnId,
+            invoice_no: sale.invoice_no,
+            returnAmount,
+            exchangeAmount,
+            difference,
+            message: difference === 0 ? "Even exchange - no payment required" : `Refund ₹${Math.abs(difference).toFixed(2)}`
+          });
         }
-        return sendResponse(res, true, 201, "Exchange completed successfully",invoiceData);
+        
+        try {
+          const razorpayAmount = difference;
+          const order = await razorpay.orders.create({
+            amount: Math.round(razorpayAmount * 100),
+            currency: "INR",
+            receipt: `sale_${sale_id}`,
+            payment_capture: 1,
+          });
+          const data={
+            razorpayOrderId: order.id,
+            saleId:sale_id,
+            amount:razorpayAmount,
+          }
+          const invoiceData={
+            invoice_no: sale.invoice_no,
+            data
+          }
+          return sendResponse(res, true, 201, "Exchange completed successfully", invoiceData);
+        } catch (razorpayError) {
+          const msg = razorpayError?.message || razorpayError?.error?.description || (typeof razorpayError === 'string' ? razorpayError : JSON.stringify(razorpayError));
+          console.error("🔴 Razorpay Error:", msg, razorpayError);
+          return sendResponse(res, false, 500, `Razorpay error: ${msg}`);
+        }
       }
     } catch (error) {
-      return sendResponse(res, false, 500, error.message);
+      const msg = error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
+      console.error("🔴 Exchange Error:", msg, error && error.stack ? error.stack : error);
+      return sendResponse(res, false, 500, msg || "Exchange failed");
     }
   },
 
   list:async(req,resp)=>{
     try{
-        const result=await ReturnService.list()
+        const storeId = getStoreIdFromRequest(req);
+        const result=await ReturnService.list(storeId)
         if(!result || result.length===0)
         {
             return sendResponse(resp,false,400,"No Data Found")
@@ -424,12 +471,13 @@ await CommonModel.updateData({
 
 getReturnById: async (req, res) => {
   try {
+    const storeId = getStoreIdFromRequest(req);
     const { id } = req.params;
       if(!id)
       {
           return sendResponse(res,false,400,"id not found")
       }
-    const getValue = await ReturnService.getReturnById(id);
+    const getValue = await ReturnService.getReturnById(id, storeId);
       const returns=getValue[0]
     if (!returns) {
       return sendResponse(res, false, 404, "Return Product not found");

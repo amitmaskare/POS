@@ -2,7 +2,7 @@ import pool from "../config.js";
 import { CommonModel } from "../models/CommonModel.js";
 
 export const PurchaseService = {
-  list: async () => {
+  list: async (storeId) => {
     const query = `
       SELECT 
         p.id,
@@ -16,61 +16,63 @@ export const PurchaseService = {
       FROM purchases p
       LEFT JOIN suppliers s ON p.supplier_id = s.id
       LEFT JOIN purchase_order_items pi ON pi.po_number = p.po_number
+      WHERE p.store_id = ?
       GROUP BY
         p.id, p.po_number, p.purchase_date, s.name, p.grand_total, p.status
       ORDER BY p.id DESC
     `;
   
-    return await CommonModel.rawQuery(query);
+    return await CommonModel.rawQuery(query, [storeId]);
   },
 
-  getNextPurchaseId: async (type) => {
-
-    const isDraft = type === "draft";
-    const prefix = isDraft ? "TEMP" : "PO";
-  
-    // Read last po_number from database (TEMP + PO both)
-    const [rows] = await pool.promise().query(
-      "SELECT po_number FROM purchases ORDER BY id DESC LIMIT 1"
-    );
-  
-    let nextSeq = 1;
-  
-    if (rows.length > 0) {
-      const lastPo = rows[0].po_number; // TEMP-0006 OR PO-0006
-      const parts = lastPo.split("-");
-  
-      const lastSeq = parseInt(parts[parts.length - 1], 10);
-      nextSeq = lastSeq + 1;
-    }
+  getNextPurchaseId: async (type, storeId) => {
+    // Get current date
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const day = String(now.getDate()).padStart(2, "0");
+    const datePrefix = `${year}${month}${day}`;
+
+    // Query to get the last PO number with same date prefix for this store
+    const [rows] = await pool.promise().query(
+      `SELECT po_number FROM purchases 
+       WHERE po_number LIKE ? AND store_id = ?
+       ORDER BY id DESC LIMIT 1`,
+      [`${datePrefix}%`, storeId]
+    );
+
+    let nextSeq = 1;
+
+    if (rows.length > 0) {
+      const lastPo = rows[0].po_number; // e.g., PO202602050001
+      // Extract sequence number (last 4 digits)
+      const lastSeq = parseInt(lastPo.slice(-4), 10);
+      nextSeq = lastSeq + 1;
+    }
+
     const formattedSeq = String(nextSeq).padStart(4, "0");
-  
-    return `${prefix}-${day}-${month}-${year}-${formattedSeq}`;
+    return `PO${datePrefix}${formattedSeq}`;
   },
   
   getFinalPoFromDraft: (oldPo) => {
-    // oldPo = TEMP-06-12-2025-0003
-    const parts = oldPo.split("-");
-  
-    const seq = parts[4]; // 0003
+    // oldPo could be any format; extract sequence from last 4 digits
+    const seq = oldPo.slice(-4); // extract last 4 digits
   
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const day = String(now.getDate()).padStart(2, "0");
+    const datePrefix = `${year}${month}${day}`;
   
-    return `PO-${day}-${month}-${year}-${seq}`;
+    return `PO${datePrefix}${seq}`;
   },
   
   
-  add: async (productData) => {
+  add: async (productData, storeId) => {
     const result = await CommonModel.insertData({
       table: "purchases",
       data: productData,
+      storeId
     });
     return result;
   },
@@ -78,35 +80,38 @@ export const PurchaseService = {
   addItem: async (data) => {
     return await CommonModel.insertData({
       table: "purchase_order_items",
-      data:data,
+      data
     });
   },
 
-  getById: async (id) => {
+  getById: async (id, storeId) => {
     const result = await CommonModel.getSingle({
       table: "purchases",
       conditions: { id },
+      storeId
     });
     return result;
   },
 
-  update: async (data) => {
+  update: async (data, storeId) => {
     const{id,purchase_date,supplier_id,subtotal,tax,grand_total,type,po_number}=data;
     const result = await CommonModel.updateData({
       table: "purchases",
       data: data,
       conditions: {id},
+      storeId
     });
     return result;
   },
 
  
-  changeStatus:async(data)=>{
+  changeStatus:async(data, storeId)=>{
     const {id,type}=data
     const result = await CommonModel.updateData({
       table: "purchases",
       data: data,
       conditions: {id},
+      storeId
     });
     return result;
   },
@@ -125,7 +130,7 @@ export const PurchaseService = {
     return true;
   },
 
-  receiveItems: async () => {
+  receiveItems: async (storeId) => {
     const query = `
       SELECT 
         p.id,
@@ -137,13 +142,13 @@ export const PurchaseService = {
       FROM purchases p
       LEFT JOIN suppliers s ON p.supplier_id = s.id
       LEFT JOIN purchase_order_items pi ON pi.po_number = p.po_number
-      WHERE p.type = 'send'
+      WHERE p.type = 'send' AND p.store_id = ?
       GROUP BY
         p.id, p.po_number, p.purchase_date, s.name, p.grand_total
       ORDER BY p.id DESC
     `;
   
-    return await CommonModel.rawQuery(query);
+    return await CommonModel.rawQuery(query, [storeId]);
   },
   
 

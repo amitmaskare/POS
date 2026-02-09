@@ -383,7 +383,7 @@ const returnItem=async(id)=>{
       <TableCell>
         <Box display="flex" alignItems="center" gap={1}>
           <img
-            src={item.image}
+            src={item?.image || ""}
             alt={item.product_name}
             width={40}
             height={40}

@@ -27,22 +27,27 @@ import { Box,
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
 import { checkout_sale,verifyPayment } from "../../services/saleService";
 import {confirmReturn,confirmExchange,verifyManagerAuth} from "../../services/ReturnService";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/Toast/Toast";
 
 export default function SaleReturnCart({ cart, setCart }) {
 
   const [active, setActive] = useState(""); 
   const [editingPriceId, setEditingPriceId] = useState(null);
   const [mobile, setMobile] = useState("");
-const [openHoldModal, setOpenHoldModal] = useState(false);
-const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
-const [cashOpen, setCashOpen] = useState(false);
-const [receivedAmount, setReceivedAmount] = useState("");
-const [returnAmount, setReturnAmount] = useState(0);
-const [holdItem, setHoldItem] = useState([]);
-const [showApproval, setShowApproval] = useState(false);
-const[managerUser,setManagerUser]=useState("")
-const[managerPass,setManagerPass]=useState("")
-const [approvalType, setApprovalType] = useState(""); 
+  const [openHoldModal, setOpenHoldModal] = useState(false);
+  const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
+  const [cashOpen, setCashOpen] = useState(false);
+  const [receivedAmount, setReceivedAmount] = useState("");
+  const [returnAmount, setReturnAmount] = useState(0);
+  const [holdItem, setHoldItem] = useState([]);
+  const [showApproval, setShowApproval] = useState(false);
+  const [managerUser, setManagerUser] = useState("");
+  const [managerPass, setManagerPass] = useState("");
+  const [approvalType, setApprovalType] = useState("");
+  
+  // Use custom toast hook
+  const { showToast, toastMessage, toastType, showToastNotification } = useToast(); 
   // Handle Quantity
  const updateQty = (id, type) => {
   setCart((prev) =>
@@ -85,21 +90,23 @@ const [approvalType, setApprovalType] = useState("");
   // Clear Cart
   const clearCart = () => setCart([]);
 
-  // Retrieve Example (Mock)
+  // ✅ FIXED: Retrieve Cart with proper error handling and notifications
   const retrieveCart = async() => {
      try{
 
   if (mobile.length !== 10) {
-    alert("Enter valid mobile number");
+    showToastNotification("Enter valid mobile number", "warning");
     return;
   }
 
 const payload={customer_mobile: mobile}
 
-  const result= await retrieveHoldSale(payload);
-  if(result.status===true)
+  const result = await retrieveHoldSale(payload);
+  if(result.status === true)
   {
-    const { items } = result.data;
+    const { items, sale } = result.data;
+    const saleId = sale?.id || null; // 🔥 Extract sale_id from response
+    
       setCart(
     items.map(item => ({
       id: item.product_id || item.id,
@@ -108,15 +115,19 @@ const payload={customer_mobile: mobile}
       qty: item.qty,
       price: item.price,
       image: item.image,
-      tax: item.tax
+      tax: item.tax,
+      sale_id: saleId  // 🔥 Add sale_id to each item
     }))
      );
   setOpenRetrieveModal(false);
   setMobile("");
+  showToastNotification("Sale retrieved successfully", "success");
+  } else {
+    showToastNotification(result.message || "Failed to retrieve sale", "error");
   }
   }catch(error)
     {
-      console.log(error.message)
+      showToastNotification(error.response?.data?.message || error.message || "Retrieve failed", "error");
     } 
   };
 
@@ -160,26 +171,52 @@ const subtotal = cart.reduce((sum, item) => {
   return sum;
 }, 0);
 const getItemTaxAmount = (item) => {
-  const base = item.qty * item.price;
-  const taxPercent = item.tax || 0;
-  return (base * taxPercent) / 100;
+  const qty = item.qty || 1;
+  const price = Number(item.price) || 0;
+  const base = qty * price;
+  const taxPercent = Number(item.tax) || 0;
+
+  // In exchange mode, refund items contribute negatively to subtotal
+  // so their tax should also be negative. Detect signed contribution:
+  const sign = mode === "exchange" && item.cart_type === "refund" ? -1 : 1;
+  return sign * (base * taxPercent) / 100;
 };
-const tax =  cart.reduce((sum, item) => sum + getItemTaxAmount(item),0);
-const totalTax = cart.reduce((sum, item) => sum + Number(item.tax), 0);
-const saleId = cart.length > 0 ? cart[0].id : null;
+
+const tax = cart.reduce((sum, item) => sum + getItemTaxAmount(item), 0);
+
+// Determine a sensible tax percent label: if all items share the same tax percent, show it; otherwise leave blank
+const uniqueTaxPercents = Array.from(new Set(cart.map(i => Number(i.tax) || 0)));
+const totalTax = uniqueTaxPercents.length === 1 ? uniqueTaxPercents[0] : "";
+
+// Determine saleId robustly: prefer explicit `sale_id`/`saleId`/`invoice_no` on items
+const saleId = (() => {
+  if (!cart || cart.length === 0) return null;
+
+  // Look for explicit properties on any cart item
+  for (const it of cart) {
+    if (it.sale_id) return it.sale_id;
+    if (it.saleId) return it.saleId;
+    if (it.invoice_no && it.sale_id) return it.sale_id;
+  }
+
+  // Fallback: some flows store sale id on a top-level property
+  const first = cart[0];
+  return first?.sale_id || first?.saleId || null;
+})();
 
 const total = subtotal + tax;
 
+  // ✅ FIXED: submitHoldSale with proper success notification
   const submitHoldSale = async () => {
     try{
 
   if (mobile.length !== 10) {
-    alert("Enter valid mobile number");
+    showToastNotification("Enter valid mobile number", "warning");
     return;
   }
 
   if (cart.length === 0) {
-    alert("Cart is empty");
+    showToastNotification("Cart is empty", "warning");
     return;
   }
 
@@ -199,39 +236,45 @@ const total = subtotal + tax;
     }))
   };
 
-  const result= await holdSale(payload);
-  if(result.status===true)
+  const result = await holdSale(payload);
+  if(result.status === true)
   {
      setCart([]);        // clear cart
-  setMobile("");      // reset
-  setOpenHoldModal(false);
+     setMobile("");      // reset
+     setOpenHoldModal(false);
+     showToastNotification("Sale held successfully", "success");  // ✅ FIX: Added success notification
+  } else {
+    showToastNotification(result.message || "Failed to hold sale", "error");
   }
   }catch(error)
     {
-      console.log(error.message)
+      showToastNotification(error.response?.data?.message || error.message || "Hold sale failed", "error");
     }
  
 };
 
-const buildExchangeInvoice = (apiResult) => {
+const buildExchangeInvoice = (apiData) => {
+  // Handle both object and string responses
+  const invoiceNo = typeof apiData === 'string' ? apiData : apiData?.invoice_no || apiData?.data?.invoice_no || 'N/A';
+  
   return {
     shop_name: "My Super Store",
-    invoice_no: apiResult.invoice_no,
+    invoice_no: invoiceNo,
     date: new Date().toLocaleString(),
     items: cart.map(item => ({
       name: item.product_name,
-      qty: item.qty,
-      price: item.price,
+      qty: item.qty || item.return_qty || 0,
+      price: item.price || 0,
       type: item.cart_type, // refund / exchange
       total:
         item.cart_type === "refund"
-          ? -item.price * item.qty
-          : item.price * item.qty
+          ? -item.price * (item.qty || item.return_qty || 0)
+          : item.price * (item.qty || item.return_qty || 0)
     })),
     subtotal,
     tax,
     total,
-    difference: apiResult.difference
+    difference: apiData?.difference || 0
   };
 };
 let printWindow=null;
@@ -336,23 +379,29 @@ const printInvoice = (invoice) => {
   printWindow.document.close();
 };
 
+// ✅ FIXED: Improved checkoutSale with better error handling
 const checkoutSale = async () => {
   try{
-      if (!saleId) {
-      alert("Sale ID missing");
+    if (!cart || cart.length === 0) {
+      showToastNotification("Cart is empty", "warning");
+      return;
+    }
+
+    if (mode === "exchange" && !saleId) {
+      showToastNotification("Sale ID missing", "warning");
       return;
     }
 
     const return_items = cart
-  .filter(item => item.cart_type === "refund")
-  .map(item => ({
-    sale_item_id: item.id,          // cart item id
-    product_id: item.product_id,
-    product_name: item.product_name,
-    image: item.image || null,
-    qty: Number(item.qty) || 0,
-    tax: Number(item.tax) || 0,
-  }));
+      .filter(item => item.cart_type === "refund" || mode === "refund")
+      .map(item => ({
+        sale_item_id: item.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        image: item.image || null,
+        qty: Number(item.qty || item.return_qty) || 0,
+        tax: Number(item.tax) || 0,
+      }));
      
     const exchange_items = cart
       .filter(i => i.cart_type === "exchange")
@@ -360,44 +409,42 @@ const checkoutSale = async () => {
         product_id: i.id,
         product_name: i.product_name,
         image: i.image,
-        qty: i.qty,
-        price: i.price,
-        tax: i.tax,
+        qty: i.qty || 0,
+        price: i.price || 0,
+        tax: i.tax || 0,
       }));
 
-    // if (!return_items.length || !exchange_items.length) {
-    //   alert("Return & Exchange items required");
-    //   return;
-    // }
-   const payload = {
+    const payload = {
       sale_id: saleId,
-      payment_method:"cash",
+      payment_method: "cash",
       return_items,
       exchange_items,
     };
-  const result= await confirmExchange(payload)
-  if(result.status===true)
-  {
-   const diff = result.data.difference;
+
+    const result = await confirmExchange(payload);
+    if(result.status === true) {
+      const diff = result.data?.difference || 0;
       if (diff > 0) {
-        alert(`Customer pays ₹${diff}`);
+        showToastNotification(`Customer pays ₹${Math.abs(diff).toFixed(2)}`, "info");
       } else if (diff < 0) {
-        alert(`Refund ₹${Math.abs(diff)}`);
+        showToastNotification(`Refund ₹${Math.abs(diff).toFixed(2)}`, "info");
       } else {
-        alert("Even exchange – no payment");
+        showToastNotification("Even exchange – no payment", "info");
       }
-      const invoice = buildExchangeInvoice(result.data.invoice_no);
+      
+      const invoice = buildExchangeInvoice(result.data);
       printInvoice(invoice);
-     setCashOpen(false);
+      setCashOpen(false);
       setCart([]);
       setReceivedAmount("");
       setReturnAmount(0);
-     
+    } else {
+      showToastNotification(result.message || "Checkout failed", "error");
+    }
+  } catch(error) {
+    const errorMsg = error.response?.data?.message || error.message || "Checkout failed";
+    showToastNotification(errorMsg, "error");
   }
-}catch(error)
-{
-  console.log(error.message)
-}
 };
 
 useEffect(()=>{
@@ -425,7 +472,9 @@ const retrieveItem=async(id)=>{
   const result= await retrieveHoldItem(id);
   if(result.status===true)
   {
-    const { items } = result.data;
+    const { items, sale } = result.data;
+    const saleId = sale?.id || id; // 🔥 Extract sale_id - prefer sale object, fallback to id param
+    
       setCart(
     items.map(item => ({
       id: item.product_id || item.id,
@@ -435,46 +484,59 @@ const retrieveItem=async(id)=>{
       price: item.price,
       image: item.image,
       tax: item.tax,
+      sale_id: saleId  // 🔥 Add sale_id to each item
     }))
      );
   setOpenRetrieveModal(false);
   setMobile("");
+  showToastNotification("Item retrieved successfully", "success");
+  } else {
+    showToastNotification("Failed to retrieve item", "error");
   }
   }catch(error)
     {
-      console.log(error.message)
+      showToastNotification(error.response?.data?.message || error.message || "Retrieve failed", "error");
     }
 }
- const handleRefundSave = async (manager_id) => {
-  
-   try{
-    const payload = {
-    sale_id: saleId,
-    return_type: "refund",
-    manager_id,
-    items: cart.map(item => ({
-      sale_item_id: item.id,
-      product_id: item.product_id,
-      product_name: item.product_name,
-      image: item.image,
-      qty: Number(item.return_qty),   // 👈 backend expects this
-      price: item.price,
-      tax: item.tax
-    }))
-  };
 
-  const result= await confirmReturn(payload);
-    if(result.status===true)
-    {
-      alert(`Refund Amount ₹${result.data.refundAmount}`);
-      setCart([])
-      const invoice = buildExchangeInvoice(result.data.invoice_no);
-      printInvoice(invoice);
+// ✅ FIXED: Improved handleRefundSave with better error handling
+const handleRefundSave = async (manager_id) => {
+  try {
+    if (!cart || cart.length === 0) {
+      showToastNotification("Cart is empty", "warning");
+      return;
     }
-   }catch(error)
-   {
-    console.log(error.message)
-   }
+
+    const payload = {
+      sale_id: saleId,
+      return_type: "refund",
+      manager_id,
+      items: cart.map(item => ({
+        sale_item_id: item.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        image: item.image,
+        qty: Number(item.return_qty || item.qty) || 0,
+        price: item.price || 0,
+        tax: item.tax || 0
+      }))
+    };
+
+    const result = await confirmReturn(payload);
+    if(result.status === true) {
+      const refundAmt = result.data?.refundAmount || 0;
+      showToastNotification(`Refund Amount ₹${refundAmt.toFixed(2)}`, "success");
+      const invoice = buildExchangeInvoice(result.data);
+      printInvoice(invoice);
+      setCart([]);
+      setOpenHoldModal(false);
+    } else {
+      showToastNotification(result.message || "Refund processing failed", "error");
+    }
+  } catch(error) {
+    const errorMsg = error.response?.data?.message || error.message || "Refund processing failed";
+    showToastNotification(errorMsg, "error");
+  }
 };
 
 const verifyManager = async () => {
@@ -493,100 +555,194 @@ const verifyManager = async () => {
         setCashOpen(true);
         break;
 
-      // case "credit":
-      //   handleRazorpay();  
-      //   break;
+      case "credit":
+        handleRazorpay();  
+        break;
 
       default:
-        alert("Invalid approval type");
+        showToastNotification("Invalid approval type", "error");
     }
+  } else {
+    showToastNotification(result.message || "Verification failed", "error");
   }
  }catch(error)
  {
-  alert(error.response?.data?.message || error.message)
+  const errorMsg = error.response?.data?.message || error.message || "Verification failed";
+  showToastNotification(errorMsg, "error");
  }
 };
 
 const loadRazorpay = () => {
   return new Promise((resolve) => {
+    // If Razorpay already loaded
+    if (window.Razorpay) {
+      console.log("✅ Razorpay already loaded");
+      resolve(true);
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+    script.async = true;
+    
+    script.onload = () => {
+      console.log("✅ Razorpay SDK loaded");
+      resolve(true);
+    };
+    
+    script.onerror = () => {
+      console.error("❌ Failed to load Razorpay");
+      resolve(false);
+    };
+    
     document.body.appendChild(script);
   });
 };
+
+// ✅ FIXED: Simplified handleRazorpay 
 const handleRazorpay = async () => {
- 
-  await loadRazorpay();
-  
-  if (!saleId) {
-      alert("Sale ID missing");
+  try {
+    console.log("🔵 Starting Razorpay payment flow...");
+    
+    // Step 1: Load SDK
+    const loaded = await loadRazorpay();
+    if (!loaded || !window.Razorpay) {
+      showToastNotification("Failed to load Razorpay SDK", "error");
       return;
     }
-     try{
-     const return_items = cart
-      .filter(i => i.cart_type === "refund")
+    console.log("✅ SDK ready");
+
+    // Step 2: Validate cart
+    if (!Array.isArray(cart) || cart.length === 0) {
+      showToastNotification("Cart is empty", "warning");
+      return;
+    }
+
+    // Step 3: Build payload
+    const return_items = cart
+      .filter(i => mode === "refund" || i.cart_type === "refund")
       .map(i => ({
         sale_item_id: i.id,
         product_id: i.product_id,
         product_name: i.product_name,
-        image: i.image,
-        qty: i.qty,
-        tax: i.tax,
-      }));
+        image: i.image ?? null,
+        qty: Number(i.return_qty ?? i.qty ?? 0),
+        tax: Number(i.tax ?? 0),
+      }))
+      .filter(i => i.qty > 0);
 
     const exchange_items = cart
       .filter(i => i.cart_type === "exchange")
       .map(i => ({
         product_id: i.id,
         product_name: i.product_name,
-        image: i.image,
-        qty: i.qty,
-        price: i.price,
-        tax: i.tax,
-      }));
+        image: i.image ?? null,
+        qty: Number(i.qty ?? 0),
+        price: Number(i.price ?? 0),
+        tax: Number(i.tax ?? 0),
+      }))
+      .filter(i => i.qty > 0);
 
-    if (!return_items.length || !exchange_items.length) {
-      alert("Return & Exchange items required");
-      return;
-    }
-   const payload = {
+    const payload = {
       sale_id: saleId,
-      payment_method:"credit",
+      payment_method: "credit",
       return_items,
       exchange_items,
     };
-  const result= await confirmExchange(payload)
-   const options = {
-    key: "rzp_test_RvRduZ5UNffoaN",
-    amount: result.data.data.amount * 100,
-    currency: "INR",
-    order_id: result.data.data.razorpayOrderId,
-    name: "My POS",
-    handler: async function (response) {
-      const invoiceWindow = window.open("", "_blank");
-        const data={
-           ...response,
-           razorpay_order_id: response.razorpay_order_id,
-      razorpay_payment_id: response.razorpay_payment_id,
-      razorpay_signature: response.razorpay_signature,
-        saleId: result.data.data.saleId,
-        amount: result.data.data.amount,
-        }
-      const verifyData=await verifyPayment(data);
-     const invoice = buildExchangeInvoice(result.data.invoice_no);
-    printInvoice(invoice);
-     setCashOpen(false);
+
+    console.log("📤 Exchange payload:", payload);
+
+    // Step 4: Call API
+    const result = await confirmExchange(payload);
+    
+    if (!result?.status) {
+      console.error("❌ API Error:", result);
+      showToastNotification(result?.message || "Exchange initialization failed", "error");
+      return;
+    }
+
+    console.log("✅ API Success:", result);
+
+    const data = result.data?.data ?? result.data ?? {};
+    const difference = Number(data.difference ?? 0);
+
+    // If no payment needed
+    if (difference <= 0) {
+      console.log("✅ Even exchange - no payment needed");
+      showToastNotification("Exchange completed successfully", "success");
+      printInvoice(buildExchangeInvoice(result.data));
       setCart([]);
-    },
-  };
-  new window.Razorpay(options).open();
-}catch(error)
-{
-  console.log(error.response?.data?.message || error.message)
-}
+      setCashOpen(false);
+      setShowApproval(false);
+      return;
+    }
+
+    // Step 5: Extract Razorpay details
+    const razorpayOrderId = data.razorpay_order_id || data.razorpayOrderId || data.order_id;
+    const amount = Number(data.amount ?? 0);
+    const orderId = data.sale_id ?? data.saleId;
+
+    console.log("💳 Razorpay Order:", { razorpayOrderId, amount, orderId });
+
+    if (!razorpayOrderId || amount <= 0) {
+      console.error("❌ Invalid payment data:", { razorpayOrderId, amount });
+      showToastNotification("Invalid payment data from server", "error");
+      return;
+    }
+
+    // Step 6: Open Razorpay
+    const options = {
+      key: "rzp_test_RvRduZ5UNffoaN",
+      amount: Math.round(amount * 100),
+      currency: "INR",
+      order_id: razorpayOrderId,
+      name: "POS System",
+      description: `Exchange - Order ${razorpayOrderId}`,
+      
+      prefill: {
+        contact: "9999999999",
+      },
+
+      handler: async (response) => {
+        console.log("✅ Payment response:", response);
+        try {
+          const verifyResult = await verifyPayment({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            saleId: orderId,
+            amount,
+          });
+
+          if (verifyResult?.status) {
+            showToastNotification("Payment successful!", "success");
+            printInvoice(buildExchangeInvoice(result.data));
+            setCart([]);
+            setCashOpen(false);
+            setShowApproval(false);
+          } else {
+            showToastNotification("Payment verification failed", "error");
+          }
+        } catch (err) {
+          console.error("❌ Verification error:", err);
+          showToastNotification("Payment verification error", "error");
+        }
+      },
+
+      theme: { color: "#5A8DEE" }
+    };
+
+    console.log("🎯 Opening Razorpay with options:", options);
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+    console.log("✅ Modal opened");
+
+  } catch (error) {
+    console.error("❌ Error:", error);
+    showToastNotification(error?.message || "Payment failed", "error");
+  }
 };
+
 
   return (
     <>
@@ -611,7 +767,7 @@ const handleRazorpay = async () => {
             }}
           >
            <img
-              src={item.image}
+             src={item?.image || ""}
               alt="product"
               className="rounded-3"
               style={{ width: 55, height: 55, objectFit: "cover" }}
@@ -644,23 +800,22 @@ const handleRazorpay = async () => {
                     height: "32px",
                   }}
                 >
-                   {!item.return_qty ? (
-                    <>
-                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
-                    −
-                  </button>
-                  <span className="fw-bold" style={{ fontSize: "14px" }}>
-                    {item.return_qty}
-                  </span>
-                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
-                    +
-                  </button>
-                  </>
-                  ):(
+                   {item.return_qty ? (
                     <span className="fw-bold" style={{ fontSize: "14px" }}>
-                    {item.qty}
-                  </span> 
-
+                      {item.return_qty}
+                    </span>
+                  ) : (
+                    <>
+                      <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
+                        −
+                      </button>
+                      <span className="fw-bold" style={{ fontSize: "14px" }}>
+                        {item.qty}
+                      </span>
+                      <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
+                        +
+                      </button>
+                    </>
                   )}
                 </div>
 
@@ -700,17 +855,24 @@ const handleRazorpay = async () => {
 
       {/* Totals */}
       <div className="border-top pt-3 mt-4">
+        {total < 0 ? (
+          <div className="d-flex justify-content-between mb-2">
+            <span>Subtotal (Refund)</span>
+            <span>₹{Math.abs(Number(subtotal)).toFixed(2)}</span>
+          </div>
+        ) : (
+          <div className="d-flex justify-content-between mb-2">
+            <span>Subtotal</span>
+            <span>₹{Number(subtotal).toFixed(2)}</span>
+          </div>
+        )}
         <div className="d-flex justify-content-between mb-2">
-          <span>Subtotal</span>
-          <span>₹{Number(subtotal).toFixed(2)}</span>
-        </div>
-        <div className="d-flex justify-content-between mb-2">
-          <span>Tax ({`${totalTax} %`})</span>
-          <span>₹{Number(tax).toFixed(2)}</span>
+          <span>Tax {totalTax !== "" ? `(${totalTax} %)` : ""}</span>
+          <span>₹{Math.abs(Number(tax)).toFixed(2)}</span>
         </div>
         <div className="d-flex justify-content-between fw-bold border-top pt-3 mt-4">
-          <span style={{color:"#5A8DEE"}}>Total</span>
-          <span style={{color:"#5A8DEE"}}>₹{total.toFixed(2)}</span>
+          <span style={{color:"#5A8DEE"}}>{total < 0 ? "Total Refund" : "Total"}</span>
+          <span style={{color:"#5A8DEE"}}>₹{Math.abs(Number(total)).toFixed(2)}</span>
         </div>
 
         {/* Discount */}
@@ -744,7 +906,7 @@ const handleRazorpay = async () => {
   }}
           >
             <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
-           Exchange Cash
+            Cash
           </button>
 
           <button
@@ -753,7 +915,7 @@ const handleRazorpay = async () => {
             onClick={() =>{
                setActive("cash")
               setApprovalType("credit");
-              handleRazorpay()
+              setShowApproval(true);
               }} >
             <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
             Credit
@@ -771,9 +933,15 @@ const handleRazorpay = async () => {
           </button>
         </div>
 
-        {/* Print  onClick={checkoutSale } */}
+        {/* Print Receipt */}
         <div className="d-grid gap-2 mt-3">
-          <button className="btn btn-success" >
+          <button className="btn btn-success" onClick={() => {
+            if (cart.length === 0) {
+              showToastNotification("Cart is empty. Add items to print receipt.", "warning");
+              return;
+            }
+            checkoutSale();
+          }}>
             <PrintIcon style={{ fontSize: 18, marginRight: 5 }} />
             Print Receipt
           </button>
@@ -871,24 +1039,37 @@ const handleRazorpay = async () => {
   <DialogTitle>Cash Payment</DialogTitle>
 
   <DialogContent>
-    <Typography>Total Amount: ₹{Number(total).toFixed(2)}</Typography>
+    {/* Compute amountDue: positive => customer pays, negative => refund to customer */}
+    {total >= 0 ? (
+      <>
+        <Typography>Total Amount: ₹{Number(total).toFixed(2)}</Typography>
 
-    <TextField
-      label="Received Amount"
-      type="number"
-      fullWidth
-      sx={{ mt: 2 }}
-      value={receivedAmount}
-      onChange={(e) => {
-        const val = Number(e.target.value);
-        setReceivedAmount(val);
-        setReturnAmount(val - total);
-      }}
-    />
+        <TextField
+          label="Received Amount"
+          type="number"
+          fullWidth
+          sx={{ mt: 2 }}
+          value={receivedAmount}
+          onChange={(e) => {
+            const raw = e.target.value;
+            const val = raw === "" ? "" : Number(raw);
+            setReceivedAmount(val);
+            setReturnAmount((val === "" ? 0 : val) - total);
+          }}
+        />
 
-    <Typography sx={{ mt: 2 }} fontWeight="bold">
-      Return Amount: ₹{returnAmount > 0 ? returnAmount.toFixed(2) : "0.00"}
-    </Typography>
+        <Typography sx={{ mt: 2 }} fontWeight="bold">
+          Return Amount: ₹{returnAmount > 0 ? returnAmount.toFixed(2) : "0.00"}
+        </Typography>
+      </>
+    ) : (
+      <>
+        <Typography fontWeight="bold">Refund To Customer: ₹{Math.abs(Number(total)).toFixed(2)}</Typography>
+        <Typography sx={{ mt: 2 }} color="text.secondary">
+          This is an exchange where the customer should receive a refund. Click below to process refund and print invoice.
+        </Typography>
+      </>
+    )}
   </DialogContent>
 
   <DialogActions>
@@ -897,10 +1078,10 @@ const handleRazorpay = async () => {
     <Button
       variant="contained"
       color="success"
-      disabled={receivedAmount < total}
+      disabled={total >= 0 ? (receivedAmount === "" || Number(receivedAmount) < total) : false}
       onClick={checkoutSale}
     >
-      OK & Print
+      {total >= 0 ? "OK & Print" : "Refund & Print"}
     </Button>
   </DialogActions>
 </Dialog>
@@ -922,7 +1103,7 @@ const handleRazorpay = async () => {
       <DialogContent>
      <input
     type="password"
-    placeholder="Manager Passsword"
+    placeholder="Manager Password"
      className="form-control mt-2"
     value={managerPass}
     onChange={e => setManagerPass(e.target.value)}
@@ -937,6 +1118,9 @@ const handleRazorpay = async () => {
   </DialogActions>
    
 </Dialog>
+
+    {/* Toast Notification */}
+    <Toast show={showToast} message={toastMessage} type={toastType} />
 
     </>
   );

@@ -20,10 +20,13 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import { useState, useEffect } from "react";
 import { confirmReturn,confirmExchange } from "../../services/ReturnService";
 import { searchProduct,add_product } from "../../services/productService";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/Toast/Toast";
 
 export default function ReturnModal({ open, onClose,onSaved, viewData }) {
 
   // ✅ Hooks ALWAYS on top
+  const { showToast, toastMessage, toastType, showToastNotification } = useToast();
   const [mode, setMode] = useState("return"); 
   const [returnItems, setReturnItems] = useState([]);
   const [exchangeCart, setExchangeCart] = useState([]);
@@ -108,12 +111,12 @@ const handleConfirmExchange = async () => {
     }));
 
   if (!returnPayload.length) {
-    alert("Select valid return items");
+    showToastNotification("Select valid return items", "warning");
     return;
   }
 
   if (!exchangeCart.length) {
-    alert("Add exchange products");
+    showToastNotification("Add exchange products", "warning");
     return;
   }
 
@@ -136,17 +139,17 @@ const handleConfirmExchange = async () => {
     const res = await confirmExchange(payload);
 
     if (res.status) {
-      alert(`Payable Amount: ₹${res.data.payable}`);
+      showToastNotification(`Payable Amount: ₹${res.data.payable}`, "info");
       onSaved();
       setMode("return"); 
       onClose();
 
     } else {
-      alert(res.message);
+      showToastNotification(res.message, "error");
     }
   } catch (error) {
     console.error(error);
-    alert("Exchange failed");
+    showToastNotification("Exchange failed", "error");
   }
 };
 
@@ -171,14 +174,14 @@ const handleConfirmExchange = async () => {
   try {
     const res = await confirmReturn(payload);
     if (res.status === true) {
-      alert(`Success! Refund ₹${res.data.refundAmount}`);
+      showToastNotification(`Success! Refund ₹${res.data.refundAmount}`, "success");
         onSaved()
       onClose();
     } else {
-      alert(res.message);
+      showToastNotification(res.message, "error");
     }
   } catch (err) {
-    alert("Return failed");
+    showToastNotification("Return failed", "error");
   }
 };
 
@@ -205,7 +208,7 @@ const handleBarcodeChange = async (value) => {
       const price = Number(data.price);
 
       if (!product_id) {
-        alert("Invalid product_id");
+        showToastNotification("Invalid product_id", "error");
         return;
       }
 
@@ -282,7 +285,7 @@ const addNewProduct = async () => {
       const price = Number(data.price);
 
       if (!product_id) {
-        alert("Invalid product id");
+        showToastNotification("Invalid product id", "error");
         return;
       }
 
@@ -334,12 +337,12 @@ const addNewProduct = async () => {
       setOpenAddModal(false); 
 
     } else {
-      alert(result.message || "Failed to add product");
+      showToastNotification(result.message || "Failed to add product", "error");
     }
 
   } catch (error) {
     console.error(error.response?.data?.message || error.message);
-    alert("Something went wrong");
+    showToastNotification("Something went wrong", "error");
   }
 };
 
@@ -545,6 +548,7 @@ const addNewProduct = async () => {
         </Button>
       </DialogActions>
     </Dialog>
+    <Toast show={showToast} message={toastMessage} type={toastType} />
     </>
   );
 }

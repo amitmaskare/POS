@@ -15,71 +15,56 @@ const Manage = () => {
 
   // receives: "expanded", "collapsed", "hidden"
   const [sidebarState, setSidebarState] = useState(isMobile ? "hidden" : "expanded");
-  const [cart, setCart] = useState([]);
-//   const addToCart = (product) => {
-//   setCart((prev) => {
-//     const exists = prev.find((item) => item.id === product.id);
+  
+  // Separate cart states for PosSystem and SaleReturn
+  const [posSystemCart, setPosSystemCart] = useState([]);
+  const [saleReturnCart, setSaleReturnCart] = useState([]);
 
-//     if (exists) {
-//       return prev.map((item) => {
-//         if (item.id !== product.id) return item;
+  // Generic cart addition function factory
+  const createAddToCart = (setCartFunc) => (product) => {
+    setCartFunc((prev) => {
+      const exists = prev.find((item) => item.id === product.id);
 
-//         const newQty = item.qty + 1;
-//         const basePrice = item.selling_price ?? item.price;
+      // ✅ product already in cart → qty++
+      if (exists) {
+        return prev.map((item) => {
+          if (item.id !== product.id) return item;
 
-//         return {
-//           ...item,
-//           qty: newQty,
-//           price: basePrice,
-//         };
-//       });
-//     }
+          const newQty = item.qty + 1;
+          const basePrice = item.selling_price ?? item.price;
 
-//     return [
-//       ...prev,
-//       {
-//         ...product,
-//         price: product.selling_price ?? product.price,
-//       },
-//     ];
-//   });
-// };
+          return {
+            ...item,
+            qty: newQty,
+            price: newQty * basePrice,
+            total: newQty * basePrice,
+          };
+        });
+      }
 
-const addToCart = (product) => {
-  setCart((prev) => {
-    const exists = prev.find((item) => item.id === product.id);
+      // ✅ new product → add first time
+      const basePrice = product.selling_price ?? product.price;
 
-    // ✅ product already in cart → qty++
-    if (exists) {
-      return prev.map((item) => {
-        if (item.id !== product.id) return item;
+      return [
+        ...prev,
+        {
+          ...product,
+          qty: 1,
+          price: basePrice,
+          total: basePrice,
+        },
+      ];
+    });
+  };
 
-        const newQty = item.qty + 1;
-        const basePrice = item.selling_price ?? item.price;
+  // Module-specific addToCart functions
+  const addToPosSystemCart = createAddToCart(setPosSystemCart);
+  const addToSaleReturnCart = createAddToCart(setSaleReturnCart);
 
-        return {
-          ...item,
-          qty: newQty,
-          price: newQty * basePrice,
-          total: newQty * basePrice, // 🔥 important
-        };
-      });
-    }
-
-    // ✅ new product → add first time
-    const basePrice = product.selling_price ?? product.price;
-
-    return [
-      ...prev,
-      {
-        ...product,
-        qty: 1,
-        price: basePrice,
-        total: basePrice,
-      },
-    ];
-  });
-};
+  // Determine which module is active and use appropriate cart
+  const currentCart = isSaleReturnDashboard ? saleReturnCart : posSystemCart;
+  const currentSetCart = isSaleReturnDashboard ? setSaleReturnCart : setPosSystemCart;
+  const addToCart = isSaleReturnDashboard ? addToSaleReturnCart : addToPosSystemCart;
 
   const getSidebarWidth = () => {
     // On mobile, sidebar is a drawer overlay, so width is always 0
@@ -158,8 +143,8 @@ const addToCart = (product) => {
          <Outlet context={{ addToCart }} />
         </Box>
 
-        {isDashboard && <Cart cart={cart} setCart={setCart} />}
-        {isSaleReturnDashboard && <SaleReturnCart cart={cart} setCart={setCart} />}
+        {isDashboard && <Cart cart={posSystemCart} setCart={setPosSystemCart} />}
+        {isSaleReturnDashboard && <SaleReturnCart cart={saleReturnCart} setCart={setSaleReturnCart} />}
       </Box>
     </Box>
   );

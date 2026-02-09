@@ -1,4 +1,5 @@
 import { SaleService } from "../services/SaleService.js";
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 import {sendResponse} from "../utils/sendResponse.js"
 import {CommonModel} from "../models/CommonModel.js"
 import crypto from "crypto"
@@ -6,7 +7,8 @@ import razorpay from "../config/razorpay.js"
 export const SaleController={
     list:async(req,resp)=>{
         try{
-            const result=await SaleService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await SaleService.list(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -21,6 +23,7 @@ export const SaleController={
     checkoutSale:async(req,resp)=>{
       
         try {
+            const storeId = getStoreIdFromRequest(req);
             const requiredFields = [
              "subtotal", "tax", "total","payment_method","cart"
             ];
@@ -53,9 +56,10 @@ export const SaleController={
                      tax,
                      total,
                      payment_method,
-                     payment_status:payment_method === "cash" ? "paid" : "pending"
+                     payment_status:payment_method === "cash" ? "paid" : "pending",
+                     store_id: storeId
                   };
-            const saleId = await SaleService.createSale(saleData);
+            const saleId = await SaleService.createSale(saleData, storeId);
              
             if (!saleId) {
               return sendResponse(resp, false, 400, "Something went wrong");
@@ -214,7 +218,8 @@ export const SaleController={
 
       saleReport:async(req,resp)=>{
         try{
-            const result=await SaleService.saleReport()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await SaleService.saleReport(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -250,7 +255,8 @@ export const SaleController={
      
       transactionList:async(req,resp)=>{
         try{
-            const result=await SaleService.transactionList()
+          const storeId = getStoreIdFromRequest(req);
+            const result=await SaleService.transactionList(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")

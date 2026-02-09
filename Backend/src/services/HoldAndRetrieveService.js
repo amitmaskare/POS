@@ -3,7 +3,7 @@ import {CommonModel} from "../models/CommonModel.js"
 import pool from "../config.js"
 export const HoldAndRetrieveService={
 
-  list:async()=>{
+  list:async(storeId)=>{
     const query = `
     SELECT 
     hs.id,
@@ -18,12 +18,13 @@ export const HoldAndRetrieveService={
   LEFT JOIN users AS u ON u.userId=hs.user_id
   LEFT JOIN hold_sale_items AS hsi
     ON hsi.hold_sale_id  = hs.id
+  WHERE hs.store_id = ?
   GROUP BY 
     hs.id
   ORDER BY hs.id DESC
   LIMIT 10
   `;
-  return await CommonModel.rawQuery(query);    
+  return await CommonModel.rawQuery(query, [storeId]);    
   },
 
     generateHoldNumber: async() => {
@@ -50,8 +51,8 @@ export const HoldAndRetrieveService={
         return `Hold-${day}-${month}-${year}-${formattedSeq}`;
       },
 
-    holdSale:async(data)=>{
-        const result=await CommonModel.insertData({table:"hold_sales",data:data})
+    holdSale:async(data, storeId)=>{
+        const result=await CommonModel.insertData({table:"hold_sales",data:data, storeId})
         return result
     },
 
@@ -62,13 +63,19 @@ export const HoldAndRetrieveService={
         });
       },
 
-      retrieveHoldSale: async (customer_mobile) => {
-        const result=await CommonModel.getSingle({table:"hold_sales",conditions:{customer_mobile:customer_mobile}})
+      retrieveHoldSale: async (customer_mobile, storeId) => {
+        const result=await CommonModel.getSingle({table:"hold_sales",conditions:{customer_mobile:customer_mobile}, storeId})
          return result
      },
-      retrieveHoldSaleItem: async (id) => {
-       const result=await CommonModel.getAllData({table:"hold_sale_items",fields:["product_id as id, product_name, price,tax, qty,total, image"],conditions:{hold_sale_id:id}})
-        return result
-    },
+        retrieveHoldSaleItem: async (id, storeId) => {
+         const conditions = { hold_sale_id: id };
+         const result = await CommonModel.getAllData({
+           table: "hold_sale_items",
+           fields: ["product_id as id, product_name, price,tax, qty,total, image"],
+           conditions,
+           storeId
+         });
+         return result;
+      },
    
 }

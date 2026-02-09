@@ -24,9 +24,12 @@ import AddIcon from "@mui/icons-material/Add";
 import { useState, useEffect } from "react";
 import { supplierList, productList } from "../../services/productService";
 import { createPurchase,updatePurchase,receiveQuantity } from "../../services/purchaseService";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/Toast/Toast";
 
 export default function NewPurchaseOrderModal({ open, onClose, onSaved,editData }) {
 
+  const { showToast, toastMessage, toastType, showToastNotification } = useToast();
   const [items, setItems] = useState([]);
   const [poNumber, setPoNumber] = useState("");
   const [supplier, setSupplier] = useState([]);
@@ -35,35 +38,41 @@ export default function NewPurchaseOrderModal({ open, onClose, onSaved,editData 
  const [purchaseId,setPurchaseId]=useState("")
 
 useEffect(() => {
- if (!editData) return; // WAIT until items are loaded
+ if (!editData || !editData.purchase) return; // WAIT until items are loaded
 
   const purchasedata = editData.purchase;
+  const purchaseItems = editData.purchaseItem || [];
 
-  setPoNumber(purchasedata.po_number);
-  setSupplierId(purchasedata.supplier_id);
-  setPurchaseId(purchasedata.id);
+  // ✅ SAFETY: Validate data before accessing
+  if (!purchasedata || !Array.isArray(purchaseItems)) {
+    console.warn('Invalid editData structure:', editData);
+    return;
+  }
 
- const purchaseItems = editData.purchaseItem;
+  setPoNumber(purchasedata.po_number || "");
+  setSupplierId(purchasedata.supplier_id || "");
+  setPurchaseId(purchasedata.id || "");
 
- const formatted = purchaseItems.map((p) => {
-  const product = productItem.find((prod) => prod.id === p.product_id);
+  const formatted = purchaseItems.map((p) => {
+    if (!p || !p.product_id) return null; // Skip invalid items
+    const product = productItem.find((prod) => prod?.id === p.product_id);
 
     return {
       product_id: p.product_id,
       purchase_item_id: p.id,
-      order_qty: p.quantity,      // ordered quantity
-      qty: p.received_qty || 0,                     // received qty default
-      cost_price: p.cost_price,                     // received qty default
+      order_qty: p.quantity || 0,
+      qty: p.received_qty || 0,
+      cost_price: p.cost_price || 0,
       selected: true,
       // MERGED PRODUCT DETAILS
-      image: product?.image || "Unknown Product",
+      image: product?.image || "/images/placeholder.png",
       product_name: product?.product_name || "Unknown Product",
       category_name: product?.category_name || "Unknown Category",
     };
-  });
+  }).filter(Boolean); // Remove null entries
 
-  setItems(formatted);
-}, [editData,productItem]);  // ONLY runs after product list loads
+  setItems(formatted.length > 0 ? formatted : []);
+}, [editData, productItem]);  // ONLY runs after product list loads
 
 
   // LOAD INITIAL DATA
@@ -113,10 +122,10 @@ useEffect(() => {
 
 
   // Checkbox toggle  
-  const toggleSelect = (id) => {
+  const toggleSelect = (product_id) => {
     setItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, selected: !item.selected } : item
+        item.product_id === product_id ? { ...item, selected: !item.selected } : item
       )
     );
   };
@@ -151,6 +160,14 @@ useEffect(() => {
 
   const selectedItems = items.filter((i) => i.selected);
 
+    const updateReason = (product_id, reason) => {
+      setItems(prev =>
+        prev.map(item =>
+          item.product_id === product_id ? { ...item, received_reason: reason } : item
+        )
+      );
+    };
+
   const totalValue = selectedItems.reduce(
     (acc, i) => acc + i.qty * i.price,
     0
@@ -162,8 +179,19 @@ useEffect(() => {
       const selected = items.filter(i => i.selected && i.qty > 0);
   
       if (selected.length === 0) {
-        alert("Please enter receive quantity");
+        showToastNotification("Please enter receive quantity", "warning");
         return;
+      }
+
+      // Validate receive qty doesn't exceed order qty
+      for (const item of selected) {
+        if (item.qty > item.order_qty) {
+          showToastNotification(
+            `Cannot receive ${item.qty} units of ${item.product_name}. Only ${item.order_qty} units ordered.`,
+            "error"
+          );
+          return;
+        }
       }
   
       const payload = {
@@ -178,168 +206,201 @@ useEffect(() => {
       const response = await receiveQuantity(payload); // ✅ CORRECT API
   
       if (response.status === true) {
-        alert("Items received successfully");
+        showToastNotification("Items received successfully", "success");
         onClose();
         onSaved();
       } else {
-        alert(response.message);
+        showToastNotification(response.message, "error");
       }
   
     } catch (error) {
       console.error(error);
-      alert(error.response?.data?.message || "Something went wrong");
+      showToastNotification(error.response?.data?.message || "Something went wrong", "error");
     }
   };
   
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "75%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          bgcolor: "#0f172a",
-          p: 4,
-          borderRadius: 3,
-          color: "#fff",
-        }}
-      >
-        <Typography variant="h6" mb={2} color="#5A8DEE">
-         Receiving Items
-        </Typography>
-
-        {/* PO DETAILS */}
-        <Paper sx={{ p: 3, mb: 3, background: "#1e293b", color: "#fff" }}>
-         
-          <Box display="flex" gap={2} mb={2}>
-            <TextField
-              label="PO Number"
-              fullWidth
-              value={poNumber}
-              InputLabelProps={{ style: { color: "#94a3b8" } }}
-              sx={{ input: { color: "#fff" } }}
-            />
-
-            <input type="hidden" value={purchaseId} />
-          </Box>
-
-          <Box display="flex" gap={2}>
-            <FormControl fullWidth>
-              <InputLabel sx={{ color: "#94a3b8" }}>Filter by Supplier</InputLabel>
-              <Select
-                value={supplierId}
-                onChange={(e) => setSupplierId(e.target.value)}
-                label="Filter by Supplier"
-                sx={{ color: "#fff" }}
-              >
-                <MenuItem value="">All suppliers</MenuItem>
-                {supplier.map((item, i) => (
-                  <MenuItem key={i} value={item.id}>
-                    {item.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-        </Paper>
-
-        {/* ITEM TABLE */}
-        <Paper sx={{ p: 3, background: "#1e293b" }}>
-          <Typography fontWeight={600} mb={2} color="#facc15">
-            Receiving Items ({items.length} items)
+    <>
+      <Modal open={open} onClose={onClose}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "75%",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            bgcolor: "#0f172a",
+            p: 4,
+            borderRadius: 3,
+            color: "#fff",
+          }}
+        >
+          <Typography variant="h6" mb={2} color="#5A8DEE">
+           Receiving Items
           </Typography>
 
-          <Table>
-            <TableHead>
-              <TableRow sx={{ background: "#5A8DEE" }}>
-                <TableCell sx={{ color: "#fff" }}>Select</TableCell>
-                <TableCell sx={{ color: "#fff" }}>Product</TableCell>
-                <TableCell sx={{ color: "#fff" }}>Order Quantity</TableCell>
-                <TableCell sx={{ color: "#fff" }}>Received Quantity</TableCell>
-                <TableCell sx={{ color: "#fff" }}>Reason</TableCell>
-              </TableRow>
-            </TableHead>
+          {/* PO DETAILS */}
+          <Paper sx={{ p: 3, mb: 3, background: "#1e293b", color: "#fff" }}>
+           
+            <Box display="flex" gap={2} mb={2}>
+              <TextField
+                label="PO Number"
+                fullWidth
+                value={poNumber}
+                InputLabelProps={{ style: { color: "#94a3b8" } }}
+                sx={{ input: { color: "#fff" } }}
+              />
 
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={item.selected}
-                      onChange={() => toggleSelect(item.id)}
-                      sx={{ color: "#9ca3af" }}
-                    />
-                  </TableCell>
+              <input type="hidden" value={purchaseId} />
+            </Box>
 
-                  <TableCell>
-                     <img
-              src={item.image}
-              alt="product"
-              className="rounded-3"
-              style={{ width: 55, height: 55, objectFit: "cover" }}
-            />
-                    <Typography fontWeight={600} color="#fff">
-                      {item.product_name}
-                    </Typography>
-                    <Typography fontSize="12px" color="#94a3b8">
-                      {item.category_name}
-                    </Typography>
-                  </TableCell>
+            <Box display="flex" gap={2}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ color: "#94a3b8" }}>Filter by Supplier</InputLabel>
+                <Select
+                  value={supplierId}
+                  onChange={(e) => setSupplierId(e.target.value)}
+                  label="Filter by Supplier"
+                  sx={{ color: "#fff" }}
+                >
+                  <MenuItem value="">All suppliers</MenuItem>
+                  {supplier.map((item, i) => (
+                    <MenuItem key={i} value={item.id}>
+                      {item.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          </Paper>
 
-                  <TableCell sx={{ color: "#fff" }}> {item.order_qty}</TableCell>
-                 
-                  <TableCell>
-                    {item.selected ? (
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <IconButton onClick={() => decreaseQty(item.product_id)} sx={{ color: "#fff" }}>
-                          <RemoveIcon />
-                        </IconButton>
+          {/* ITEM TABLE */}
+          <Paper sx={{ p: 3, background: "#1e293b" }}>
+            <Typography fontWeight={600} mb={2} color="#facc15">
+              Receiving Items ({items.length} items)
+            </Typography>
 
+            <Table>
+              <TableHead>
+                <TableRow sx={{ background: "#5A8DEE" }}>
+                  <TableCell sx={{ color: "#fff" }}>Select</TableCell>
+                  <TableCell sx={{ color: "#fff" }}>Product</TableCell>
+                  <TableCell sx={{ color: "#fff" }}>Order Quantity</TableCell>
+                  <TableCell sx={{ color: "#fff" }}>Received Quantity</TableCell>
+                  <TableCell sx={{ color: "#fff" }}>Reason</TableCell>
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {items && items.length > 0 ? items.map((item) => (
+                  <TableRow key={item?.product_id || Math.random()}>
+                    <TableCell>
+                      <Checkbox
+                        checked={item?.selected || false}
+                        onChange={() => item?.product_id && toggleSelect(item.product_id)}
+                        sx={{ color: "#9ca3af" }}
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      {item?.image && (
+                        <img
+                          src={item.image}
+                          alt="product"
+                          className="rounded-3"
+                          style={{ width: "50px", height: "50px", objectFit: "cover" }}
+                        />
+                      )}
+                      <Typography fontWeight={600} color="#fff">
+                        {item?.product_name || "Unknown"}
+                      </Typography>
+                      <Typography fontSize="12px" color="#94a3b8">
+                        {item?.category_name || "N/A"}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell sx={{ color: "#fff" }}>{item?.order_qty || 0}</TableCell>
+                    <TableCell sx={{ color: "#fff" }}>
+                      {item?.qty > item?.order_qty ? (
+                        <span style={{ color: "#ff6b6b" }}>
+                          Cannot receive more than {item?.order_qty || 0} (Already received: {(item?.qty || 0) - (item?.order_qty || 0)})
+                        </span>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      {item?.selected ? (
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <IconButton onClick={() => item?.product_id && decreaseQty(item.product_id)} sx={{ color: "#fff" }}>
+                            <RemoveIcon />
+                          </IconButton>
+
+                          <TextField
+                            value={item?.qty || 0}
+                            onChange={(e) => item?.product_id && updateQty(item.product_id, e.target.value)}
+                            sx={{
+                              width: "60px",
+                              input: { color: "#fff", textAlign: "center" },
+                            }}
+                          />
+
+                          <IconButton onClick={() => item?.product_id && increaseQty(item.product_id)} sx={{ color: "#fff" }}>
+                            <AddIcon />
+                          </IconButton>
+                        </Box>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+
+                    <TableCell sx={{ color: "#fff" }}>
+                      {item?.selected ? (
                         <TextField
-                          value={item.qty}
-                           onChange={(e) => updateQty(item.product_id, e.target.value)}
+                          placeholder="Reason (optional)"
+                          value={item?.received_reason || ""}
+                          onChange={(e) => item?.product_id && updateReason(item.product_id, e.target.value)}
+                          size="small"
                           sx={{
-                            width: "60px",
-                            input: { color: "#fff", textAlign: "center" },
+                            width: "150px",
+                            input: { color: "#fff", fontSize: "12px" },
+                            "& .MuiOutlinedInput-root": {
+                              "& fieldset": { borderColor: "#475569" }
+                            }
                           }}
                         />
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ color: "#fff", py: 3 }}>
+                      No items available
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
 
-                        <IconButton onClick={() => increaseQty(item.product_id)} sx={{ color: "#fff" }}>
-                          <AddIcon />
-                        </IconButton>
-                      </Box>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-
-                  <TableCell sx={{ color: "#fff" }}>
-                   <input type="text" placeholder="Reason" />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* FOOTER BUTTONS */}
-          <Box display="flex" justifyContent="flex-end" mt={3} gap={2}>
-            <Button onClick={onClose} variant="outlined" color="inherit">
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              sx={{ bgcolor: "#5A8DEE" }}
-              onClick={() => handleReceivedQty()}
-            >
-              Submit
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
-    </Modal>
+            {/* FOOTER BUTTONS */}
+            <Box display="flex" justifyContent="flex-end" mt={3} gap={2}>
+              <Button onClick={onClose} variant="outlined" color="inherit">
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                sx={{ bgcolor: "#5A8DEE" }}
+                onClick={() => handleReceivedQty()}
+              >
+                Submit
+              </Button>
+            </Box>
+          </Paper>
+        </Box>
+      </Modal>
+      <Toast show={showToast} message={toastMessage} type={toastType} />
+    </>
   );
 }

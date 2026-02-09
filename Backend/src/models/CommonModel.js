@@ -8,11 +8,20 @@ export const CommonModel = {
     groupBy = "",
     orderBy = "",
     limit = "",
+    storeId = null,
   } = {}) => {
     let sql = `SELECT ${fields.join(", ")} FROM ${table}`;
     const values = [];
 
     const whereClauses = [];
+
+    // ✅ AUTO-ADD STORE_ID FILTER FOR MULTI-TENANT
+    const tenantTables = ['categories', 'subcategories', 'products', 'customers', 'suppliers', 'packages', 'offers', 'purchases', 'sales', 'returns', 'hold_sales', 'ration_cards', 'payments', 'cards'];
+    
+    if (storeId && tenantTables.includes(table)) {
+      whereClauses.push(`${table}.store_id = ?`);
+      values.push(storeId);
+    }
 
   for (let key in conditions) {
     const condition = conditions[key];
@@ -67,6 +76,7 @@ export const CommonModel = {
     groupBy = "",
     orderBy = "",
     limit = "",
+    storeId = null,
   } = {}) => {
     const rows = await CommonModel.getAllData({
       table,
@@ -75,10 +85,18 @@ export const CommonModel = {
       groupBy: "",
       orderBy: "",
       limit: "",
+      storeId,
     });
     return rows[0];
   },
-  insertData: async ({ table, data } = {}) => {
+  insertData: async ({ table, data, storeId = null } = {}) => {
+    // ✅ AUTO-ADD STORE_ID FOR TENANT TABLES
+    const tenantTables = ['categories', 'subcategories', 'products', 'customers', 'suppliers', 'packages', 'offers', 'purchases', 'sales', 'returns', 'hold_sales', 'ration_cards', 'payments', 'cards'];
+    
+    if (storeId && tenantTables.includes(table) && !data.store_id) {
+      data.store_id = storeId;
+    }
+
     const keys = Object.keys(data);
     const values = Object.values(data);
     const placeholders = keys.map(() => "?").join(", ");
@@ -90,7 +108,14 @@ export const CommonModel = {
     return result.insertId;
   },
 
-  updateData: async ({ table, data, conditions } = {}) => {
+  updateData: async ({ table, data, conditions, storeId = null } = {}) => {
+    // ✅ AUTO-ADD STORE_ID FILTER FOR SECURITY
+    const tenantTables = ['categories', 'subcategories', 'products', 'customers', 'suppliers', 'packages', 'offers', 'purchases', 'sales', 'returns', 'hold_sales', 'ration_cards', 'payments', 'cards'];
+    
+    if (storeId && tenantTables.includes(table) && !conditions.store_id) {
+      conditions.store_id = storeId;
+    }
+
     const setKeys = Object.keys(data);
     const setValues = Object.values(data);
     const setClause = setKeys.map((key) => `${key} = ?`).join(", ");
@@ -106,7 +131,14 @@ export const CommonModel = {
     return result.affectedRows;
   },
 
-  deleteData: async ({ table, conditions } = {}) => {
+  deleteData: async ({ table, conditions, storeId = null } = {}) => {
+    // ✅ AUTO-ADD STORE_ID FILTER FOR SECURITY
+    const tenantTables = ['categories', 'subcategories', 'products', 'customers', 'suppliers', 'packages', 'offers', 'purchases', 'sales', 'returns', 'hold_sales', 'ration_cards', 'payments', 'cards'];
+    
+    if (storeId && tenantTables.includes(table) && !conditions.store_id) {
+      conditions.store_id = storeId;
+    }
+
     const conditionKeys = Object.keys(conditions);
     const conditionValues = Object.values(conditions);
     const whereClause = conditionKeys.map((key) => `${key} = ?`).join(" AND ");

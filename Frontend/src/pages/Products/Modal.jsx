@@ -18,6 +18,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import IconButton from "@mui/material/IconButton";
 import { categoryList,addCategory } from "../../services/categoryService";
 import { addProduct,updateProduct,supplierList,addSupplier } from "../../services/productService";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/Toast/Toast";
 
 const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
   const [tab, setTab] = useState(0);
@@ -89,12 +91,24 @@ const [newSupplier, setNewSupplier] = useState("");
   const handleTabChange = (_, newValue) => setTab(newValue);
 
   const handleChange = (e) => {
+    const { name, value, files } = e.target;
     setForm((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
-      image: e.target.files[0],
+      [name]: files && files.length ? files[0] : value,
     }));
   };
+
+  const { showToast, toastMessage, toastType, showToastNotification } = useToast();
+  const [imagePreview, setImagePreview] = useState("");
+
+  useEffect(() => {
+    if (form.image instanceof File) {
+      const url = URL.createObjectURL(form.image);
+      setImagePreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setImagePreview(form.image || "");
+  }, [form.image]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -112,7 +126,7 @@ const [newSupplier, setNewSupplier] = useState("");
                 }
      
       if (result.status === true) {
-        setSuccess(result.message);
+        showToastNotification(result.message, "success");
         setForm({
           product_name: "",
           sku: "",
@@ -132,10 +146,10 @@ const [newSupplier, setNewSupplier] = useState("");
         onClose();
          onSaved();
       } else {
-        setError(result.message);
+        showToastNotification(result.message, "error");
       }
     } catch (err) {
-      setError("Failed to save product");
+      showToastNotification("Failed to save product", "error");
     }
   };
 
@@ -428,7 +442,7 @@ const handleAddSupplier = async () => {
                   onChange={handleChange}
                 />
           <br/>
-        <img src={form.image} alt="IMG"  width={45} height={45}
+        <img src={imagePreview} alt="IMG"  width={45} height={45}
         style={{
           objectFit: "cover",
           borderRadius: 6,
@@ -453,6 +467,7 @@ const handleAddSupplier = async () => {
         </Box>
       </Paper>
     </Modal>
+    <Toast show={showToast} message={toastMessage} type={toastType} />
       
       <Dialog open={openAddCategory}>
   <DialogTitle  sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>Add Category

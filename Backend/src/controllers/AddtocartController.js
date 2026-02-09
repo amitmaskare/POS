@@ -1,13 +1,15 @@
 import {AddtocartService} from "../services/AddtocartService.js"
 import {sendResponse} from "../utils/sendResponse.js"
 import { CommonModel } from "../models/CommonModel.js";
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 export const AddtocartController={
 
  list:async(req,resp)=>{
     try{
+        const storeId = getStoreIdFromRequest(req);
         const userId = req.user.userId;
-        const result=await AddtocartService.list(userId)
+        const result=await AddtocartService.list(userId, storeId)
         if(!result || result.length===0)
         {
             return sendResponse(resp,false,400,"No Data Found")
@@ -20,6 +22,7 @@ export const AddtocartController={
  },
  add:async(req,resp)=>{
     try{
+        const storeId = getStoreIdFromRequest(req);
         const requiredFields=[
             'productId',
             'quantity',
@@ -34,7 +37,7 @@ export const AddtocartController={
          const{productId,quantity}=req.body
          const userId=req.user.userId;
           let result;
-         const checkItem=await CommonModel.getSingle({table:'add_to_cart',conditions:{userId,productId}})
+         const checkItem=await CommonModel.getSingle({table:'add_to_cart',conditions:{userId,productId}, storeId})
         
          if(!checkItem)
          {
@@ -43,14 +46,14 @@ export const AddtocartController={
             productId:productId,
             quantity:quantity
         }
-         result= await AddtocartService.add(saveData)
+         result= await AddtocartService.add(saveData, storeId)
          }
          else{
            const updateData = {
         quantity: checkItem.quantity + quantity, 
       };
       const id=checkItem.id
-         result= await CommonModel.updateData({table:'add_to_cart',data:updateData,conditions:{id}})
+         result= await CommonModel.updateData({table:'add_to_cart',data:updateData,conditions:{id}, storeId})
          }
        
         if(!result)
@@ -67,8 +70,9 @@ export const AddtocartController={
   
   deleteData:async(req,resp)=>{
     try{
+        const storeId = getStoreIdFromRequest(req);
         const{id}=req.params
-        const result=await AddtocartService.deleteData(id)
+        const result=await AddtocartService.deleteData(id, storeId)
         return sendResponse(resp,true,200,"Item deleted successful")
     }catch(error)
     {

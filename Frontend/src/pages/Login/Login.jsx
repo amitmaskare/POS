@@ -53,6 +53,7 @@ export default function Login({ onLogin }) {
 
       if (result?.status) {
         localStorage.setItem("token", result.data.token);
+        localStorage.setItem("store_id", result.data.user.store_id);
         localStorage.setItem("user", JSON.stringify(result.data.user));
         onLogin?.();
         navigate("/dashboard");

@@ -56,8 +56,9 @@ export const AuthController = {
           userId: userData.userId,
           email: userData.email,
           name: userData.name,
-          role: userData.role_name,          // ✅ FIXED
-          permissions: userData.permissions // ✅ FIXED
+          role: userData.role_name,
+          store_id: userData.store_id,       // ✅ ADD STORE_ID TO JWT
+          permissions: userData.permissions
         },
         JWT_SECRET,
         { expiresIn: "1d" }
@@ -68,7 +69,8 @@ export const AuthController = {
         user: {
           id: userData.userId,
           name: userData.name,
-          role: userData.role_name,          // ✅ FIXED
+          role: userData.role_name,
+          store_id: userData.store_id,       // ✅ ADD STORE_ID TO RESPONSE
           permissions: userData.permissions
         }
       };

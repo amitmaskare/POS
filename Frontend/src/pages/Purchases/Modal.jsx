@@ -113,7 +113,8 @@ useEffect(() => {
         ...p,
         selected: false,
         qty: 1,
-        price: p.cost_price,
+          cost_price: p.cost_price || 0,
+          tax_rate: p.tax_rate || 0
       }));
       setItems(formattedItems);
     }
@@ -256,16 +257,12 @@ const getGrandTotal = () => {
   type,
   supplier_id: supplierId,
   purchase_date: new Date().toISOString().slice(0, 19).replace("T", " "),
-  subtotal: subtotal,
-  tax: totalTax,
-  grand_total: grandTotal,
   items: selected.map((i) => ({
      id: i.purchase_item_id,
     product_id: i.id,
     quantity: i.qty,
     cost_price: i.cost_price,
-    product_name: i.product_name,
-    tax: i.tax_rate || 0,
+        tax: i.tax_rate || 0,
     image: i.image || null
   })),
 };
@@ -388,8 +385,8 @@ const getGrandTotal = () => {
                   </TableCell>
 
                   <TableCell>
-                     <img
-              src={item.image}
+                    <img
+                  src={item?.image || ""}
               alt="product"
               className="rounded-3"
               style={{ width: 55, height: 55, objectFit: "cover" }}

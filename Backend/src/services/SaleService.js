@@ -4,7 +4,7 @@ import pool from "../config.js"
 
 export const SaleService={
 
-    list:async()=>{
+    list:async(storeId)=>{
       const query = `
       SELECT 
       sale.id,
@@ -23,42 +23,51 @@ export const SaleService={
     FROM sales AS sale
     LEFT JOIN sales_items AS si 
       ON si.sale_id = sale.id
-    
+    WHERE sale.store_id = ?
     GROUP BY 
       sale.id
     ORDER BY sale.id DESC
     `;
-    return await CommonModel.rawQuery(query);    
+    return await CommonModel.rawQuery(query, [storeId]);    
     },
 
-    generateInvoice: async() => {
-       
-        const [rows] = await pool.promise().query(
-          "SELECT invoice_no FROM sales ORDER BY id DESC LIMIT 1"
-        );
-      
-        let nextSeq = 1;
-      
-        if (rows.length > 0) {
-          const lastPo = rows[0].invoice_no ; // TEMP-0006 OR PO-0006
-          const parts = lastPo.split("-");
-      
-          const lastSeq = parseInt(parts[parts.length - 1], 10);
-          nextSeq = lastSeq + 1;
-        }
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, "0");
-        const day = String(now.getDate()).padStart(2, "0");
-        const formattedSeq = String(nextSeq).padStart(4, "0");
-      
-        return `TXN-${day}-${month}-${year}-${formattedSeq}`;
+    generateInvoice: async () => {
+  const [rows] = await pool.promise().query(
+    `SELECT invoice_no FROM sales WHERE invoice_no LIKE 'TXN%' ORDER BY invoice_no DESC 
+    LIMIT 1`
+  );
+
+  let nextSeq = 1;
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const todayPrefix = `TXN${year}${month}${day}`;
+
+  if (rows.length > 0) {
+    const lastInvoice = rows[0].invoice_no;
+
+    // Extract last 4 digits safely
+    const lastSeq = parseInt(lastInvoice.slice(-4), 10);
+
+    if (!isNaN(lastSeq)) {
+      nextSeq = lastSeq + 1;
+    }
+  }
+
+  const formattedSeq = String(nextSeq).padStart(4, "0");
+
+  return `${todayPrefix}${formattedSeq}`;
+},
+
+    createSale: async (data, storeId) => {
+        return await CommonModel.insertData({
+          table: "sales",
+          data,
+          storeId
+        });
       },
-
-      createSale:async(data)=>{
-        const result=await CommonModel.insertData({table:"sales",data:data})
-        return result
-    },
 
     createSaleItem: async (data) => {
         return await CommonModel.insertData({
@@ -67,18 +76,18 @@ export const SaleService={
         });
       },
 
-      getSaleById :async(id)=>{
-        const result=await CommonModel.getSingle({table:"sales", conditions: { id }})
+      getSaleById :async(id, storeId)=>{
+        const result=await CommonModel.getSingle({table:"sales", conditions: { id }, storeId})
         return result
       },
 
-      getSale :async(invoice_no)=>{
-        const result=await CommonModel.getSingle({table:"sales", conditions: { invoice_no:invoice_no }})
+      getSale :async(invoice_no, storeId)=>{
+        const result=await CommonModel.getSingle({table:"sales", conditions: { invoice_no:invoice_no }, storeId})
         return result
       },
 
 
-      saleReport: async () => {
+      saleReport: async (storeId) => {
         const query = `
         SELECT 
         s.invoice_no,
@@ -87,11 +96,12 @@ export const SaleService={
         COUNT(si.id) AS items
       FROM sales s
       LEFT JOIN sales_items si ON si.sale_id = s.id
+      WHERE s.store_id = ?
       GROUP BY s.id`
-        return await CommonModel.rawQuery(query);
+        return await CommonModel.rawQuery(query, [storeId]);
       },
 
-      transactionList:async()=>{
+      transactionList:async(storeId)=>{
         const query = `
         SELECT 
           s.id,
@@ -103,9 +113,10 @@ export const SaleService={
           p.razorpay_payment_id
         FROM sales s
         LEFT JOIN payments p ON p.sale_id = s.id
+        WHERE s.store_id = ?
         ORDER BY s.created_at DESC
       `;
-      return await CommonModel.rawQuery(query);    
+      return await CommonModel.rawQuery(query, [storeId]);    
       },   
 
 }

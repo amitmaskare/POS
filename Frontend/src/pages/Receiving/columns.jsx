@@ -5,21 +5,32 @@ export  const columns = [
     { id: "purchase_date", label: "Date" },
     { id: "total_items", label: "Items" },
     { id: "amount", label: "Amount" },
-    // { id: "actions", label: "Actions" },
     {
       id: "actions",
       label: "Actions",
-      render: (row,extra) => (
-        <Box display="flex" gap={1}>
-          <Button size="small" variant="outlined" color="primary" onClick={() => extra?.edit(row?.id)}>
-            Received Items
-          </Button>
-    
-          {/* <Button size="small" variant="outlined" color="error">
-            Delete
-          </Button> */}
-        </Box>
-      ),
+      render: (row, extra) => {
+        // ✅ SAFETY: Validate input parameters
+        if (!row || typeof row !== 'object') return <Box>-</Box>;
+        
+        const handleClick = () => {
+          if (extra?.edit && typeof extra.edit === 'function' && row?.id) {
+            extra.edit(row.id);
+          }
+        };
+        
+        return (
+          <Box display="flex" gap={1}>
+            <Button 
+              size="small" 
+              variant="outlined" 
+              color="primary" 
+              onClick={handleClick}
+              disabled={!row?.id}
+            >
+              Received Items
+            </Button>
+          </Box>
+        );
+      },
     }
-
   ];

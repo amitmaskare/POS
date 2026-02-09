@@ -1,11 +1,13 @@
 import { PackageService } from "../services/PackageService.js";
 import {sendResponse} from "../utils/sendResponse.js"
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 
 export const PackageController={
     list:async(req,resp)=>{
         try{
-            const result=await PackageService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await PackageService.list(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(reportError,false,400,"No Data Found")
@@ -18,12 +20,13 @@ export const PackageController={
     },
     add:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const{package_name}=req.body
             if(!package_name)
             {
                 return sendResponse(resp,false,400,"package_name field is required")
             }
-            const result= await PackageService.add(req.body)
+            const result= await PackageService.add(req.body, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
@@ -35,13 +38,14 @@ export const PackageController={
         }
     },
     getById:async(req,resp)=>{
-        try{
+        try{storeId = getStoreIdFromRequest(req);
             const {id}=req.params
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
             }
-            const result=await PackageService.getById(id)
+            const result=await PackageService.getById(id, storeId)
+            //const result=await PackageService.getById(id)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -53,7 +57,7 @@ export const PackageController={
         }
     },
     update:async(req,resp)=>{
-        try{
+        try{const storeId = getStoreIdFromRequest(req);
              const {id,package_name}=req.body
                         if(!id)
                         {
@@ -63,7 +67,7 @@ export const PackageController={
                         {
                             return sendResponse(resp,false,400,"package_name field is required")
                         }
-                        const result= await PackageService.update(req.body)
+                        const result= await PackageService.update(req.body, storeId)
                         if(!result)
                         {
                             return sendResponse(resp,false,400,"Something went wrong")
@@ -77,8 +81,9 @@ export const PackageController={
     },
     deleteData:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
-            const result=await PackageService.deleteData(id)
+            const result=await PackageService.deleteData(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"ID not found")
