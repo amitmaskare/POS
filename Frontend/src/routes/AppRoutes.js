@@ -2,21 +2,6 @@
 
 import {useState} from "react";
 import { Routes,Route } from "react-router-dom";
-// Pages
-
-// import Dashboard from "../pages/Dashboard";
-// import Products from "../pages/Products";
-// import Login from "../pages/Login";
-// import ForgotPassword from "../pages/ForgotPassword";
-// import Manage from "../layouts/Manage";
-// import Purchases from "../pages/Purchases";
-// import Transactions from "../pages/Transactions";
-// import Inventory from "../pages/Inventory";
-// import Reports from "../pages/Reports";
-// import Customers from "../pages/Customers";
-// import Users from "../pages/Users";
-// import RationCards from "../pages/RationCards";
-
 import Dashboard from "../pages/PosSystem/Dashboard";
 import Products from "../pages/Products/Products";
 import Login from "../pages/Login/Login";
@@ -40,6 +25,7 @@ import Role from "../pages/Role/Role";
 import Permission from "../pages/Permission/Permission";
 import RolePermission from "../pages/RolePermission/RolePermission";
 import UserPermissions from "../pages/Users/UserPermissions";
+import Store from "../pages/Store/Stores";
 
 const AppRoutes = () => {
  const [auth, setAuth] = useState(localStorage.getItem('token'));
@@ -83,6 +69,7 @@ const AppRoutes = () => {
         <Route path="user-permissions/:userId" element={<UserPermissions />} />
         <Route path="user-permissions" element={<UserPermissions />} />
         <Route path="salereturn" element={<SaleReturn />} />
+        <Route path="stores" element={<Store />} />
       </Route>
 
       {/* PUBLIC ROUTES (WITHOUT SIDEBAR) */}

@@ -30,7 +30,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { getUser } from "../utils/Auth.js";
 
 const menuItems = [
-  { title: "POS System", icon: <ShoppingCartIcon />, path: "/dashboard", permission: "view-dashboard" },
+  { title: "POS System", icon: <ShoppingCartIcon />, path: "/dashboard", permission: "view-pos" },
   { title: "Products", icon: <CategoryIcon />, path: "/products", permission: "view-product" },
   { title: "Purchases", icon: <ShoppingBagIcon />, path: "/purchases", permission: "view-purchase" },
   { title: "Receiving", icon: <ShoppingBagIcon />, path: "/receiving", permission: "view-receiving" },
@@ -40,6 +40,7 @@ const menuItems = [
   { title: "Inventory", icon: <InventoryIcon />, path: "/inventory", permission: "view-inventory" },
   { title: "Reports", icon: <AssessmentIcon />, path: "/reports", permission: "view-reports" },
   { title: "Customers", icon: <PeopleIcon />, path: "/customers", permission: "view-customer" },
+  { title: "Stores", icon: <LuStore />, path: "/stores", permission: "view-store" },
   { title: "Users", icon: <PersonIcon />, path: "/users", permission: "view-user" },
   { title: "Ration Cards", icon: <InventoryIcon />, path: "/rationcards", permission: "view-rationcard" },
   { title: "Offers", icon: <InventoryIcon />, path: "/offers", permission: "view-offer" },

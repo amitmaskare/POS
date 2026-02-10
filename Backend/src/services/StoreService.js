@@ -5,7 +5,7 @@ export const StoreService = {
   list: async () => {
     const result = await CommonModel.getAllData({
       table: "stores",
-      fields: ["store_id,store_name,phone,address,type,location,created_at"],
+      fields: ["store_id,store_name,phone,email,address,type,location,created_at"],
     });
     return result;
   },

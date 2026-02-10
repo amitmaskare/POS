@@ -27,21 +27,11 @@ export const StoreController = {
       if (err) {
         return sendResponse(resp, false, 400, `Upload Error: ${err.message}`);
       }
-
       const requiredFields = [
-        "ownerId",
         "store_name",
         "phone",
         "address",
-        "gst",
-        "tax",
-        "city",
-        "location",
-        "pincode",
         "type",
-        "branding",
-        "business_name",
-        "gst_number",
         "email",
       ];
       for (let field of requiredFields) {
@@ -51,23 +41,10 @@ export const StoreController = {
       }
 
       const {
-        ownerId,
         store_name,
         phone,
         address,
-        gst,
-        tax,
-        city,
-        location,
-        pincode,
-        currency,
-        address_proof,
         type,
-        branding,
-        business_name,
-        gst_number,
-        vat,
-        website,
         email,
       } = req.body;
 
@@ -75,27 +52,13 @@ export const StoreController = {
         const imageUrl = req.file ? req.file.filename : null;
         const store_id = await StoreService.getNextStoreId();
         const saveData = {
-          ownerId: ownerId,
           store_id: store_id,
           store_name: store_name,
           phone: phone,
           address: address,
-          gst: gst,
-          tax: tax,
-          city: city,
-          location: location,
-          pincode: pincode,
-          currency: currency,
-          address_proof: address_proof,
           type: type,
-          branding: Array.isArray(branding) ? branding.join(", ") : branding,
-          business_name: business_name,
-          gst_number: gst_number,
-          vat: vat ? vat : 0,
           logo: imageUrl,
-          website: website,
           email: email,
-          created_at: new Date(),
         };
         const result = await StoreService.add(saveData);
         if (!result) {
@@ -136,19 +99,10 @@ export const StoreController = {
 
         const requiredFields = [
           "id",
-          "ownerId",
           "store_name",
           "phone",
           "address",
-          "gst",
-          "tax",
-          "city",
-          "location",
-          "pincode",
           "type",
-          "branding",
-          "business_name",
-          "gst_number",
           "email",
         ];
 
@@ -160,23 +114,10 @@ export const StoreController = {
 
         const {
           id,
-          ownerId,
           store_name,
           phone,
           address,
-          gst,
-          tax,
-          city,
-          location,
-          pincode,
-          currency,
-          address_proof,
           type,
-          branding,
-          business_name,
-          gst_number,
-          vat,
-          website,
           email,
         } = req.body;
 
@@ -205,24 +146,11 @@ export const StoreController = {
 
         // ✅ Prepare data for DB update
         const saveData = {
-          ownerId,
           store_name,
           phone,
           address,
-          gst,
-          tax,
-          city,
-          location,
-          pincode,
-          currency: currency || null,
-          address_proof: address_proof || null,
           type,
-          branding: Array.isArray(branding) ? branding.join(",") : branding,
-          business_name,
-          gst_number,
-          vat: vat || 0,
           logo: imageUrl,
-          website: website || null,
           email,
         };
 
