@@ -4,7 +4,6 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
 import EditIcon from "@mui/icons-material/Edit";
-import JsBarcode from "jsbarcode";
 import { Box,
   Typography,
   Paper,
@@ -26,7 +25,7 @@ import { Box,
   TableRow,
   DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
-import { checkout_sale,verifyPayment,createQRPayment,checkQRPaymentStatus } from "../../services/saleService";
+import { checkout_sale,verifyPayment,createQRPayment,checkQRPaymentStatus,confirmQRPayment } from "../../services/saleService";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CircularProgress from "@mui/material/CircularProgress";
 import QRCode from "qrcode";
@@ -529,9 +528,6 @@ const handleQRPayment = async () => {
 
       setQrCodeImage(qrDataUrl);
       setQrModalOpen(true);
-
-      // Start polling for payment status
-      startPaymentPolling(result.data.qrCodeId, result.data.saleId, result.data.saleData);
     } else {
       alert("Failed to generate QR code");
     }
@@ -541,34 +537,40 @@ const handleQRPayment = async () => {
   }
 };
 
-const startPaymentPolling = (qrCodeId, saleId, saleData) => {
-  const interval = setInterval(async () => {
-    try {
-      const statusResult = await checkQRPaymentStatus({ qrCodeId, saleId });
+const handleConfirmPayment = async () => {
+  try {
+    if (!qrCodeData) return;
 
-      if (statusResult.status && statusResult.data.status === "paid") {
-        setPaymentStatus("paid");
-        clearInterval(interval);
-        setPollingInterval(null);
+    setPaymentStatus("confirming");
 
-        // Print invoice
-        setTimeout(() => {
-          const invoice = buildExchangeInvoice(saleData);
-          printInvoice(invoice);
+    const confirmResult = await confirmQRPayment({
+      saleId: qrCodeData.saleId
+    });
 
-          // Reset and close
-          setQrModalOpen(false);
-          setCart([]);
-          setQrCodeData(null);
-          setPaymentStatus("pending");
-        }, 1000);
-      }
-    } catch (error) {
-      console.error("Polling Error:", error);
+    if (confirmResult.status) {
+      setPaymentStatus("paid");
+
+      // Print invoice
+      setTimeout(() => {
+        const invoice = buildExchangeInvoice(qrCodeData.saleData);
+        printInvoice(invoice);
+
+        // Reset and close
+        setQrModalOpen(false);
+        setCart([]);
+        setQrCodeData(null);
+        setQrCodeImage(null);
+        setPaymentStatus("pending");
+      }, 1000);
+    } else {
+      alert("Failed to confirm payment. Please try again.");
+      setPaymentStatus("pending");
     }
-  }, 3000); // Poll every 3 seconds
-
-  setPollingInterval(interval);
+  } catch (error) {
+    console.error("Confirm Payment Error:", error);
+    alert("Error confirming payment");
+    setPaymentStatus("pending");
+  }
 };
 
 const closeQRModal = () => {
@@ -943,16 +945,34 @@ const closeQRModal = () => {
           elevation={0}
           sx={{
             p: 2,
-            backgroundColor: paymentStatus === 'paid' ? '#d4edda' : '#fff3cd',
+            backgroundColor: paymentStatus === 'paid' ? '#d4edda' : paymentStatus === 'confirming' ? '#cce5ff' : '#fff3cd',
             borderRadius: 2,
-            border: `2px solid ${paymentStatus === 'paid' ? '#28a745' : '#ffc107'}`
+            border: `2px solid ${paymentStatus === 'paid' ? '#28a745' : paymentStatus === 'confirming' ? '#007bff' : '#ffc107'}`
           }}
         >
           {paymentStatus === 'pending' && (
+            <Box>
+              <Typography variant="body1" fontWeight="bold" color="#856404" sx={{ mb: 2, textAlign: 'center' }}>
+                Scan QR code with any UPI app to pay
+              </Typography>
+              <Button
+                variant="contained"
+                color="success"
+                fullWidth
+                size="large"
+                onClick={handleConfirmPayment}
+                sx={{ mt: 1 }}
+              >
+                I Have Paid - Confirm Payment
+              </Button>
+            </Box>
+          )}
+
+          {paymentStatus === 'confirming' && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-              <CircularProgress size={24} sx={{ color: '#ffc107' }} />
-              <Typography variant="body1" fontWeight="bold" color="#856404">
-                Waiting for payment...
+              <CircularProgress size={24} sx={{ color: '#007bff' }} />
+              <Typography variant="body1" fontWeight="bold" color="#004085">
+                Confirming payment...
               </Typography>
             </Box>
           )}
@@ -965,7 +985,9 @@ const closeQRModal = () => {
         </Paper>
 
         <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-          Open any UPI app and scan the QR code to complete payment
+          1. Scan QR code with GPay/PhonePe/Paytm
+          2. Complete the payment
+          3. Click "I Have Paid" button above
         </Typography>
       </>
     )}

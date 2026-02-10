@@ -110,3 +110,19 @@ export const checkQRPaymentStatus=async(data)=>{
     }
 }
 
+export const confirmQRPayment=async(data)=>{
+    try{
+        const token = localStorage.getItem("token");
+        const response= await axios.post(`${apiUrl}/sale/confirmQRPayment`,data,{
+           headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        })
+
+        return response.data
+    }catch(error)
+    {
+      throw error
+    }
+}
+
