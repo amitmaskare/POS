@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -26,7 +26,10 @@ import { Box,
   TableRow,
   DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
-import { checkout_sale,verifyPayment } from "../../services/saleService";
+import { checkout_sale,verifyPayment,createQRPayment,checkQRPaymentStatus } from "../../services/saleService";
+import QrCode2Icon from "@mui/icons-material/QrCode2";
+import CircularProgress from "@mui/material/CircularProgress";
+import QRCode from "qrcode";
 
 export default function Cart({ cart, setCart }) {
   const [active, setActive] = useState(""); 
@@ -38,6 +41,12 @@ const [cashOpen, setCashOpen] = useState(false);
 const [receivedAmount, setReceivedAmount] = useState("");
 const [returnAmount, setReturnAmount] = useState(0);
 const [holdItem, setHoldItem] = useState([]);
+const [qrModalOpen, setQrModalOpen] = useState(false);
+const [qrCodeData, setQrCodeData] = useState(null);
+const [paymentStatus, setPaymentStatus] = useState("pending");
+const [pollingInterval, setPollingInterval] = useState(null);
+const [qrCodeImage, setQrCodeImage] = useState(null);
+const qrCanvasRef = useRef(null);
   // Handle Quantity
  const updateQty = (id, action) => {
   setCart((prev) =>
@@ -482,6 +491,98 @@ const handleRazorpay = async () => {
   rzp.open();
 };
 
+const handleQRPayment = async () => {
+  try {
+    setActive("qr_code");
+    setPaymentStatus("pending");
+
+    const payload = {
+      subtotal,
+      tax,
+      total,
+      cart: cart.map(item => ({
+        product_id: item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        price: item.price,
+        tax: item.tax,
+        total: item.price * item.qty,
+        image: item.image,
+      })),
+    };
+
+    const result = await createQRPayment(payload);
+
+    if (result.status) {
+      setQrCodeData(result.data);
+
+      // Generate QR code from the payment URL
+      const qrDataUrl = await QRCode.toDataURL(result.data.qrCodeUrl, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'H'
+      });
+
+      setQrCodeImage(qrDataUrl);
+      setQrModalOpen(true);
+
+      // Start polling for payment status
+      startPaymentPolling(result.data.qrCodeId, result.data.saleId, result.data.saleData);
+    } else {
+      alert("Failed to generate QR code");
+    }
+  } catch (error) {
+    console.error("QR Payment Error:", error);
+    alert("Failed to create QR payment");
+  }
+};
+
+const startPaymentPolling = (qrCodeId, saleId, saleData) => {
+  const interval = setInterval(async () => {
+    try {
+      const statusResult = await checkQRPaymentStatus({ qrCodeId, saleId });
+
+      if (statusResult.status && statusResult.data.status === "paid") {
+        setPaymentStatus("paid");
+        clearInterval(interval);
+        setPollingInterval(null);
+
+        // Print invoice
+        setTimeout(() => {
+          const invoice = buildExchangeInvoice(saleData);
+          printInvoice(invoice);
+
+          // Reset and close
+          setQrModalOpen(false);
+          setCart([]);
+          setQrCodeData(null);
+          setPaymentStatus("pending");
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("Polling Error:", error);
+    }
+  }, 3000); // Poll every 3 seconds
+
+  setPollingInterval(interval);
+};
+
+const closeQRModal = () => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+    setPollingInterval(null);
+  }
+  setQrModalOpen(false);
+  setQrCodeData(null);
+  setQrCodeImage(null);
+  setPaymentStatus("pending");
+  setActive("");
+};
+
   return (
     <>
     <aside className="cart p-3">
@@ -602,8 +703,8 @@ const handleRazorpay = async () => {
         {/* Payment Buttons */}
         <div className="d-flex gap-2 mt-3">
           <button
-            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
-            style={getButtonStyle("cash")}
+            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("cash"), flex: 1}}
             onClick={() => {
     setActive("cash");
     setCashOpen(true);
@@ -614,15 +715,24 @@ const handleRazorpay = async () => {
           </button>
 
           <button
-            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
-            style={getButtonStyle("credit")}
-            onClick={() =>{ 
+            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("credit"), flex: 1}}
+            onClick={() =>{
               setActive("credit");
               handleRazorpay();
             }}
           >
             <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
             Credit
+          </button>
+
+          <button
+            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("qr_code"), flex: 1}}
+            onClick={handleQRPayment}
+          >
+            <QrCode2Icon style={{ fontSize: 18, marginRight: 5 }} />
+            QR
           </button>
         </div>
 
@@ -763,6 +873,111 @@ const handleRazorpay = async () => {
       onClick={checkoutSale}
     >
       OK & Print
+    </Button>
+  </DialogActions>
+</Dialog>
+
+<Dialog
+  open={qrModalOpen}
+  onClose={closeQRModal}
+  maxWidth="sm"
+  fullWidth
+>
+  <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
+    <QrCode2Icon sx={{ fontSize: 40, color: '#5A8DEE', mb: 1 }} />
+    <Typography variant="h5" fontWeight="bold">
+      Scan QR Code to Pay
+    </Typography>
+  </DialogTitle>
+
+  <DialogContent sx={{ textAlign: 'center', py: 3 }}>
+    {qrCodeData && (
+      <>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 3,
+            mb: 3,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 2
+          }}
+        >
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            Invoice: {qrCodeData.invoice_no}
+          </Typography>
+          <Typography variant="h4" fontWeight="bold" color="#5A8DEE" sx={{ mb: 2 }}>
+            ₹{Number(qrCodeData.amount).toFixed(2)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Items: {cart.length}
+          </Typography>
+        </Paper>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            mb: 3,
+            p: 2,
+            backgroundColor: 'white',
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}
+        >
+          {qrCodeImage ? (
+            <img
+              src={qrCodeImage}
+              alt="QR Code"
+              style={{
+                width: '400px',
+                height: '400px',
+                objectFit: 'contain'
+              }}
+            />
+          ) : (
+            <CircularProgress size={60} />
+          )}
+        </Box>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            backgroundColor: paymentStatus === 'paid' ? '#d4edda' : '#fff3cd',
+            borderRadius: 2,
+            border: `2px solid ${paymentStatus === 'paid' ? '#28a745' : '#ffc107'}`
+          }}
+        >
+          {paymentStatus === 'pending' && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+              <CircularProgress size={24} sx={{ color: '#ffc107' }} />
+              <Typography variant="body1" fontWeight="bold" color="#856404">
+                Waiting for payment...
+              </Typography>
+            </Box>
+          )}
+
+          {paymentStatus === 'paid' && (
+            <Typography variant="body1" fontWeight="bold" color="#155724">
+              ✓ Payment Successful! Printing receipt...
+            </Typography>
+          )}
+        </Paper>
+
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+          Open any UPI app and scan the QR code to complete payment
+        </Typography>
+      </>
+    )}
+  </DialogContent>
+
+  <DialogActions sx={{ px: 3, pb: 2 }}>
+    <Button
+      onClick={closeQRModal}
+      variant="outlined"
+      disabled={paymentStatus === 'paid'}
+    >
+      Cancel
     </Button>
   </DialogActions>
 </Dialog>
