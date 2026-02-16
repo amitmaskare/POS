@@ -40,6 +40,7 @@ import Role from "../pages/Role/Role";
 import Permission from "../pages/Permission/Permission";
 import RolePermission from "../pages/RolePermission/RolePermission";
 import UserPermissions from "../pages/Users/UserPermissions";
+import POSSettings from "../pages/Settings/POSSettings";
 
 const AppRoutes = () => {
  const [auth, setAuth] = useState(localStorage.getItem('token'));
@@ -83,6 +84,7 @@ const AppRoutes = () => {
         <Route path="user-permissions/:userId" element={<UserPermissions />} />
         <Route path="user-permissions" element={<UserPermissions />} />
         <Route path="salereturn" element={<SaleReturn />} />
+        <Route path="pos-settings" element={<POSSettings />} />
       </Route>
 
       {/* PUBLIC ROUTES (WITHOUT SIDEBAR) */}

@@ -26,6 +26,7 @@ import { Box,
   DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
 import { checkout_sale,verifyPayment,createQRPayment,checkQRPaymentStatus,confirmQRPayment } from "../../services/saleService";
+import { processPayment, getDeviceStatus } from "../../services/posService";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CircularProgress from "@mui/material/CircularProgress";
 import QRCode from "qrcode";
@@ -46,6 +47,9 @@ const [paymentStatus, setPaymentStatus] = useState("pending");
 const [pollingInterval, setPollingInterval] = useState(null);
 const [qrCodeImage, setQrCodeImage] = useState(null);
 const qrCanvasRef = useRef(null);
+const [posConnected, setPosConnected] = useState(false);
+const [posProcessing, setPosProcessing] = useState(false);
+const [onlinePaymentOpen, setOnlinePaymentOpen] = useState(false);
   // Handle Quantity
  const updateQty = (id, action) => {
   setCart((prev) =>
@@ -357,7 +361,93 @@ const checkoutSale = async () => {
 
 useEffect(()=>{
   holdlist()
+  checkPOSConnection()
 },[])
+
+// Check POS device connection status
+const checkPOSConnection = async () => {
+  try {
+    const status = await getDeviceStatus();
+    setPosConnected(status.data.connected);
+  } catch (error) {
+    setPosConnected(false);
+  }
+};
+
+// Handle POS Card Payment
+const handlePOSPayment = async () => {
+  if (!posConnected) {
+    alert('POS device not connected! Please go to Settings > POS Settings to connect your device first.');
+    return;
+  }
+
+  if (cart.length === 0) {
+    alert('Cart is empty!');
+    return;
+  }
+
+  setPosProcessing(true);
+  setActive("pos");
+
+  try {
+    // Step 1: Create sale first with pending status
+    const payload = {
+      payment_method: 'pos_card',
+      subtotal,
+      tax,
+      total,
+      cart: cart.map(item => ({
+        product_id: item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        tax: item.tax,
+        price: item.price,
+        total: item.price * item.qty,
+        image: item.image
+      }))
+    };
+
+    const saleResult = await checkout_sale(payload);
+
+    if (!saleResult.status) {
+      alert('Failed to create sale');
+      setPosProcessing(false);
+      return;
+    }
+
+    // Step 2: Process payment through POS device
+    alert('Please insert, swipe, or tap the customer\'s card on the POS machine...');
+
+    const paymentResult = await processPayment({
+      amount: total,
+      invoiceNo: saleResult.data.invoice_no,
+      saleId: saleResult.data.id || null
+    });
+
+    if (paymentResult.success && paymentResult.data.success) {
+      // Payment approved!
+      alert(`Payment Approved!
+Transaction ID: ${paymentResult.data.transactionId}
+Card: ${paymentResult.data.cardNumber || 'XXXX'}
+Auth Code: ${paymentResult.data.authCode || 'N/A'}`);
+
+      // Print invoice
+      const invoice = buildExchangeInvoice(saleResult.data);
+      printInvoice(invoice);
+
+      // Clear cart
+      setCart([]);
+      setActive("");
+    } else {
+      alert('Payment declined or failed. Please try again or use another payment method.');
+    }
+  } catch (error) {
+    console.error('POS payment error:', error);
+    alert('Error processing payment: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setPosProcessing(false);
+  }
+};
 
 const holdlist=async()=>{
   try{
@@ -708,9 +798,9 @@ const closeQRModal = () => {
             className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
             style={{...getButtonStyle("cash"), flex: 1}}
             onClick={() => {
-    setActive("cash");
-    setCashOpen(true);
-  }}
+              setActive("cash");
+              setCashOpen(true);
+            }}
           >
             <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
             Cash
@@ -718,23 +808,11 @@ const closeQRModal = () => {
 
           <button
             className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
-            style={{...getButtonStyle("credit"), flex: 1}}
-            onClick={() =>{
-              setActive("credit");
-              handleRazorpay();
-            }}
+            style={{...getButtonStyle("online"), flex: 1}}
+            onClick={() => setOnlinePaymentOpen(true)}
           >
             <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Credit
-          </button>
-
-          <button
-            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
-            style={{...getButtonStyle("qr_code"), flex: 1}}
-            onClick={handleQRPayment}
-          >
-            <QrCode2Icon style={{ fontSize: 18, marginRight: 5 }} />
-            QR
+            Online
           </button>
         </div>
 
@@ -876,6 +954,116 @@ const closeQRModal = () => {
     >
       OK & Print
     </Button>
+  </DialogActions>
+</Dialog>
+
+{/* Online Payment Options Modal */}
+<Dialog open={onlinePaymentOpen} onClose={() => setOnlinePaymentOpen(false)} maxWidth="sm" fullWidth>
+  <DialogTitle>Select Online Payment Method</DialogTitle>
+  <DialogContent>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+
+      {/* Credit Card / Razorpay */}
+      <Button
+        variant="outlined"
+        size="large"
+        fullWidth
+        startIcon={<CreditCardIcon />}
+        onClick={() => {
+          setOnlinePaymentOpen(false);
+          setActive("credit");
+          handleRazorpay();
+        }}
+        sx={{
+          justifyContent: 'flex-start',
+          py: 2,
+          px: 3,
+          textTransform: 'none',
+          borderColor: '#5A8DEE',
+          color: '#5A8DEE',
+          '&:hover': {
+            borderColor: '#5A8DEE',
+            backgroundColor: '#f0f4ff',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+          <Typography variant="body1" fontWeight="600">Credit Card</Typography>
+          <Typography variant="caption" color="text.secondary">Pay via Razorpay Gateway</Typography>
+        </Box>
+      </Button>
+
+      {/* QR Code Payment */}
+      <Button
+        variant="outlined"
+        size="large"
+        fullWidth
+        startIcon={<QrCode2Icon />}
+        onClick={() => {
+          setOnlinePaymentOpen(false);
+          handleQRPayment();
+        }}
+        sx={{
+          justifyContent: 'flex-start',
+          py: 2,
+          px: 3,
+          textTransform: 'none',
+          borderColor: '#28a745',
+          color: '#28a745',
+          '&:hover': {
+            borderColor: '#28a745',
+            backgroundColor: '#f0fff4',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+          <Typography variant="body1" fontWeight="600">QR Code / UPI</Typography>
+          <Typography variant="caption" color="text.secondary">Scan QR to pay via UPI</Typography>
+        </Box>
+      </Button>
+
+      {/* POS Machine */}
+      <Button
+        variant="outlined"
+        size="large"
+        fullWidth
+        startIcon={posProcessing ? <CircularProgress size={20} /> : <CreditCardIcon />}
+        onClick={() => {
+          setOnlinePaymentOpen(false);
+          handlePOSPayment();
+        }}
+        disabled={!posConnected || posProcessing}
+        sx={{
+          justifyContent: 'flex-start',
+          py: 2,
+          px: 3,
+          textTransform: 'none',
+          borderColor: posConnected ? '#ff6b6b' : '#999',
+          color: posConnected ? '#ff6b6b' : '#999',
+          '&:hover': {
+            borderColor: posConnected ? '#ff6b6b' : '#999',
+            backgroundColor: posConnected ? '#fff5f5' : '#f5f5f5',
+          },
+          '&:disabled': {
+            borderColor: '#ddd',
+            color: '#999',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+          <Typography variant="body1" fontWeight="600">
+            POS Machine {!posConnected && '⚠️'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {posConnected ? 'Card swipe/chip/contactless' : 'POS device not connected'}
+          </Typography>
+        </Box>
+      </Button>
+
+    </Box>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setOnlinePaymentOpen(false)}>Cancel</Button>
   </DialogActions>
 </Dialog>
 
