@@ -27,6 +27,7 @@ import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import NightlightIcon from "@mui/icons-material/Nightlight";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
 import { getUser } from "../utils/Auth.js";
 
 const menuItems = [
@@ -37,6 +38,7 @@ const menuItems = [
   { title: "Sales", icon: <ShoppingBagIcon />, path: "/sales", permission: "view-sale" },
   { title: "Return Product", icon: <ShoppingBagIcon />, path: "/return-product", permission: "view-return" },
   { title: "Transactions", icon: <ReceiptLongIcon />, path: "/transactions", permission: "view-transaction" },
+  { title: "POS Settings", icon: <CreditCardIcon />, path: "/pos-settings", permission: "view-pos" },
   { title: "Inventory", icon: <InventoryIcon />, path: "/inventory", permission: "view-inventory" },
   { title: "Reports", icon: <AssessmentIcon />, path: "/reports", permission: "view-reports" },
   { title: "Customers", icon: <PeopleIcon />, path: "/customers", permission: "view-customer" },

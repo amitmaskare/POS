@@ -24,8 +24,13 @@ import PaymentRoute from "../src/routes/PaymentRoute.js"
 import HoldAndRetrieveRoute from "../src/routes/HoldAndRetrieveRoute.js"
 import SaleRoute from "../src/routes/SaleRoute.js"
 import ReturnRoute from "../src/routes/ReturnRoute.js"
+import POSRoute from "../src/routes/POSRoute.js"
+import { initializePOS } from "./pos/index.js"
 dotenv.config();
 const app = express();
+
+// Initialize POS system
+initializePOS();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
@@ -52,6 +57,7 @@ app.use("/api",PaymentRoute)
 app.use("/api",HoldAndRetrieveRoute)
 app.use("/api",SaleRoute)
 app.use("/api",ReturnRoute)
+app.use("/api",POSRoute)
 app.use('/public/uploads', express.static('public/uploads'));
 
 export default app;
