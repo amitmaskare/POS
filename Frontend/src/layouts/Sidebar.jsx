@@ -89,7 +89,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
       sx={{
         width: "100%",
         height: "100%",
-        backgroundColor: "#fff",
+        backgroundColor: "#edf2fb",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -114,7 +114,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
           {/* Menu Icon - Left side on mobile */}
           {(sidebarState === "collapsed" || isMobile) && (
             <Box
-              sx={{ cursor: "pointer", color: "#5A8DEE", display: "flex", alignItems: "center" }}
+              sx={{ cursor: "pointer", color: "#1b263b", display: "flex", alignItems: "center" }}
               onClick={toggleSidebar}
             >
               {isMobile && sidebarState === "expanded" ? <CloseIcon /> : <MenuIcon />}
@@ -123,13 +123,13 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
 
           {/* Store Logo */}
           <Box display="flex" alignItems="center" gap={2}>
-            <LuStore size={32} color="#5A8DEE" />
+            <LuStore size={32} color="#415a77" />
             {(sidebarState === "expanded" || isMobile) && (
               <Box>
-                <Typography variant="h6" fontWeight="bold" color="#5A8DEE" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                <Typography variant="h6" fontWeight="bold" color="#415a77" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   My Store
                 </Typography>
-                <Typography fontSize="14px" color="black" sx={{ fontSize: { xs: '12px', sm: '14px' } }}>
+                <Typography fontSize="14px" color="#415a77" sx={{ fontSize: { xs: '12px', sm: '14px' } }}>
                   Admin • Admin User
                 </Typography>
               </Box>
@@ -139,7 +139,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
           {/* Toggle icon on expanded desktop */}
           {sidebarState === "expanded" && !isMobile && (
             <MenuIcon
-              sx={{ cursor: "pointer", color: "#5A8DEE" }}
+              sx={{ cursor: "pointer", color: "#415a77" }}
               onClick={toggleSidebar}
             />
           )}
@@ -185,20 +185,20 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
                 sx={{
                   mb: 1,
                   borderRadius: "10px",
-                  backgroundColor: isActive ? "#5A8DEE" : "transparent",
+                  backgroundColor: isActive ? "#415a77" : "transparent",
                   color: isActive ? "#fff" : "black",
                   justifyContent: sidebarState === "collapsed" && !isMobile ? "center" : "flex-start",
                   px: sidebarState === "collapsed" && !isMobile ? 1.5 : 2,
                   py: isMobile ? 1.5 : 1, // Larger tap targets on mobile
                   minHeight: isMobile ? "48px" : "auto", // Touch-friendly height
                   "&:hover": {
-                    backgroundColor: isActive ? "#5A8DEE" : "#e9efff",
+                    backgroundColor: isActive ? "#415a77" : "#e9efff",
                   },
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    color: isActive ? "#fff" : "#5A8DEE",
+                    color: isActive ? "#fff" : "#415a77",
                     minWidth: sidebarState === "collapsed" && !isMobile ? "0px" : "40px",
                   }}
                 >
@@ -292,7 +292,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
               left: 18,
               cursor: "pointer",
               zIndex: 2000,
-              color: "#5A8DEE",
+              color: "#415a77",
               fontSize: "28px",
             }}
           />

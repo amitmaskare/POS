@@ -2,7 +2,6 @@ import React from "react";
 import { Grid, Card, CardContent, Box, Typography } from "@mui/material";
 
 const Stats = ({ stats = [] }) => {
-  // ✅ SAFETY: Handle null/undefined stats
   const safeStats = Array.isArray(stats) ? stats : [];
   
   return (

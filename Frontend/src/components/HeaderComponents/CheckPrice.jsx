@@ -54,9 +54,7 @@ export default function CheckPriceModal({ open, onClose }) {
         borderRadius: 3,
         border: "1px solid #e2e8f0",
         mt: 8,
-        "& .MuiDialog-container": {
-          ml:20
-      },
+        
       }}
     >
       {/* Header */}
@@ -69,7 +67,7 @@ export default function CheckPriceModal({ open, onClose }) {
           justifyContent: "space-between",
         }}
       >
-        <Box display="flex" alignItems="center" gap={1} color="#5A8DEE">
+        <Box display="flex" alignItems="center" gap={1}  color="#415a77">
           <HistoryIcon />
          Check Price
         </Box>
@@ -99,8 +97,8 @@ export default function CheckPriceModal({ open, onClose }) {
           >
             {/* Row 1 */}
             <Box display="flex" justifyContent="space-between">
-              <Typography fontWeight={600} color="#5A8DEE">
-                #  <img
+              <Typography fontWeight={600}  color="#415a77">
+                 <img
               src={item.image}
               alt="product"
               className="rounded-3"

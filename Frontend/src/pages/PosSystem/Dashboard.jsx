@@ -165,7 +165,7 @@ const getFilteredProducts = () => {
         }}
       >
      <div className="row">
-      <div className="col-12 col-md-6 col-lg-8">
+      <div className="col-12 col-md-12 col-lg-8">
       <SearchFilter  value={barcode} onSearchChange={(e) => handleBarcodeChange(e.target.value)}  
         autoFocus/>
       </div>
@@ -180,9 +180,9 @@ const getFilteredProducts = () => {
               className="btn rounded-pill"
               style={{
                 backgroundColor:
-                  activeFilter === item ? "#5A8DEE" : "transparent",
+                  activeFilter === item ? "#415a77" : "transparent",
                 border:
-                  activeFilter === item ? "1px solid #5A8DEE" : "1px solid #ccc",
+                  activeFilter === item ? "1px solid #415a77" : "1px solid #ccc",
                 color: activeFilter === item ? "#fff" : "#444",
               }}
             >
@@ -197,7 +197,8 @@ const getFilteredProducts = () => {
         
         {/* Products Table */}
         {getFilteredProducts().length > 0 ? (
-          <div className="btn-group d-flex w-100">
+          <div className="row">
+          <div className="col-12 col-md-12 col-lg-8">
             <TableLayout columns={columns} rows={getFilteredProducts()}  extra={{ selectItem: handleSelectItem}} actionButtons={
               [
                 {
@@ -214,6 +215,7 @@ const getFilteredProducts = () => {
                 },
               ]
             }/>
+          </div>
           </div>
         ) : (
           <div className="alert alert-info mt-3">No products found in {activeFilter} category</div>

@@ -80,7 +80,14 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
     placeholder={searchPlaceholder || "Search..."}
     value={search}
     onChange={(e) => setSearch(e.target.value)}
-    sx={{ width: "300px" }}
+    sx={{
+      width: {
+        xs: "100%",   // mobile
+        sm: "100%",
+        md: "70%",
+        lg: "60%"
+      }
+    }}
   />
 
   {/* ⭐ Reusable Buttons */}
@@ -92,6 +99,11 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
       startIcon={btn.icon || null}
       color={btn.color || "primary"}
       onClick={btn.onClick}
+      sx={{
+       color:"#415a77",
+        border: "1px solid #415a77",
+       
+      }}
     >
       {btn.label}
     </Button>
@@ -99,11 +111,12 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
 </Box>
 </Box>
 
-      <TableContainer sx={{ maxHeight: 400 }}>
+<TableContainer 
+>
         <Table stickyHeader>
           <TableHead
             sx={{
-              bgcolor: "#5A8DEE",
+              bgcolor: "#415a77",
               "& .MuiTableSortLabel-root.Mui-active": { color: "#fff" },
               "& .MuiTableSortLabel-root:hover": { color: "#fff" },
             }}
@@ -116,7 +129,7 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
                   sx={{
                     color: "white",
                     fontWeight: "bold",
-                    bgcolor: "#5A8DEE",
+                    bgcolor: "#415a77",
                   }}
                 >
                   {col.sortable !== false ? (

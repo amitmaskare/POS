@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import Cart from "../pages/PosSystem/Cart";
 import SaleReturnCart from "../pages/SaleReturn/Cart";
 import { Box, useMediaQuery, useTheme } from "@mui/material";
+import { Drawer } from "@mui/material";
 
 const Manage = () => {
   const theme = useTheme();
@@ -14,11 +15,11 @@ const Manage = () => {
   const isSaleReturnDashboard = location.pathname === "/salereturn";
 
   // receives: "expanded", "collapsed", "hidden"
-  const [sidebarState, setSidebarState] = useState(isMobile ? "hidden" : "expanded");
-  
+  const [sidebarState, setSidebarState] = useState("hidden");
   // Separate cart states for PosSystem and SaleReturn
   const [posSystemCart, setPosSystemCart] = useState([]);
   const [saleReturnCart, setSaleReturnCart] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
 
   // Generic cart addition function factory
   const createAddToCart = (setCartFunc) => (product) => {
@@ -77,7 +78,14 @@ const Manage = () => {
 
   const SIDEBAR_WIDTH = getSidebarWidth();
   const HEADER_HEIGHT = isMobile ? 60 : 70;
-
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarState("hidden");   
+    } else {
+      setSidebarState("expanded"); 
+    }
+  }, [isMobile]);
+  
   return (
     <Box sx={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
 
@@ -110,7 +118,7 @@ const Manage = () => {
             transition: "0.3s ease",
           }}
         >
-          <Header sidebarState={sidebarState}/>
+          <Header sidebarState={sidebarState} setCartOpen={setCartOpen}/>
         </Box>
 
         {/* Page Content */}
@@ -143,7 +151,24 @@ const Manage = () => {
          <Outlet context={{ addToCart }} />
         </Box>
 
-        {isDashboard && <Cart cart={posSystemCart} setCart={setPosSystemCart} />}
+        {/* Desktop cart */}
+{!isMobile && isDashboard && (<Cart cart={posSystemCart} setCart={setPosSystemCart} />)}
+
+{/* Mobile cart drawer */}
+{isMobile && isDashboard && (
+  <Drawer
+    anchor="right"
+    open={cartOpen}
+    onClose={() => setCartOpen(false)}
+  >
+    <Cart
+      cart={posSystemCart}
+      setCart={setPosSystemCart}
+      cartOpen={cartOpen}
+      setCartOpen={setCartOpen}
+    />
+  </Drawer>
+)}
         {isSaleReturnDashboard && <SaleReturnCart cart={saleReturnCart} setCart={setSaleReturnCart} />}
       </Box>
     </Box>

@@ -182,7 +182,7 @@ const SaveStock=async()=>{
     </Box>
 
     <Dialog open={openStock}>
-      <DialogTitle  sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>Add Stock
+      <DialogTitle  sx={{ display: "flex", justifyContent: "space-between", alignItems: "center",color:"#415A77", fontWeight:"600" }}>Add Stock
            <IconButton onClick={handleClose}>
         <CloseIcon />
       </IconButton>
@@ -194,12 +194,21 @@ const SaveStock=async()=>{
           value={stock}
           onChange={(e) => setStock(e.target.value)}
           margin="normal"
+          sx={{
+            border: "1px solid #415A77"
+          }}
         />
     
         <Button
           variant="contained"
           fullWidth
           onClick={SaveStock}
+          sx={{
+            backgroundColor: "#415A77",
+            "&:hover": {
+              backgroundColor: "#344E64"   // slightly darker for hover
+            }
+          }}
         >
           Save
         </Button>

@@ -37,7 +37,7 @@ const Aadhaar = ({ open, onClose }) => {
           <CloseIcon />
         </IconButton>
 
-        <Typography variant="h6" color="#5A8DEE" fontWeight="bold" sx={{ textAlign: "left", mt: 1 }}>
+        <Typography variant="h6"  color="#415a77" fontWeight="bold" sx={{ textAlign: "left", mt: 1 }}>
           Enter Aadhaar Number
         </Typography>
 
@@ -56,7 +56,7 @@ const Aadhaar = ({ open, onClose }) => {
           }}
         />
 
-        <Button variant="contained" color="primary" onClick={onClose}>
+        <Button variant="contained"  onClick={onClose}>
           Submit
         </Button>
       </Box>

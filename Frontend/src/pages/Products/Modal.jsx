@@ -227,7 +227,7 @@ const handleAddSupplier = async () => {
           outline: "none",
         }}
       >
-        <Typography variant="h6" mb={2} color="#5A8DEE" fontWeight="bold">
+        <Typography variant="h6" mb={2} color="#415A77" fontWeight="bold">
           Add New Product
         </Typography>
 
@@ -238,7 +238,7 @@ const handleAddSupplier = async () => {
           <Tab label="Supplier" />
         </Tabs>
 
-        <Box component="form" onSubmit={handleSubmit} display="grid" gap={2}>
+        <Box component="form" onSubmit={handleSubmit} display="grid" gap={2} mt={3}>
           {tab === 0 && (
             <>
               <Grid container spacing={4}>
@@ -326,7 +326,7 @@ const handleAddSupplier = async () => {
   <Grid item xs={2}>
     <Button
       variant="contained"
-      color="primary"
+     
       fullWidth
       sx={{ height: "46px" }} // match TextField height
       onClick={() => setOpenAddCategory(true)}

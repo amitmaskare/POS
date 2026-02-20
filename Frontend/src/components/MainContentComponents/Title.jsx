@@ -9,7 +9,7 @@ const Title = ({
   <Stack direction="row" justifyContent="space-between" alignItems="center">
     {/* Left section */}
     <Box>
-      <Typography variant="h4" fontWeight="bold" color="#5A8DEE">
+      <Typography variant="h4" fontWeight="bold" color="#415a77">
         {title}
       </Typography>
       <Typography variant="subtitle1" color="text.dark">
@@ -26,7 +26,7 @@ const Title = ({
           startIcon={btn.icon}
           onClick={btn.onClick}
           sx={{
-            bgcolor: btn.bgcolor || "inherit",
+            bgcolor: "#415a77" || "inherit",
             color: btn.variant === "outlined" ? "#5A8DEE" : "white",
             "&:hover": {
               bgcolor: btn.bgcolor || (btn.variant === "outlined" ? "inherit" : undefined),

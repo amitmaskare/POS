@@ -29,7 +29,7 @@ export default function CashierCheckoutModal({ open, onClose }) {
       sx={{
         "& .MuiDialog-container": {
             mt: 5, 
-            ml:20
+         
            
            
         },
@@ -41,7 +41,7 @@ export default function CashierCheckoutModal({ open, onClose }) {
     fontSize: 20,
     fontWeight: 600,
     borderBottom: "1px solid #e0e0e0",
-    color:"#5A8DEE",
+    color:"#415a77",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",

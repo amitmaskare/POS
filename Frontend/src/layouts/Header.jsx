@@ -1,5 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme, useMediaQuery, Tooltip } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import CloseIcon from "@mui/icons-material/Close";
+import PriceCheckIcon from "@mui/icons-material/PriceCheck";
+import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import {
   Box,
   Typography,
@@ -25,10 +32,11 @@ import CashierCheckoutModal from "../components/HeaderComponents/CheckOut";
 import SalesHistoryModal from "../components/HeaderComponents/SalesHistory";
 import CheckPriceModal from "../components/HeaderComponents/CheckPrice";
 import SaleReturnModal from "../components/HeaderComponents/SaleReturn"
-export default function Header({ sidebarState }) {
+export default function Header({ sidebarState, setCartOpen }) {
   const navigate = useNavigate();
 
   const [anchorEl, setAnchorEl] = useState(null);
+  const [actionsAnchorEl, setActionsAnchorEl] = useState(null);
   const [openAadhaar, setOpenAadhaar] = useState(false);
   const [openRationCard, setOpenRationCard] = useState(false);
   const [openCheckOut, setopenCheckout] = useState(false);
@@ -37,13 +45,16 @@ export default function Header({ sidebarState }) {
   const [openSaleReturn, setopenSaleReturn] = useState(false);
 
   const open = Boolean(anchorEl);
+  const actionsOpen = Boolean(actionsAnchorEl);
 
   const handleOpenMenu = (event) => setAnchorEl(event.currentTarget);
   const handleCloseMenu = () => setAnchorEl(null);
   const handleOpenAadhaar = () => setOpenAadhaar(true); // open modal
   const handleCloseAadhaar = () => setOpenAadhaar(false); // close modal
-
- 
+  const handleActionsOpen = (event) => { setActionsAnchorEl(event.currentTarget); };
+  const handleActionsClose = () => { setActionsAnchorEl(null); };
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   return (
     <Box
@@ -71,7 +82,8 @@ export default function Header({ sidebarState }) {
           sx={{
             textTransform: "none",
             fontWeight: "600",
-            backgroundColor: "#f8f9fa",
+            backgroundColor: "#415a77",
+            color:"#fff"
           }}
         >
           Admin User{" "}
@@ -80,7 +92,7 @@ export default function Header({ sidebarState }) {
             sx={{
               ml: 1,
               px: 1,
-              background: "red",
+              background: "#E53935",
               color: "#fff",
               borderRadius: "5px",
               fontSize: "12px",
@@ -103,25 +115,78 @@ export default function Header({ sidebarState }) {
 
       {/* RIGHT SIDE BUTTON GROUP */}
       <Box sx={{ display: "flex", gap: 1 }}>
-        <Button variant="outlined" size="small" onClick={() => setopenCheckout(true)} startIcon={<ShoppingCartCheckoutIcon />}>
-          Check Out
+        {/* <Tooltip title="Check Out">
+  <Button variant="outlined" size="small" onClick={() => setopenCheckout(true)}
+    sx={{
+      minWidth: isMobile ? 40 : "auto",
+      px: isMobile ? 0 : 2,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <ShoppingCartCheckoutIcon />
         </Button>
+</Tooltip>
 
-         <Button variant="outlined" size="small" onClick={() => setopenCheckPrice(true)} startIcon={<HistoryIcon />}>
-          Check Price
-        </Button>
-        
+ {/* <Tooltip title="Check Price">
+    <Button variant="outlined" size="small" onClick={() => setopenCheckPrice(true)} 
+      sx={{
+        minWidth: isMobile ? 40 : "auto",
+        px: isMobile ? 0 : 2,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+     <PriceCheckIcon />
+    </Button>
+  </Tooltip>
 
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<FingerprintIcon />}
-          onClick={handleOpenAadhaar}
-        >
-          Enter Aadhaar
-        </Button>
+  <Tooltip title="Enter Aadhaar">
+    <Button variant="outlined" size="small" onClick={handleOpenAadhaar}
+      sx={{
+        minWidth: isMobile ? 40 : "auto",
+        px: isMobile ? 0 : 2,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <FingerprintIcon />
+    </Button>
+  </Tooltip>
 
-        <Button
+  <Tooltip title="Sale Return">
+    <Button variant="outlined" size="small" onClick={() => navigate("/salereturn")}
+      sx={{
+        minWidth: isMobile ? 40 : "auto",
+        px: isMobile ? 0 : 2,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+     <AssignmentReturnIcon />
+    </Button>
+  </Tooltip>
+
+  <Tooltip title="Sales History">
+    <Button  variant="outlined" size="small" onClick={() => setopenSalesHistory(true)}
+      sx={{
+        minWidth: isMobile ? 40 : "auto",
+        px: isMobile ? 0 : 2,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <HistoryIcon />
+    </Button>
+  </Tooltip>
+
+ 
+  {/* <Button
         variant="outlined"
         size="small"
         startIcon={<CreditCardIcon />}
@@ -129,20 +194,191 @@ export default function Header({ sidebarState }) {
       >
         Ration Card
       </Button>
+ */}
 
-
-        <Button variant="outlined"  size="small" startIcon={<LocalOfferIcon />}>
+        {/* <Button variant="outlined"  size="small" startIcon={<LocalOfferIcon />}>
           Offers
-        </Button>
-             <Button variant="outlined" size="small" startIcon={<HistoryIcon />} onClick={() => navigate("/salereturn")}>
+        </Button> */}
+        {/* <Button variant="outlined" size="small" startIcon={<HistoryIcon />} onClick={() => navigate("/salereturn")}>
           Sale Return
-        </Button> 
-          {/* <ListItemButton to="/salereturn" variant="outlined" startIcon={<HistoryIcon />}>
+        </Button>  */}
+        {/* <ListItemButton to="/salereturn" variant="outlined" startIcon={<HistoryIcon />}>
           <ListItemText primary="Sale Return" />
         </ListItemButton> */}
-        <Button variant="outlined"  size="small" onClick={() => setopenSalesHistory(true)} startIcon={<HistoryIcon />}>
+        {/* <Button variant="outlined"  size="small" onClick={() => setopenSalesHistory(true)} startIcon={<HistoryIcon />}>
           Sales History
+        </Button> */}
+        {isMobile ? (
+          <>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleActionsOpen}
+              sx={{
+                color:"#415a77",
+                 border: "1px solid #415A77",
+                
+               }}
+            >
+              Actions
+            </Button>
+
+            <Menu
+              anchorEl={actionsAnchorEl}
+              open={actionsOpen}
+              onClose={handleActionsClose}
+              sx={{
+                "& .MuiMenuItem-root": {
+                  border: "1px solid #415A77",
+                  borderRadius: "6px",
+                  mx: 1,
+                  my: 2,
+                  transition: "all 0.2s ease",
+            
+                  "&:hover": {
+                    backgroundColor: "#415A77",
+                    color: "#ffffff"
+                  }
+                }
+              }}
+            >
+              <MenuItem onClick={() => { setopenCheckout(true); handleActionsClose(); }} >
+                Check Out
+              </MenuItem>
+
+              <MenuItem onClick={() => { setopenCheckPrice(true); handleActionsClose(); }}>
+                Check Price
+              </MenuItem>
+
+              <MenuItem onClick={() => { handleOpenAadhaar(); handleActionsClose(); }}>
+                Enter Aadhaar
+              </MenuItem>
+
+              <MenuItem onClick={() => { navigate("/salereturn"); handleActionsClose(); }}>
+                Sale Return
+              </MenuItem>
+
+              <MenuItem onClick={() => { setopenSalesHistory(true); handleActionsClose(); }}>
+                Sales History
+              </MenuItem>
+            </Menu>
+            {isMobile && (
+              <IconButton onClick={() => setCartOpen(prev => !prev)}>
+                <ShoppingCartIcon sx={{
+       color:"#415a77"
+       
+      }} />
+              </IconButton>
+
+            )}
+          </>
+        ) : (
+
+          <>
+            {/* Desktop Buttons */}
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setopenCheckout(true)}
+              startIcon={<ShoppingCartCheckoutIcon />}
+              sx={{
+                color: "#fff",
+                backgroundColor: "#415a77",
+                textTransform: "none",
+                fontWeight: 500,
+                "&:hover": {
+                  backgroundColor: "#415a77",
+                  color: "#fff",
+                  borderColor: "#D32F2F"
+                }
+              }}
+            >
+              Check Out
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setopenCheckPrice(true)}
+              startIcon={<HistoryIcon />}
+              sx={{
+                color: "#fff",
+                backgroundColor: "#415a77",
+                textTransform: "none",
+                fontWeight: 500,
+                "&:hover": {
+                  backgroundColor: "#415a77",
+                  color: "#fff",
+                  borderColor: "#D32F2F"
+                }
+              }}
+            >
+          Check Price
         </Button>
+
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<FingerprintIcon />}
+          onClick={handleOpenAadhaar}
+          sx={{
+            color: "#fff",
+            backgroundColor: "#415a77",
+            textTransform: "none",
+            fontWeight: 500,
+            "&:hover": {
+              backgroundColor: "#415a77",
+              color: "#fff",
+              borderColor: "#D32F2F"
+            }
+          }}
+        >
+          Enter Aadhaar
+        </Button>
+
+        <Button
+        variant="outlined"
+        size="small"
+        startIcon={<HistoryIcon />}
+              onClick={() => navigate("/salereturn")}
+              sx={{
+                color: "#fff",
+                backgroundColor: "#415a77",
+                textTransform: "none",
+                fontWeight: 500,
+                "&:hover": {
+                  backgroundColor: "#415a77",
+                  color: "#fff",
+                  borderColor: "#D32F2F"
+                }
+              }}
+            >
+              Sale Return
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setopenSalesHistory(true)}
+              startIcon={<HistoryIcon />}
+              sx={{
+                color: "#fff",
+                backgroundColor: "#415a77",
+                textTransform: "none",
+                fontWeight: 500,
+                "&:hover": {
+                  backgroundColor: "#415a77",
+                  color: "#fff",
+                  borderColor: "#D32F2F"
+                }
+              }}
+              
+            >
+              Sales History
+            </Button>
+          </>
+        )}
+
       </Box>
       <Aadhaar open={openAadhaar} onClose={handleCloseAadhaar} />
 

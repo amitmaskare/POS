@@ -4,6 +4,15 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
 import EditIcon from "@mui/icons-material/Edit";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import UnarchiveIcon from "@mui/icons-material/Unarchive";
+import Tooltip from "@mui/material/Tooltip";
+import ReplayIcon from "@mui/icons-material/Replay";
+import PosCart from "../../components/Cart/PosCart";
+
 import { Box,
   Typography,
   Paper,
@@ -746,158 +755,42 @@ const handleRazorpay = async () => {
 
   return (
     <>
-    <aside className="cart p-3" style={{
-    flex: 1,
-    overflowY: "auto",
-    paddingRight: "4px",
-  }}>
-      <h3 className="fw-bold mb-4" style={{color:"#5A8DEE"}}>Sale Return </h3>
-
-      {/* Product List */}
-      <div className="mt-1">
-        {cart.map((item) => (
-          <div
-            key={item.id}
-            className="d-flex p-3 rounded-3 mb-3"
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e6e6e6",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-              alignItems: "center",
-            }}
-          >
-           <img
-             src={item?.image || ""}
-              alt="product"
-              className="rounded-3"
-              style={{ width: 55, height: 55, objectFit: "cover" }}
-            /> 
-
-            <div className="ms-3 flex-grow-1">
-              <div className="d-flex justify-content-between align-items-start">
-                <div>
-                  <h6 className="fw-semibold mb-1" style={{ fontSize: "15px" }}>
-                    {item.product_name} 
-                  </h6>
-                  {/* <span className="text-muted" style={{ fontSize: "12px" }}>
-                    {item.category} • SKU: {item.sku}
-                  </span> */}
-                </div>
-
-                <button className="btn p-1 text-danger" onClick={() => deleteItem(item.id)}>
-                  <DeleteIcon fontSize="small" />
-                </button>
-              </div>
-
-              <div className="d-flex justify-content-between align-items-center mt-2">
-                {/* Quantity */}
-                <div
-                  className="d-flex align-items-center rounded-pill px-2 py-1"
-                  style={{
-                    border: "1px solid #dcdcdc",
-                    width: "90px",
-                    justifyContent: "space-between",
-                    height: "32px",
-                  }}
-                >
-                   {item.return_qty ? (
-                    <span className="fw-bold" style={{ fontSize: "14px" }}>
-                      {item.return_qty}
-                    </span>
-                  ) : (
-                    <>
-                      <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
-                        −
-                      </button>
-                      <span className="fw-bold" style={{ fontSize: "14px" }}>
-                        {item.qty}
-                      </span>
-                      <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
-                        +
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {/* Price */}
-               {/* Price */}
-<div className="d-flex align-items-center gap-2">
-  {editingPriceId === item.id ? (
-    <input
-      type="number"
-      className="form-control form-control-sm"
-      style={{ width: "80px" }}
-      value={item.price}
-      autoFocus
-      onChange={(e) => updatePrice(item.id, e.target.value)}
-      onBlur={() => setEditingPriceId(null)}
-      onKeyDown={(e) => e.key === "Enter" && setEditingPriceId(null)}
-    />
-  ) : (
-    <h6 className="fw-bold mb-0" style={{ fontSize: "15px" }}>
-      ₹{item.price}
-    </h6>
-  )}
-
-  <button
-    className="btn btn-sm p-0 text-primary"
-    onClick={() => setEditingPriceId(item.id)}
-  >
-    <EditIcon fontSize="small" />
-  </button>
-</div>
-
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Totals */}
-      <div className="border-top pt-3 mt-4">
-        {total < 0 ? (
-          <div className="d-flex justify-content-between mb-2">
-            <span>Subtotal (Refund)</span>
-            <span>₹{Math.abs(Number(subtotal)).toFixed(2)}</span>
-          </div>
-        ) : (
-          <div className="d-flex justify-content-between mb-2">
-            <span>Subtotal</span>
-            <span>₹{Number(subtotal).toFixed(2)}</span>
-          </div>
-        )}
-        <div className="d-flex justify-content-between mb-2">
-          <span>Tax {totalTax !== "" ? `(${totalTax} %)` : ""}</span>
-          <span>₹{Math.abs(Number(tax)).toFixed(2)}</span>
-        </div>
-        <div className="d-flex justify-content-between fw-bold border-top pt-3 mt-4">
-          <span style={{color:"#5A8DEE"}}>{total < 0 ? "Total Refund" : "Total"}</span>
-          <span style={{color:"#5A8DEE"}}>₹{Math.abs(Number(total)).toFixed(2)}</span>
-        </div>
-
-        {/* Discount */}
-        <button className="btn btn-outline-secondary btn-sm w-100 mt-3 d-flex align-items-center text-dark justify-content-center">
-          % Apply Discount
-        </button>
-
-
-          <div className="d-flex gap-2 mt-3">
+   <PosCart
+  title="Sale Return"
+  cart={cart}
+  deleteItem={deleteItem}
+  updateQty={updateQty}
+  updatePrice={updatePrice}
+  editingPriceId={editingPriceId}
+  setEditingPriceId={setEditingPriceId}
+  subtotal={subtotal}
+  tax={tax}
+  total={total}
+  totalTax={totalTax}
+  checkoutSale={checkoutSale}
+  isReturn={true}
+  renderPaymentButtons={
+    <div className="d-flex gap-2 mt-3 justify-content-around">
+              {/* Discount */}
+        <Tooltip title="Apply Discount" placement="top" arrow>
+        <button className="btn  d-flex align-items-center justify-content-center no-hover">
+        <LocalOfferIcon fontSize="small" />
+              </button>
+            </Tooltip>
+          <Tooltip title="Refund" placement="top" arrow>
           <button
-            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
+            className="btn d-flex align-items-center justify-content-center no-hover"
             style={getButtonStyle("cash")} onClick={() => {
                 setApprovalType("refund");
                 setShowApproval(true);
               }}>
-            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Refund
+            <ReplayIcon fontSize="small" />
+           
           </button>
-
-        </div>
-
-        {/* Payment Buttons */}
-        <div className="d-flex gap-2 mt-3">
+          </Tooltip>
+          <Tooltip title="Cash" placement="top" arrow>
           <button
-            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
+            className="btn d-flex align-items-center justify-content-center no-hover"
             style={getButtonStyle("cash")}
             onClick={() => {
     setActive("cash");
@@ -905,49 +798,47 @@ const handleRazorpay = async () => {
     setShowApproval(true);
   }}
           >
-            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Cash
+           <PaymentsIcon />
+           
           </button>
-
+          </Tooltip>
+          <Tooltip title="Credit" placement="top" arrow>
           <button
-            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
+            className="btn d-flex align-items-center justify-content-center no-hover"
             style={getButtonStyle("cash")}
             onClick={() =>{
                setActive("cash")
               setApprovalType("credit");
               setShowApproval(true);
               }} >
-            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Credit
+            <CreditCardIcon />
+          
           </button>
+          </Tooltip>
         </div>
-
-        {/* Cart Options */}
-        <div className="d-flex flex-row mt-3 gap-3 justify-content-center">
-          <button className="btn btn-outline-secondary text-dark" onClick={() => setOpenHoldModal(true)}>Hold Sale</button>
-          <button className="btn btn-outline-secondary text-dark" onClick={clearCart}>
-            Clear Cart
-          </button>
-          <button className="btn btn-outline-secondary text-dark" onClick={() => setOpenRetrieveModal(true)}>
-            Retrieve
-          </button>
-        </div>
-
-        {/* Print Receipt */}
-        <div className="d-grid gap-2 mt-3">
-          <button className="btn btn-success" onClick={() => {
-            if (cart.length === 0) {
-              showToastNotification("Cart is empty. Add items to print receipt.", "warning");
-              return;
-            }
-            checkoutSale();
-          }}>
-            <PrintIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Print Receipt
-          </button>
-        </div>
-      </div>
-    </aside>
+  }
+  renderCartOptions={
+    <>
+    <div className="d-flex flex-row mt-3 gap-3 justify-content-evenly">
+    <Tooltip title="Hold Sale" arrow>
+      <button className="btn d-flex align-items-center justify-content-center no-hover" onClick={() => setOpenHoldModal(true)}>
+      <PauseCircleFilledIcon />
+      </button>
+      </Tooltip>
+      <Tooltip title="Clear Cart" arrow>
+      <button className="btn d-flex align-items-center justify-content-center no-hover" onClick={clearCart}>
+      <DeleteSweepIcon />
+      </button>
+      </Tooltip>
+      <Tooltip title="Retrieve" arrow>
+      <button className="btn d-flex align-items-center justify-content-center no-hover" onClick={() => setOpenRetrieveModal(true)}>
+      <UnarchiveIcon />
+      </button>
+      </Tooltip>
+    </div>
+</>
+  }
+/>
 
 
 

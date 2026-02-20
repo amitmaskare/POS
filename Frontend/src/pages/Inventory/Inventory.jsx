@@ -10,6 +10,7 @@ import {
   IconButton
 } from '@mui/material';
 
+
 import Title from '../../components/MainContentComponents/Title';
 import Stats from '../../components/MainContentComponents/Stats';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
@@ -145,15 +146,22 @@ const outOfStock = data.filter(
       </Box>
       
       {/* Inventory Items */}
-      <Typography variant="h5" color="#5A8DEE" mt={3}>Inventory Items</Typography>
+      <Typography variant="h5" color="#415a77" mt={3}>Inventory Items</Typography>
       <Divider sx={{ mb: 2, bgcolor: '#333' }} />
 
-      <Box>
+      <Grid container spacing={1}>
         {data.map((item, index) => (
+          <Grid
+          item
+          key={index}
+          xs={12}     // 1 per row on mobile
+          sm={6}      // 2 per row on tablet
+          md={4}      // 3 per row on medium
+          lg={12}      // 4 per row on desktop
+        >
           <Box
             key={index}
             sx={{
-
               border: "1px solid #333",
               borderRadius: "10px",
               p: 2,
@@ -170,21 +178,20 @@ const outOfStock = data.filter(
                 sx={{
                   width: 45,
                   height: 45,
-
                   borderRadius: "8px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center"
                 }}
               >
-                <InventoryIcon sx={{ color: "#9ca3af" }} />
+                <InventoryIcon sx={{ color:"#415a77"}} />
               </Box>
 
               {/* Text Info */}
               <Box>
                 {/* Name + Stock-Level Badge */}
                 <Box display="flex" alignItems="center" gap={1}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 600 }}>
+                  <Typography sx={{ color:"#415a77", fontWeight:600, fontSize:"16px"}}>
                     {item.product_name}
                   </Typography>
 
@@ -208,17 +215,17 @@ const outOfStock = data.filter(
                 </Box>
 
                 {/* Category + Price in one row */}
-                <Box display="flex" gap={2} mt={0.5}>
-                  <Typography variant="body2" >
+                
+                  <Typography variant="body1" >
                     Category: {item.category_name}
                   </Typography>
-                  <Typography variant="body2" >
+                  <Typography variant="body2"  >
                     Price: ${item.cost_price}
                   </Typography>
-                </Box>
+               
 
                 {/* Stock + Updated in one row */}
-                <Box display="flex" gap={2} mt={0.5}>
+                <Box display="flex" gap={2} mt={0.5 } >
                   <Typography variant="body2" >
                     Stock: {item.stock}
                   </Typography>
@@ -234,8 +241,10 @@ const outOfStock = data.filter(
            
 
           </Box>
-        ))}
-      </Box>
+          
+          </Grid>
+  ))}
+</Grid>
 
 
       {/* Bottom Panels */}

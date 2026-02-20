@@ -105,7 +105,7 @@ export default function Sales() {
       <Paper
         sx={{ p: 3, borderRadius: 2, mt: 4, }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-          <Typography variant="h6" fontWeight={700} color="#5A8DEE">
+          <Typography variant="h6" fontWeight={700} color="#415a77">
             Sales
           </Typography>
         </Box>
@@ -126,7 +126,7 @@ export default function Sales() {
           },
         ]}/>
 
-        <Typography variant="h6" fontWeight={700} mb={2} mt={3}>
+        <Typography variant="h6" color="#415a77" fontWeight={700} mb={2} mt={3}>
           Quick Actions
         </Typography>
         <Box mb={3} mt={3} >

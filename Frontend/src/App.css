@@ -16,7 +16,7 @@ body {
     }
     .header {
       height: 64px;
-      background: #fff;
+      background: #edf2fb;
       border-bottom: 1px solid #ddd;
       position: fixed;
       top: 0;

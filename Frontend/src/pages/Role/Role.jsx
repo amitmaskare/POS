@@ -119,7 +119,7 @@ export default function Role() {
       {/* USERS TABLE */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3} mt={3}>
         <Typography variant="h6" fontWeight={700}>
-          ROle
+          Role
         </Typography>
       </Box>
       <TableLayout columns={Column} rows={data}  extra={{ deleteItem: handleDelete, edit: handleEdit }}  actionButtons={[

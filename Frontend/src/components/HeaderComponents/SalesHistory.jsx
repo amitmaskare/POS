@@ -49,9 +49,7 @@ export default function SalesHistoryModal({ open, onClose }) {
         borderRadius: 3,
         border: "1px solid #e2e8f0",
         mt: 8,
-        "& .MuiDialog-container": {
-          ml:20
-      },
+        
       }}
     >
       {/* Header */}
@@ -64,7 +62,7 @@ export default function SalesHistoryModal({ open, onClose }) {
           justifyContent: "space-between",
         }}
       >
-        <Box display="flex" alignItems="center" gap={1} color="#5A8DEE">
+        <Box display="flex" alignItems="center" gap={1} color="#415a77">
           <HistoryIcon />
           Sales History
         </Box>
@@ -93,7 +91,7 @@ export default function SalesHistoryModal({ open, onClose }) {
     >
       {/* Row 1 */}
       <Box display="flex" justifyContent="space-between">
-        <Typography fontWeight={600} color="#5A8DEE">
+        <Typography fontWeight={600} color="#415a77">
           # {txn.invoice_no}
         </Typography>
 
@@ -113,12 +111,12 @@ export default function SalesHistoryModal({ open, onClose }) {
         <Chip
           label={txn.paymentMethod ? txn.paymentMethod:'Cash'}
           size="small"
-          sx={{ background: "#5A8DEE", color: "#fff" }}
+          sx={{ background: "#415a77", color: "#fff" }}
         />
         <Chip
           label={txn.total_items}
           size="small"
-          sx={{ background: "#5A8DEE", color: "#fff" }}
+          sx={{ background: "#415a77", color: "#fff" }}
         />
       </Box>
     </Paper>
