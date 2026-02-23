@@ -50,6 +50,10 @@ const qrCanvasRef = useRef(null);
 const [posConnected, setPosConnected] = useState(false);
 const [posProcessing, setPosProcessing] = useState(false);
 const [onlinePaymentOpen, setOnlinePaymentOpen] = useState(false);
+const [splitPaymentOpen, setSplitPaymentOpen] = useState(false);
+const [cashAmount, setCashAmount] = useState("");
+const [onlineAmount, setOnlineAmount] = useState("");
+const [splitPaymentMethod, setSplitPaymentMethod] = useState("");
   // Handle Quantity
  const updateQty = (id, action) => {
   setCart((prev) =>
@@ -201,7 +205,7 @@ const total = subtotal + tax;
  
 };
 
-const buildExchangeInvoice = (apiResult) => {
+const buildExchangeInvoice = (apiResult, paymentDetails = {}) => {
   return {
     shop_name: "My Super Store",
     invoice_no: apiResult.invoice_no,
@@ -219,7 +223,11 @@ const buildExchangeInvoice = (apiResult) => {
     subtotal,
     tax,
     total,
-    difference: apiResult.difference
+    difference: apiResult.difference,
+    payment_method: paymentDetails.payment_method || 'cash',
+    cash_amount: paymentDetails.cash_amount || null,
+    online_amount: paymentDetails.online_amount || null,
+    online_method: paymentDetails.online_method || null
   };
 };
 let printWindow=null;
@@ -300,6 +308,45 @@ const printInvoice = (invoice) => {
           }
         </p>
 
+        <div class="line"></div>
+
+        <table>
+          <tr>
+            <td colspan="2"><b>Payment Details</b></td>
+          </tr>
+          <tr>
+            <td>Payment Mode</td>
+            <td class="right">
+              ${
+                invoice.payment_method === 'cash' ? 'Cash' :
+                invoice.payment_method === 'credit' ? 'Credit Card' :
+                invoice.payment_method === 'qr_code' ? 'QR Code/UPI' :
+                invoice.payment_method === 'pos_card' ? 'POS Machine' :
+                invoice.payment_method === 'split' ? 'Split Payment' :
+                'Cash'
+              }
+            </td>
+          </tr>
+          ${
+            invoice.payment_method === 'split' && invoice.cash_amount && invoice.online_amount
+              ? `
+                <tr>
+                  <td>Cash Amount</td>
+                  <td class="right">₹${parseFloat(invoice.cash_amount).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Online Amount (${
+                    invoice.online_method === 'qr_code' ? 'QR/UPI' :
+                    invoice.online_method === 'pos_card' ? 'POS Card' :
+                    invoice.online_method === 'credit' ? 'Credit Card' : 'Online'
+                  })</td>
+                  <td class="right">₹${parseFloat(invoice.online_amount).toFixed(2)}</td>
+                </tr>
+              `
+              : ''
+          }
+        </table>
+
         <p style="text-align:center;">Thank You!</p>
 
         <script>
@@ -346,7 +393,7 @@ const checkoutSale = async () => {
   if(result.status===true)
   {
   //alert("Sale completed");
-  const invoice = buildExchangeInvoice(result.data);
+  const invoice = buildExchangeInvoice(result.data, { payment_method: 'cash' });
     printInvoice(invoice);
      setCashOpen(false);
       setCart([]);
@@ -432,7 +479,7 @@ Card: ${paymentResult.data.cardNumber || 'XXXX'}
 Auth Code: ${paymentResult.data.authCode || 'N/A'}`);
 
       // Print invoice
-      const invoice = buildExchangeInvoice(saleResult.data);
+      const invoice = buildExchangeInvoice(saleResult.data, { payment_method: 'pos_card' });
       printInvoice(invoice);
 
       // Clear cart
@@ -555,7 +602,7 @@ const handleRazorpay = async () => {
         const verifyRes = await verifyPayment(verifyPayload);
         // ✅ Step 4: Print ONLY if verified
         if (verifyRes.status === true) {
-          const invoice = buildExchangeInvoice(result.data.saleData);
+          const invoice = buildExchangeInvoice(result.data.saleData, { payment_method: 'credit' });
           printInvoice(invoice);
 
           // Reset POS
@@ -623,7 +670,7 @@ const handleQRPayment = async () => {
     }
   } catch (error) {
     console.error("QR Payment Error:", error);
-    alert("Failed to create QR payment");
+    alert("Failed to create QR payment: " + (error.response?.data?.message || error.message));
   }
 };
 
@@ -642,7 +689,17 @@ const handleConfirmPayment = async () => {
 
       // Print invoice
       setTimeout(() => {
-        const invoice = buildExchangeInvoice(qrCodeData.saleData);
+        // Check if it's split payment
+        const paymentDetails = qrCodeData.cash_amount && qrCodeData.online_amount
+          ? {
+              payment_method: 'split',
+              cash_amount: qrCodeData.cash_amount,
+              online_amount: qrCodeData.online_amount,
+              online_method: 'qr_code'
+            }
+          : { payment_method: 'qr_code' };
+
+        const invoice = buildExchangeInvoice(qrCodeData.saleData, paymentDetails);
         printInvoice(invoice);
 
         // Reset and close
@@ -673,6 +730,212 @@ const closeQRModal = () => {
   setQrCodeImage(null);
   setPaymentStatus("pending");
   setActive("");
+};
+
+// Handle Split Payment - QR Code
+const handleSplitQRPayment = async () => {
+  try {
+    setPaymentStatus("pending");
+
+    const payload = {
+      payment_method: 'split',
+      cash_amount: Number(cashAmount),
+      online_amount: Number(onlineAmount),
+      online_method: 'qr_code',
+      subtotal,
+      tax,
+      total,
+      cart: cart.map(item => ({
+        product_id: item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        price: item.price,
+        tax: item.tax,
+        total: item.price * item.qty,
+        image: item.image,
+      })),
+    };
+
+    const result = await createQRPayment({ ...payload, total: Number(onlineAmount) });
+
+    if (result.status) {
+      setQrCodeData({ ...result.data, cash_amount: Number(cashAmount), online_amount: Number(onlineAmount) });
+
+      const qrDataUrl = await QRCode.toDataURL(result.data.qrCodeUrl, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'H'
+      });
+
+      setQrCodeImage(qrDataUrl);
+      setSplitPaymentOpen(false);
+      setQrModalOpen(true);
+    } else {
+      alert("Failed to generate QR code");
+    }
+  } catch (error) {
+    console.error("Split QR Payment Error:", error);
+    alert("Failed to create split QR payment");
+  }
+};
+
+// Handle Split Payment - POS Machine
+const handleSplitPOSPayment = async () => {
+  if (!posConnected) {
+    alert('POS device not connected! Please go to Settings > POS Settings to connect your device first.');
+    return;
+  }
+
+  setPosProcessing(true);
+
+  try {
+    const payload = {
+      payment_method: 'split',
+      cash_amount: Number(cashAmount),
+      online_amount: Number(onlineAmount),
+      online_method: 'pos_card',
+      subtotal,
+      tax,
+      total,
+      cart: cart.map(item => ({
+        product_id: item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        tax: item.tax,
+        price: item.price,
+        total: item.price * item.qty,
+        image: item.image
+      }))
+    };
+
+    const saleResult = await checkout_sale(payload);
+
+    if (!saleResult.status) {
+      alert('Failed to create sale');
+      setPosProcessing(false);
+      return;
+    }
+
+    alert(`Cash received: ₹${cashAmount}\nPlease process card payment for: ₹${onlineAmount}\n\nInsert, swipe, or tap the customer's card on the POS machine...`);
+
+    const paymentResult = await processPayment({
+      amount: Number(onlineAmount),
+      invoiceNo: saleResult.data.invoice_no,
+      saleId: saleResult.data.id || null
+    });
+
+    if (paymentResult.success && paymentResult.data.success) {
+      alert(`Split Payment Approved!\nCash: ₹${cashAmount}\nCard: ₹${onlineAmount}\nTransaction ID: ${paymentResult.data.transactionId}`);
+
+      const invoice = buildExchangeInvoice(saleResult.data, {
+        payment_method: 'split',
+        cash_amount: cashAmount,
+        online_amount: onlineAmount,
+        online_method: 'pos_card'
+      });
+      printInvoice(invoice);
+
+      setCart([]);
+      setSplitPaymentOpen(false);
+      setCashAmount("");
+      setOnlineAmount("");
+      setActive("");
+    } else {
+      alert('Card payment declined. Please try again or use another payment method.');
+    }
+  } catch (error) {
+    console.error('Split POS payment error:', error);
+    alert('Error processing split payment: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setPosProcessing(false);
+  }
+};
+
+// Handle Split Payment - Credit Card (Razorpay)
+const handleSplitCreditPayment = async () => {
+  const res = await loadRazorpay();
+  if (!res) {
+    alert("Razorpay SDK failed to load");
+    return;
+  }
+
+  const payload = {
+    payment_method: "split",
+    cash_amount: Number(cashAmount),
+    online_amount: Number(onlineAmount),
+    online_method: 'credit',
+    subtotal,
+    tax,
+    total,
+    cart: cart.map(item => ({
+      product_id: item.id,
+      product_name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      tax: item.tax,
+      total: item.price * item.qty,
+      image: item.image,
+    })),
+  };
+
+  const result = await checkout_sale(payload);
+  if (!result.status) return;
+
+  const options = {
+    key: "rzp_test_RvRduZ5UNffoaN",
+    amount: Number(onlineAmount) * 100,
+    currency: "INR",
+    order_id: result.data.data.razorpayOrderId,
+    name: "My POS",
+    description: `Split Payment - Cash: ₹${cashAmount}, Online: ₹${onlineAmount}`,
+
+    handler: async function (response) {
+      try {
+        const verifyPayload = {
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          saleId: result.data.data.saleId,
+          amount: Number(onlineAmount),
+        };
+
+        const verifyRes = await verifyPayment(verifyPayload);
+
+        if (verifyRes.status === true) {
+          const invoice = buildExchangeInvoice(result.data.saleData, {
+            payment_method: 'split',
+            cash_amount: cashAmount,
+            online_amount: onlineAmount,
+            online_method: 'credit'
+          });
+          printInvoice(invoice);
+
+          setSplitPaymentOpen(false);
+          setCart([]);
+          setCashAmount("");
+          setOnlineAmount("");
+          setActive("");
+        } else {
+          alert("Payment verification failed");
+        }
+      } catch (err) {
+        console.error("Verification Error", err);
+        alert("Payment verification error");
+      }
+    },
+
+    theme: {
+      color: "#2e86de",
+    },
+  };
+
+  setSplitPaymentOpen(false);
+  const rzp = new window.Razorpay(options);
+  rzp.open();
 };
 
   return (
@@ -813,6 +1076,25 @@ const closeQRModal = () => {
           >
             <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
             Online
+          </button>
+        </div>
+
+        {/* Cash + Online Split Payment Button */}
+        <div className="d-grid gap-2 mt-2">
+          <button
+            className="btn btn-outline-primary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("split")}}
+            onClick={() => {
+              setActive("split");
+              setSplitPaymentOpen(true);
+              setCashAmount("");
+              setOnlineAmount("");
+              setSplitPaymentMethod("");
+            }}
+          >
+            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Cash + Online
           </button>
         </div>
 
@@ -1188,6 +1470,184 @@ const closeQRModal = () => {
       disabled={paymentStatus === 'paid'}
     >
       Cancel
+    </Button>
+  </DialogActions>
+</Dialog>
+
+{/* Split Payment Modal */}
+<Dialog open={splitPaymentOpen} onClose={() => setSplitPaymentOpen(false)} maxWidth="sm" fullWidth>
+  <DialogTitle>Split Payment (Cash + Online)</DialogTitle>
+  <DialogContent>
+    <Box sx={{ mt: 2 }}>
+      <Typography variant="h6" sx={{ mb: 2, color: '#5A8DEE', fontWeight: 'bold' }}>
+        Total Amount: ₹{Number(total).toFixed(2)}
+      </Typography>
+
+      <TextField
+        label="Cash Amount"
+        type="number"
+        fullWidth
+        value={cashAmount}
+        onChange={(e) => {
+          const cash = Number(e.target.value);
+          setCashAmount(e.target.value);
+          if (cash > 0 && cash < total) {
+            setOnlineAmount((total - cash).toFixed(2));
+          } else if (cash >= total) {
+            setCashAmount(total.toFixed(2));
+            setOnlineAmount("0");
+          } else {
+            setOnlineAmount("");
+          }
+        }}
+        sx={{ mb: 2 }}
+        inputProps={{ min: 0, max: total, step: 0.01 }}
+        helperText={`Maximum: ₹${total.toFixed(2)}`}
+      />
+
+      <TextField
+        label="Online Payment Amount (Remaining)"
+        type="number"
+        fullWidth
+        value={onlineAmount}
+        disabled
+        sx={{ mb: 3 }}
+        InputProps={{
+          readOnly: true,
+        }}
+      />
+
+      {Number(cashAmount) > 0 && Number(onlineAmount) > 0 && (
+        <>
+          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
+            Select Online Payment Method for ₹{Number(onlineAmount).toFixed(2)}:
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* QR Code Payment */}
+            <Button
+              variant={splitPaymentMethod === 'qr' ? 'contained' : 'outlined'}
+              size="large"
+              fullWidth
+              startIcon={<QrCode2Icon />}
+              onClick={() => setSplitPaymentMethod('qr')}
+              sx={{
+                justifyContent: 'flex-start',
+                py: 2,
+                px: 3,
+                textTransform: 'none',
+                borderColor: '#28a745',
+                color: splitPaymentMethod === 'qr' ? '#fff' : '#28a745',
+                backgroundColor: splitPaymentMethod === 'qr' ? '#28a745' : 'transparent',
+                '&:hover': {
+                  borderColor: '#28a745',
+                  backgroundColor: splitPaymentMethod === 'qr' ? '#218838' : '#f0fff4',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+                <Typography variant="body1" fontWeight="600">QR Code / UPI</Typography>
+                <Typography variant="caption" color={splitPaymentMethod === 'qr' ? 'inherit' : 'text.secondary'}>
+                  Scan QR to pay remaining ₹{Number(onlineAmount).toFixed(2)}
+                </Typography>
+              </Box>
+            </Button>
+
+            {/* POS Machine */}
+            <Button
+              variant={splitPaymentMethod === 'pos' ? 'contained' : 'outlined'}
+              size="large"
+              fullWidth
+              startIcon={<CreditCardIcon />}
+              onClick={() => setSplitPaymentMethod('pos')}
+              disabled={!posConnected}
+              sx={{
+                justifyContent: 'flex-start',
+                py: 2,
+                px: 3,
+                textTransform: 'none',
+                borderColor: posConnected ? '#ff6b6b' : '#999',
+                color: splitPaymentMethod === 'pos' ? '#fff' : (posConnected ? '#ff6b6b' : '#999'),
+                backgroundColor: splitPaymentMethod === 'pos' ? '#ff6b6b' : 'transparent',
+                '&:hover': {
+                  borderColor: posConnected ? '#ff6b6b' : '#999',
+                  backgroundColor: splitPaymentMethod === 'pos' ? '#e63946' : (posConnected ? '#fff5f5' : '#f5f5f5'),
+                },
+                '&:disabled': {
+                  borderColor: '#ddd',
+                  color: '#999',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+                <Typography variant="body1" fontWeight="600">
+                  POS Machine {!posConnected && '⚠️'}
+                </Typography>
+                <Typography variant="caption" color={splitPaymentMethod === 'pos' ? 'inherit' : 'text.secondary'}>
+                  {posConnected ? `Card payment for ₹${Number(onlineAmount).toFixed(2)}` : 'POS device not connected'}
+                </Typography>
+              </Box>
+            </Button>
+
+            {/* Credit Card / Razorpay */}
+            <Button
+              variant={splitPaymentMethod === 'credit' ? 'contained' : 'outlined'}
+              size="large"
+              fullWidth
+              startIcon={<CreditCardIcon />}
+              onClick={() => setSplitPaymentMethod('credit')}
+              sx={{
+                justifyContent: 'flex-start',
+                py: 2,
+                px: 3,
+                textTransform: 'none',
+                borderColor: '#5A8DEE',
+                color: splitPaymentMethod === 'credit' ? '#fff' : '#5A8DEE',
+                backgroundColor: splitPaymentMethod === 'credit' ? '#5A8DEE' : 'transparent',
+                '&:hover': {
+                  borderColor: '#5A8DEE',
+                  backgroundColor: splitPaymentMethod === 'credit' ? '#4a7dd8' : '#f0f4ff',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+                <Typography variant="body1" fontWeight="600">Credit Card (Razorpay)</Typography>
+                <Typography variant="caption" color={splitPaymentMethod === 'credit' ? 'inherit' : 'text.secondary'}>
+                  Pay ₹{Number(onlineAmount).toFixed(2)} via Razorpay
+                </Typography>
+              </Box>
+            </Button>
+          </Box>
+        </>
+      )}
+    </Box>
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => {
+      setSplitPaymentOpen(false);
+      setCashAmount("");
+      setOnlineAmount("");
+      setSplitPaymentMethod("");
+    }}>
+      Cancel
+    </Button>
+
+    <Button
+      variant="contained"
+      color="success"
+      disabled={!cashAmount || !onlineAmount || !splitPaymentMethod || Number(cashAmount) <= 0 || Number(onlineAmount) <= 0}
+      onClick={() => {
+        if (splitPaymentMethod === 'qr') {
+          handleSplitQRPayment();
+        } else if (splitPaymentMethod === 'pos') {
+          handleSplitPOSPayment();
+        } else if (splitPaymentMethod === 'credit') {
+          handleSplitCreditPayment();
+        }
+      }}
+    >
+      Proceed to Payment
     </Button>
   </DialogActions>
 </Dialog>

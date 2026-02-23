@@ -19,30 +19,33 @@ export const SaleController={
     },
 
     checkoutSale:async(req,resp)=>{
-      
+
         try {
             const requiredFields = [
              "subtotal", "tax", "total","payment_method","cart"
             ];
-        
+
             for (let field of requiredFields) {
               if (!req.body[field]) {
                 return sendResponse(resp, false, 400, `${field} is required`);
               }
             }
-        
+
             const {
               subtotal,
               tax,
               total,
               payment_method,
-              cart
+              cart,
+              cash_amount,
+              online_amount,
+              online_method
             } = req.body;
-        
+
             if (!Array.isArray(cart) || cart.length === 0) {
               return sendResponse(resp, false, 400, "cart cannot be empty");
             }
-        
+
             const invoice_no = await SaleService.generateInvoice();
               const userId = req.user.userId;
 
@@ -53,7 +56,10 @@ export const SaleController={
                      tax,
                      total,
                      payment_method,
-                     payment_status:payment_method === "cash" ? "paid" : "pending"
+                     payment_status:payment_method === "cash" ? "paid" : "pending",
+                     cash_amount: payment_method === "split" ? cash_amount : null,
+                     online_amount: payment_method === "split" ? online_amount : null,
+                     online_method: payment_method === "split" ? online_method : null
                   };
             const saleId = await SaleService.createSale(saleData);
              
@@ -106,6 +112,28 @@ export const SaleController={
         
         if (payment_method === "cash") {
           return sendResponse(resp, true, 201, "Sale completed successfully",saleData);
+        }
+        else if (payment_method === "split") {
+          // For split payments, create Razorpay order only for online amount
+          const orderAmount = online_method === "qr_code" ? online_amount : online_amount;
+          const order = await razorpay.orders.create({
+            amount: Math.round(orderAmount * 100),
+            currency: "INR",
+            receipt: `sale_${saleId}_split`,
+          });
+          const data={
+            razorpayOrderId: order.id,
+            saleId,
+            amount: orderAmount,
+            cash_amount,
+            online_amount,
+            online_method
+          }
+          const invoiceData={
+            saleData,
+            data
+          }
+          return sendResponse(resp, true, 201, "Split payment created successfully", invoiceData);
         }
         else{
         const order = await razorpay.orders.create({

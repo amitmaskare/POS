@@ -89,10 +89,10 @@ const [newSupplier, setNewSupplier] = useState("");
   const handleTabChange = (_, newValue) => setTab(newValue);
 
   const handleChange = (e) => {
+    const { name, value, files } = e.target;
     setForm((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
-      image: e.target.files[0],
+      [name]: files ? files[0] : value,
     }));
   };
 
