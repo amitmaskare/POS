@@ -234,7 +234,7 @@ await CommonModel.updateData({
 
   confirmExchange: async (req, res) => {
     try {
-      const { sale_id, return_items, exchange_items,payment_method } = req.body;
+      const { sale_id, return_items, exchange_items, payment_method, cash_amount, online_amount, online_method } = req.body;
   
       /* ---------------- VALIDATION ---------------- */
       if (!sale_id)
@@ -264,7 +264,10 @@ await CommonModel.updateData({
           sale_id,
           payment_method,
           return_type: "exchange",
-          refund_amount: 0
+          refund_amount: 0,
+          cash_amount: payment_method === "split" ? cash_amount : null,
+          online_amount: payment_method === "split" ? online_amount : null,
+          online_method: payment_method === "split" ? online_method : null
         }
       });
   
@@ -386,7 +389,31 @@ await CommonModel.updateData({
         exchangeAmount,
         difference
       });
-    }else{
+    } else if (payment_method === "split") {
+      // For split payments, create Razorpay order only for online amount
+      const orderAmount = online_amount;
+      const order = await razorpay.orders.create({
+        amount: Math.round(orderAmount * 100),
+        currency: "INR",
+        receipt: `exchange_${sale_id}_split`,
+      });
+      const data = {
+        razorpayOrderId: order.id,
+        saleId: sale_id,
+        amount: orderAmount,
+        cash_amount,
+        online_amount,
+        online_method
+      };
+      const invoiceData = {
+        invoice_no: sale.invoice_no,
+        returnAmount,
+        exchangeAmount,
+        difference,
+        data
+      };
+      return sendResponse(res, true, 201, "Split exchange created successfully", invoiceData);
+    } else {
       const order = await razorpay.orders.create({
         amount: Math.round(exchangeAmount * 100),
         currency: "INR",
