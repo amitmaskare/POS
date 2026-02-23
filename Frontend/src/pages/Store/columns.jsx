@@ -1,4 +1,4 @@
-import { Button,Box } from "@mui/material";
+import { Button,Box,Avatar } from "@mui/material";
 
 export const columns = [
     { id: "store_name", label: "Store Name" },
@@ -6,7 +6,19 @@ export const columns = [
     { id: "phone", label: "Phone" },
     { id: "email", label: "Email" },
     { id: "address", label: "Address" },
+    { id: "location", label: "Location" },
     { id: "type", label: "Type" },
+    {
+      id: "logo",
+      label: "Logo",
+      render: (row) => (
+        <Avatar
+          src={row?.logo}
+          alt={row?.store_name}
+          sx={{ width: 40, height: 40 }}
+        />
+      ),
+    },
     {
       id: "actions",
       label: "Actions",

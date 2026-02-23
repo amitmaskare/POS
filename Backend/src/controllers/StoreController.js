@@ -16,28 +16,29 @@ export const StoreController = {
       if (!result || result.length === 0) {
         return sendResponse(resp, false, 400, "No Data Found");
       }
-      return sendResponse(resp, true, 200, "Fetch store data", result);
+
+      // map logo to full URL when present
+      const mapped = result.map((row) => ({
+        ...row,
+        logo: row.logo ? `${baseUrl}/public/uploads/store/${row.logo}` : null,
+      }));
+
+      return sendResponse(resp, true, 200, "Fetch store data", mapped);
     } catch (error) {
       return sendResponse(resp, false, 500, `Error :${error.message}`);
     }
   },
 
   add: async (req, resp) => {
-    upload.single("logo")(req, resp, async (err) => {
+  upload.single("logo")(req, resp, async (err) => {
+    try {
       if (err) {
         return sendResponse(resp, false, 400, `Upload Error: ${err.message}`);
       }
-      const requiredFields = [
-        "store_name",
-        "phone",
-        "address",
-        "type",
-        "email",
-      ];
-      for (let field of requiredFields) {
-        if (!req.body[field]) {
-          return sendResponse(resp, false, 400, `${field} is required`);
-        }
+
+      // ✅ Ensure body exists
+      if (!req.body) {
+        return sendResponse(resp, false, 400, "Request body missing");
       }
 
       const {
@@ -46,131 +47,196 @@ export const StoreController = {
         address,
         type,
         email,
+        location
       } = req.body;
 
-      try {
-        const imageUrl = req.file ? req.file.filename : null;
-        const store_id = await StoreService.getNextStoreId();
-        const saveData = {
-          store_id: store_id,
-          store_name: store_name,
-          phone: phone,
-          address: address,
-          type: type,
-          logo: imageUrl,
-          email: email,
-        };
-        const result = await StoreService.add(saveData);
-        if (!result) {
-          return sendResponse(resp, false, 400, "Something went wrong");
-        }
+      // ✅ Required field validation
+      const requiredFields = [
+        "store_name",
+        "phone",
+        "address",
+        "type",
+        "email"
+      ];
 
-        return sendResponse(resp, true, 201, "Store added successful");
-      } catch (error) {
-        return sendResponse(
-          resp,
-          false,
-          500,
-          error.message || "Something wennt Wrong"
-        );
+      for (let field of requiredFields) {
+        const value = String(req.body[field] || "").trim();
+        if (!value) {
+          return sendResponse(resp, false, 400, `${field} is required`);
+        }
       }
-    });
-  },
+
+      // ✅ Get uploaded image name safely
+      const imageUrl = req.file ? req.file.filename : null;
+      
+      // ✅ Generate next store ID
+      const store_id = await StoreService.getNextStoreId();
+
+      const saveData = {
+        store_id,
+        store_name: store_name.trim(),
+        phone: phone,
+        address: address.trim(),
+        type: type.trim(),
+        email: email.trim(),
+        location: location ? location.trim() : null,
+        logo: imageUrl
+      };
+
+      // ✅ Save to DB
+      const result = await StoreService.add(saveData);
+
+      if (!result) {
+        return sendResponse(resp, false, 400, "Something went wrong");
+      }
+
+      return sendResponse(resp, true, 201, "Store added successfully");
+
+    } catch (error) {
+      console.error("Add Store Error:", error);
+      return sendResponse(
+        resp,
+        false,
+        500,
+        error.message || "Something went wrong"
+      );
+    }
+  });
+},
+
 
   getById: async (req, resp) => {
     try {
       const { id } = req.params;
       const result = await StoreService.getById(id);
-      return sendResponse(resp, true, 200, "Fetch get by id", result);
+      const data = {
+        ...result,
+        logo: result && result.logo
+          ? `${baseUrl}/public/uploads/store/${result.logo}`
+          : null,
+      };
+      return sendResponse(resp, true, 200, "Fetch get by id", data);
     } catch (error) {
       return sendResponse(resp, false, 500, `Error : ${error.message}`);
     }
   },
 
-  update: async (req, resp) => {
-    upload.single("logo")(req, resp, async (err) => {
-      try {
-        if (err) {
-          return sendResponse(resp, false, 400, `Upload Error: ${err.message}`);
-        }
+ update: async (req, resp) => {
+  upload.single("logo")(req, resp, async (err) => {
+    try {
 
-        // ✅ Ensure req.body exists (prevents "Cannot convert undefined or null to object")
-        req.body = req.body || {};
-
-        const requiredFields = [
-          "id",
-          "store_name",
-          "phone",
-          "address",
-          "type",
-          "email",
-        ];
-
-        for (let field of requiredFields) {
-          if (!req.body[field]) {
-            return sendResponse(resp, false, 400, `${field} is required`);
-          }
-        }
-
-        const {
-          id,
-          store_name,
-          phone,
-          address,
-          type,
-          email,
-        } = req.body;
-
-        // ✅ Get existing store
-        const existingItem = await StoreService.getById(id);
-        if (!existingItem) {
-          return sendResponse(resp, false, 404, "Store not found");
-        }
-
-        // ✅ Handle image update safely
-        let imageUrl = existingItem.logo;
-
-        if (req.file) {
-          const oldImagePath = path.join("public", "uploads", "store", existingItem.logo || "");
-
-          if (existingItem.logo && fs.existsSync(oldImagePath)) {
-            try {
-              await fs.promises.unlink(oldImagePath);
-            } catch (unlinkErr) {
-              console.error("Error deleting old image:", unlinkErr.message);
-            }
-          }
-
-          imageUrl = req.file.filename;
-        }
-
-        // ✅ Prepare data for DB update
-        const saveData = {
-          store_name,
-          phone,
-          address,
-          type,
-          logo: imageUrl,
-          email,
-        };
-
-        // ✅ Perform update
-        const result = await StoreService.update(id, saveData);
-        if (!result) {
-          return sendResponse(resp, false, 400, "Something went wrong while updating");
-        }
-
-        return sendResponse(resp, true, 200, "Store updated successfully");
-      } catch (error) {
-        console.error("Update Error:", error);
-        return sendResponse(resp, false, 500, `Error: ${error.message}`);
+      // ✅ Handle upload error
+      if (err) {
+        return sendResponse(resp, false, 400, `Upload Error: ${err.message}`);
       }
-    });
-  },
+
+      // ✅ Ensure body exists
+      if (!req.body) {
+        return sendResponse(resp, false, 400, "Request body missing");
+      }
+
+      const {
+        id,
+        store_name,
+        phone,
+        address,
+        type,
+        email,
+        location
+      } = req.body;
+
+      // ✅ Required field validation
+      const requiredFields = [
+        "id",
+        "store_name",
+        "phone",
+        "address",
+        "type",
+        "email"
+      ];
+
+      for (let field of requiredFields) {
+        const value = String(req.body[field] || "").trim();
+        if (!value) {
+          return sendResponse(resp, false, 400, `${field} is required`);
+        }
+      }
+
+      // ✅ Get existing store
+      const existingItem = await StoreService.getById(id);
+
+      if (!existingItem) {
+        return sendResponse(resp, false, 404, "Store not found");
+      }
+
+      let imageUrl = existingItem.logo;
+
+      // ✅ If new file uploaded
+      if (req.file) {
+        const oldImagePath = path.join(
+          process.cwd(),
+          "public",
+          "uploads",
+          "store",
+          existingItem.logo || ""
+        );
+
+        // Delete old image safely
+        if (existingItem.logo && fs.existsSync(oldImagePath)) {
+          try {
+            await fs.promises.unlink(oldImagePath);
+          } catch (deleteErr) {
+            console.error("Old image delete error:", deleteErr.message);
+          }
+        }
+
+        imageUrl = req.file.filename;
+      }
+
+      // ✅ Prepare update data
+      const saveData = {
+        store_name,
+        phone,
+        address,
+        type,
+        email,
+        location: location ? location.trim() : null,
+        logo: imageUrl
+      };
+
+      // ✅ Update store
+      const result = await StoreService.update(id, saveData);
+
+      if (!result) {
+        return sendResponse(resp, false, 400, "Something went wrong while updating");
+      }
+
+      return sendResponse(resp, true, 200, "Store updated successfully");
+
+    } catch (error) {
+      console.error("Update Error:", error);
+      return sendResponse(resp, false, 500, `Error: ${error.message}`);
+    }
+  });
+},
+
 
   deleteData: async (req, resp) => {
     try {
       const { id } = req.params;
+      const store = await StoreService.getById(id);
+       if (!store) {
+        return sendResponse(resp, false, 404, "Store not found");
+      }
+      const logoPath = path.join("public", "uploads", "store", store.logo);
+      if (fs.existsSync(logoPath)) {
+        try {
+          await fs.promises.unlink(logoPath);
+          console.log(`Logo file deleted: ${store.logo}`);
+        } catch (unlinkErr) {
+          console.error("Error deleting logo file:", unlinkErr.message);
+        }
+      }
       const result = await StoreService.deleteData(id);
       return sendResponse(resp, true, 200, "Store item deleted successful");
     } catch (error) {

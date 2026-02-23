@@ -5,7 +5,10 @@ export const StoreService = {
   list: async () => {
     const result = await CommonModel.getAllData({
       table: "stores",
-      fields: ["store_id,store_name,phone,email,address,type,location,created_at"],
+      fields: ["id,store_id,store_name,phone,email,address,type,location,logo,created_at"],
+      conditions:'',
+      groupBy: "",
+      orderBy: "id DESC",
     });
     return result;
   },
@@ -36,7 +39,7 @@ export const StoreService = {
     const result = await CommonModel.getSingle({
       table: "stores",
       fields: [
-        "id,ownerId,store_name,phone,address,gst,tax,city,location,pincode,address_proof,currency,type,branding,business_name,gst_number,logo,website,email",
+        "id,store_id,store_name,phone,address,logo,email,type,location,created_at",
       ],
       conditions: { id },
     });
@@ -47,7 +50,7 @@ export const StoreService = {
     const result = await CommonModel.updateData({
       table: "stores",
       data: storeData,
-      consitions: { id: id },
+      conditions: { id: id },
     });
     return result;
   },

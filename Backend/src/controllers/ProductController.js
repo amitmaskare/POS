@@ -370,6 +370,26 @@ export const ProductController = {
     }
   },
 
+  lowStockReport: async (req, resp) => {
+    try {
+      const storeId = getStoreIdFromRequest(req);
+      const result = await ProductService.lowStockReport(storeId);
+
+      if (!result || result.length === 0) {
+        return sendResponse(resp, false, 400, "No Data Found");
+      }
+
+      const data = result.map(item => ({
+        ...item,
+        image: item.image ? `${baseUrl}/public/uploads/product/${item.image}` : null
+      }));
+
+      return sendResponse(resp, true, 200, "Fetch store data", data);
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error : ${error.message}`);
+    }
+  },
+
   addStock:async(req,resp)=>{
     try{
       const storeId = getStoreIdFromRequest(req);

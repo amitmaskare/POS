@@ -156,6 +156,20 @@ export const PurchaseController = {
     }
   },
 
+  purchaseReport: async (req, resp) => {
+    try {
+      const storeId = getStoreIdFromRequest(req);
+      const result = await PurchaseService.purchaseReport(storeId);
+
+      if (!result || result.length === 0) {
+        return sendResponse(resp, false, 400, "No Data Found");
+      }
+      return sendResponse(resp, true, 200, "Fetch data successful", result);
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error : ${error.message}`);
+    }
+  },
+
   update: async (req, resp) => {
     try {
       const storeId = getStoreIdFromRequest(req);

@@ -150,6 +150,25 @@ export const PurchaseService = {
   
     return await CommonModel.rawQuery(query, [storeId]);
   },
+
+  purchaseReport: async (storeId) => {
+    const query = `
+      SELECT
+        p.po_number,
+        DATE_FORMAT(p.purchase_date, '%Y-%m-%d') AS purchase_date,
+        p.grand_total AS amount,
+        s.name AS supplier_name,
+        COUNT(pi.id) AS items
+      FROM purchases p
+      LEFT JOIN suppliers s ON p.supplier_id = s.id
+      LEFT JOIN purchase_order_items pi ON pi.purchase_id = p.id
+      WHERE p.store_id = ?
+      GROUP BY p.id
+      ORDER BY p.id DESC
+    `;
+
+    return await CommonModel.rawQuery(query, [storeId]);
+  },
   
 
 };

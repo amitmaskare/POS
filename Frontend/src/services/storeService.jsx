@@ -23,10 +23,24 @@ export const storeList=async()=>{
 
 export const addStore=async(data)=>{
   try{
-   const response=await axios.post(`${apiUrl}/store/add`,data,{
-     headers: getAuthHeaders(),
-   })
-   return response.data
+    const formData = new FormData();
+    formData.append('store_name', data.store_name);
+    formData.append('email', data.email);
+    formData.append('phone', data.phone);
+    formData.append('address', data.address);
+    formData.append('type', data.type);
+    formData.append('location', data.location || '');
+    if (data.logo instanceof File) {
+      formData.append('logo', data.logo);
+    }
+
+    const response=await axios.post(`${apiUrl}/store/add`,formData,{
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'multipart/form-data'
+      },
+    })
+    return response.data
   }catch(error)
   {
     throw error
@@ -47,10 +61,25 @@ export const getById=async(id)=>{
 
 export const updateStore=async(data)=>{
   try{
-   const response=await axios.post(`${apiUrl}/store/update`,data,{
-     headers: getAuthHeaders(),
-   })
-   return response.data
+    const formData = new FormData();
+    formData.append('id', data.id);
+    formData.append('store_name', data.store_name);
+    formData.append('email', data.email);
+    formData.append('phone', data.phone);
+    formData.append('address', data.address);
+    formData.append('type', data.type);
+    formData.append('location', data.location || '');
+    if (data.logo instanceof File) {
+      formData.append('logo', data.logo);
+    }
+
+    const response=await axios.post(`${apiUrl}/store/update`,formData,{
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'multipart/form-data'
+      },
+    })
+    return response.data
   }catch(error)
   {
     throw error
