@@ -1,17 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
 import EditIcon from "@mui/icons-material/Edit";
-import JsBarcode from "jsbarcode";
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import PaymentsIcon from "@mui/icons-material/Payments";
-import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
-import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
-import UnarchiveIcon from "@mui/icons-material/Unarchive";
-import Tooltip from "@mui/material/Tooltip";
-import PosCart from "../../components/Cart/PosCart";
 import { Box,
   Typography,
   Paper,
@@ -31,25 +23,37 @@ import { Box,
   TableContainer,
   TableHead,
   TableRow,
-  DialogActions
-} from "@mui/material";
+  DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
-import { checkout_sale,verifyPayment } from "../../services/saleService";
-import { useToast } from "../../hooks/useToast";
-import Toast from "../../components/Toast/Toast";
+import { checkout_sale,verifyPayment,createQRPayment,checkQRPaymentStatus,confirmQRPayment } from "../../services/saleService";
+import { processPayment, getDeviceStatus } from "../../services/posService";
+import QrCode2Icon from "@mui/icons-material/QrCode2";
+import CircularProgress from "@mui/material/CircularProgress";
+import QRCode from "qrcode";
 
 export default function Cart({ cart, setCart }) {
-  const [active, setActive] = useState("");
+  const [active, setActive] = useState(""); 
   const [editingPriceId, setEditingPriceId] = useState(null);
   const [mobile, setMobile] = useState("");
-  const [openHoldModal, setOpenHoldModal] = useState(false);
-  const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
-  const [cashOpen, setCashOpen] = useState(false);
-  const [receivedAmount, setReceivedAmount] = useState("");
-  const [returnAmount, setReturnAmount] = useState(0);
-  const [holdItem, setHoldItem] = useState([]);
-  // Use custom toast hook
-  const { showToast, toastMessage, toastType, showToastNotification } = useToast();
+const [openHoldModal, setOpenHoldModal] = useState(false);
+const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
+const [cashOpen, setCashOpen] = useState(false);
+const [receivedAmount, setReceivedAmount] = useState("");
+const [returnAmount, setReturnAmount] = useState(0);
+const [holdItem, setHoldItem] = useState([]);
+const [qrModalOpen, setQrModalOpen] = useState(false);
+const [qrCodeData, setQrCodeData] = useState(null);
+const [paymentStatus, setPaymentStatus] = useState("pending");
+const [pollingInterval, setPollingInterval] = useState(null);
+const [qrCodeImage, setQrCodeImage] = useState(null);
+const qrCanvasRef = useRef(null);
+const [posConnected, setPosConnected] = useState(false);
+const [posProcessing, setPosProcessing] = useState(false);
+const [onlinePaymentOpen, setOnlinePaymentOpen] = useState(false);
+const [splitPaymentOpen, setSplitPaymentOpen] = useState(false);
+const [cashAmount, setCashAmount] = useState("");
+const [onlineAmount, setOnlineAmount] = useState("");
+const [splitPaymentMethod, setSplitPaymentMethod] = useState("");
   // Handle Quantity
  const updateQty = (id, action) => {
   setCart((prev) =>
@@ -70,10 +74,12 @@ export default function Cart({ cart, setCart }) {
         ) {
           const offerTotal = item.min_qty * item.offer_price;
           const remainingQty = newQty - item.min_qty;
+
           totalPrice =
             offerTotal + remainingQty * item.selling_price;
         }
       }
+
       return {
         ...item,
         qty: newQty,
@@ -100,7 +106,7 @@ export default function Cart({ cart, setCart }) {
      try{
 
   if (mobile.length !== 10) {
-    showToastNotification("Enter valid mobile number", "warning");
+    alert("Enter valid mobile number");
     return;
   }
 
@@ -109,8 +115,7 @@ const payload={customer_mobile: mobile}
   const result= await retrieveHoldSale(payload);
   if(result.status===true)
   {
-    const { items, sale } = result.data;
-    const saleId = sale?.id || null;
+    const { items } = result.data;
       setCart(
     items.map(item => ({
       id: item.product_id || item.id,
@@ -120,15 +125,15 @@ const payload={customer_mobile: mobile}
       price: item.price,
       image: item.image,
       tax:item.tax,
-      sale_id: saleId
     }))
      );
   setOpenRetrieveModal(false);
   setMobile("");
   }
-  } catch(error) {
-    showToastNotification(error?.message || "Failed to retrieve sale", "error");
-  } 
+  }catch(error)
+    {
+      console.log(error.message)
+    } 
   };
 
   // Payment Button Style
@@ -162,12 +167,12 @@ const total = subtotal + tax;
     try{
 
   if (mobile.length !== 10) {
-    showToastNotification("Enter valid mobile number", "warning");
+    alert("Enter valid mobile number");
     return;
   }
 
   if (cart.length === 0) {
-    showToastNotification("Cart is empty", "warning");
+    alert("Cart is empty");
     return;
   }
 
@@ -187,21 +192,22 @@ const total = subtotal + tax;
   };
 
   const result= await holdSale(payload);
-  if(result.status===true) {
-    setCart([]);
-    setMobile("");
-    setOpenHoldModal(false);
-    showToastNotification("Sale held successfully", "success");
+  if(result.status===true)
+  {
+     setCart([]);        // clear cart
+  setMobile("");      // reset
+  setOpenHoldModal(false);
   }
-  } catch(error) {
-    showToastNotification(error?.message || "Failed to hold sale", "error");
-  }
+  }catch(error)
+    {
+      console.log(error.message)
+    }
  
 };
 
-const buildExchangeInvoice = (apiResult) => {
+const buildExchangeInvoice = (apiResult, paymentDetails = {}) => {
   return {
-    shop_name: apiResult.shop_name || "Dmart",
+    shop_name: "My Super Store",
     invoice_no: apiResult.invoice_no,
     date: new Date().toLocaleString(),
     items: cart.map(item => ({
@@ -217,9 +223,11 @@ const buildExchangeInvoice = (apiResult) => {
     subtotal,
     tax,
     total,
-    totalTax: totalTax,
     difference: apiResult.difference,
-    message: apiResult.message || `${apiResult.shop_name || "Dmart"} - Tax Invoice`
+    payment_method: paymentDetails.payment_method || 'cash',
+    cash_amount: paymentDetails.cash_amount || null,
+    online_amount: paymentDetails.online_amount || null,
+    online_method: paymentDetails.online_method || null
   };
 };
 let printWindow=null;
@@ -236,14 +244,10 @@ const printInvoice = (invoice) => {
         <style>
           body { font-family: monospace; font-size: 12px; }
           h3, h4 { text-align: center; margin: 4px 0; }
-          .shop { text-align: center; font-weight: bold; font-size: 16px; }
-          .subtitle { text-align: center; font-size: 12px; color: #333; }
-          table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          th, td { padding: 6px 4px; border-bottom: 1px dashed #ddd; }
-          th { text-align: left; }
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 4px 0; }
           .right { text-align: right; }
           .line { border-top: 1px dashed #000; margin: 8px 0; }
-          .totals td { padding: 4px 0; }
         </style>
 
         <!-- JsBarcode CDN -->
@@ -251,9 +255,10 @@ const printInvoice = (invoice) => {
       </head>
 
       <body>
-        <div class="shop">${invoice.shop_name}</div>
-        <div class="subtitle">TAX INVOICE</div>
-        <p style="text-align:center; margin:6px 0 10px 0;">
+        <h3>${invoice.shop_name}</h3>
+        <h4>Exchange Invoice</h4>
+
+        <p>
           Invoice: ${invoice.invoice_no}<br/>
           <svg id="barcode"></svg><br/>
           Date: ${invoice.date}
@@ -262,54 +267,87 @@ const printInvoice = (invoice) => {
         <div class="line"></div>
 
         <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th class="right">Qty</th>
-              <th class="right">Price</th>
-              <th class="right">Tax</th>
-              <th class="right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
           ${invoice.items
-            .map(i => {
-              const itemTotal = (i.price || 0) * (i.qty || 0);
-              const itemTax = (i.tax || 0) ? (itemTotal * (i.tax / 100)) : 0;
-              return `
+            .map(
+              i => `
                 <tr>
-                  <td>${i.name}</td>
-                  <td class="right">${i.qty}</td>
-                  <td class="right">${Number(i.price).toFixed(2)}</td>
-                  <td class="right">${itemTax.toFixed(2)}</td>
-                  <td class="right">${(itemTotal + itemTax).toFixed(2)}</td>
+                  <td>${i.name} (${i.qty})</td>
+                  <td class="right">${i.total.toFixed(2)}</td>
                 </tr>
               `
-            })
+            )
             .join("")}
-          </tbody>
         </table>
 
         <div class="line"></div>
 
-        <table class="totals" style="width:100%;">
+        <table>
           <tr>
             <td>Subtotal</td>
-            <td class="right">${Number(invoice.subtotal).toFixed(2)}</td>
+            <td class="right">${invoice.subtotal.toFixed(2)}</td>
           </tr>
           <tr>
-            <td>Total Tax</td>
-            <td class="right">${Number(invoice.tax).toFixed(2)}</td>
+            <td>Tax</td>
+            <td class="right">${invoice.tax.toFixed(2)}</td>
           </tr>
           <tr>
-            <td><b>Grand Total</b></td>
-            <td class="right"><b>${Number(invoice.total).toFixed(2)}</b></td>
+            <td><b>Total</b></td>
+            <td class="right"><b>${invoice.total.toFixed(2)}</b></td>
           </tr>
         </table>
 
         <div class="line"></div>
 
-        <p style="text-align:center; margin:8px 0;">${invoice.message || `Thank you for shopping at ${invoice.shop_name}`}</p>
+        <p style="text-align:center;">
+          ${
+            invoice.difference > 0
+              ? `Customer Pays ₹${invoice.difference}`
+              : invoice.difference < 0
+              ? `Refund ₹${Math.abs(invoice.difference)}`
+              : "Even Exchange"
+          }
+        </p>
+
+        <div class="line"></div>
+
+        <table>
+          <tr>
+            <td colspan="2"><b>Payment Details</b></td>
+          </tr>
+          <tr>
+            <td>Payment Mode</td>
+            <td class="right">
+              ${
+                invoice.payment_method === 'cash' ? 'Cash' :
+                invoice.payment_method === 'credit' ? 'Credit Card' :
+                invoice.payment_method === 'qr_code' ? 'QR Code/UPI' :
+                invoice.payment_method === 'pos_card' ? 'POS Machine' :
+                invoice.payment_method === 'split' ? 'Split Payment' :
+                'Cash'
+              }
+            </td>
+          </tr>
+          ${
+            invoice.payment_method === 'split' && invoice.cash_amount && invoice.online_amount
+              ? `
+                <tr>
+                  <td>Cash Amount</td>
+                  <td class="right">₹${parseFloat(invoice.cash_amount).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Online Amount (${
+                    invoice.online_method === 'qr_code' ? 'QR/UPI' :
+                    invoice.online_method === 'pos_card' ? 'POS Card' :
+                    invoice.online_method === 'credit' ? 'Credit Card' : 'Online'
+                  })</td>
+                  <td class="right">₹${parseFloat(invoice.online_amount).toFixed(2)}</td>
+                </tr>
+              `
+              : ''
+          }
+        </table>
+
+        <p style="text-align:center;">Thank You!</p>
 
         <script>
           window.onload = function () {
@@ -352,23 +390,111 @@ const checkoutSale = async () => {
   };
 
   const result= await checkout_sale(payload)
-  if(result.status===true) {
-    showToastNotification("Sale completed successfully", "success");
-    const invoice = buildExchangeInvoice(result.data);
+  if(result.status===true)
+  {
+  //alert("Sale completed");
+  const invoice = buildExchangeInvoice(result.data, { payment_method: 'cash' });
     printInvoice(invoice);
-    setCashOpen(false);
-    setCart([]);
-    setReceivedAmount("");
-    setReturnAmount(0);
+     setCashOpen(false);
+      setCart([]);
+      setReceivedAmount("");
+      setReturnAmount(0);
   }
-} catch(error) {
-  showToastNotification(error?.message || "Sale failed", "error");
+}catch(error)
+{
+  console.log(error.message)
 }
 };
 
 useEffect(()=>{
   holdlist()
+  checkPOSConnection()
 },[])
+
+// Check POS device connection status
+const checkPOSConnection = async () => {
+  try {
+    const status = await getDeviceStatus();
+    setPosConnected(status.data.connected);
+  } catch (error) {
+    setPosConnected(false);
+  }
+};
+
+// Handle POS Card Payment
+const handlePOSPayment = async () => {
+  if (!posConnected) {
+    alert('POS device not connected! Please go to Settings > POS Settings to connect your device first.');
+    return;
+  }
+
+  if (cart.length === 0) {
+    alert('Cart is empty!');
+    return;
+  }
+
+  setPosProcessing(true);
+  setActive("pos");
+
+  try {
+    // Step 1: Create sale first with pending status
+    const payload = {
+      payment_method: 'pos_card',
+      subtotal,
+      tax,
+      total,
+      cart: cart.map(item => ({
+        product_id: item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        tax: item.tax,
+        price: item.price,
+        total: item.price * item.qty,
+        image: item.image
+      }))
+    };
+
+    const saleResult = await checkout_sale(payload);
+
+    if (!saleResult.status) {
+      alert('Failed to create sale');
+      setPosProcessing(false);
+      return;
+    }
+
+    // Step 2: Process payment through POS device
+    alert('Please insert, swipe, or tap the customer\'s card on the POS machine...');
+
+    const paymentResult = await processPayment({
+      amount: total,
+      invoiceNo: saleResult.data.invoice_no,
+      saleId: saleResult.data.id || null
+    });
+
+    if (paymentResult.success && paymentResult.data.success) {
+      // Payment approved!
+      alert(`Payment Approved!
+Transaction ID: ${paymentResult.data.transactionId}
+Card: ${paymentResult.data.cardNumber || 'XXXX'}
+Auth Code: ${paymentResult.data.authCode || 'N/A'}`);
+
+      // Print invoice
+      const invoice = buildExchangeInvoice(saleResult.data, { payment_method: 'pos_card' });
+      printInvoice(invoice);
+
+      // Clear cart
+      setCart([]);
+      setActive("");
+    } else {
+      alert('Payment declined or failed. Please try again or use another payment method.');
+    }
+  } catch (error) {
+    console.error('POS payment error:', error);
+    alert('Error processing payment: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setPosProcessing(false);
+  }
+};
 
 const holdlist=async()=>{
   try{
@@ -380,83 +506,133 @@ const holdlist=async()=>{
     else{
        setHoldItem([])
     }
-  } catch(error) {
-    showToastNotification(error?.message || "Failed to load holds", "error");
+  }catch(error)
+  {
+    console.log(error.message)
   }
 }
 
 const retrieveItem=async(id)=>{
    try{
   const result= await retrieveHoldItem(id);
-  if(result.status===true) {
-    const { items, sale } = result.data;
-    const saleId = sale?.id || id;
-    setCart(
-      items.map(item => ({
-        id: item.product_id || item.id,
-        product_id: item.product_id || item.id,
-        product_name: item.product_name,
-        qty: item.qty,
-        price: item.price,
-        image: item.image,
-        tax: item.tax,
-        sale_id: saleId,
-      }))
-    );
-    setOpenRetrieveModal(false);
-    setMobile("");
-    showToastNotification("Sale retrieved successfully", "success");
-  } else {
-    showToastNotification("Hold Item Not Found", "warning");
-    setOpenRetrieveModal(false);
+  if(result.status===true)
+  {
+    const { items } = result.data;
+      setCart(
+     items.map(item => ({
+      id: item.product_id || item.id,
+      product_id: item.product_id || item.id,
+      product_name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      image: item.image,
+      tax: item.tax,
+    }))
+     );
+  setOpenRetrieveModal(false);
+  setMobile("");
   }
-  } catch(error) {
-    showToastNotification(error?.message || "Failed to retrieve item", "error");
+  else{
+    alert("Hold Item Not Found")
+  setOpenRetrieveModal(false);
   }
+  }catch(error)
+    {
+      console.log(error.message)
+    }
 }
 
  const loadRazorpay = () => {
   return new Promise((resolve) => {
-    // If Razorpay already loaded
-    if (window.Razorpay) {
-      console.log("✅ Razorpay already loaded");
-      resolve(true);
-      return;
-    }
-
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    
-    script.onload = () => {
-      console.log("✅ Razorpay SDK loaded");
-      resolve(true);
-    };
-    
-    script.onerror = () => {
-      console.error("❌ Failed to load Razorpay");
-      resolve(false);
-    };
-    
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
 };
 
 const handleRazorpay = async () => {
-  try {
-    console.log("🔵 Starting Razorpay...");
-    
-    // Load SDK
-    const loaded = await loadRazorpay();
-    if (!loaded || !window.Razorpay) {
-      showToastNotification("Failed to load Razorpay SDK", "error");
-      return;
-    }
-    console.log("✅ SDK ready");
+  const res = await loadRazorpay();
+  if (!res) {
+    alert("Razorpay SDK failed to load");
+    return;
+  }
 
-    // Build payload
+  // Step 1: Create Sale + Razorpay Order (Backend)
+  const payload = {
+    payment_method: "credit",
+    subtotal,
+    tax,
+    total,
+    cart: cart.map(item => ({
+      product_id: item.id,
+      product_name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      tax: item.tax,
+      total: item.price * item.qty,
+      image: item.image,
+    })),
+  };
+
+  const result = await checkout_sale(payload);
+  if (!result.status) return;
+
+  // Step 2: Razorpay Options
+  const options = {
+    key: "rzp_test_RvRduZ5UNffoaN",
+    amount: result.data.data.amount * 100,
+    currency: "INR",
+    order_id: result.data.data.razorpayOrderId,
+    name: "My POS",
+
+    handler: async function (response) {
+      const invoiceWindow = window.open("", "_blank");
+      try {
+        // Step 3: Verify Payment
+        const verifyPayload = {
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          saleId: result.data.data.saleId,
+          amount: result.data.data.amount,
+        };
+
+        const verifyRes = await verifyPayment(verifyPayload);
+        // ✅ Step 4: Print ONLY if verified
+        if (verifyRes.status === true) {
+          const invoice = buildExchangeInvoice(result.data.saleData, { payment_method: 'credit' });
+          printInvoice(invoice);
+
+          // Reset POS
+          setCashOpen(false);
+          setCart([]);
+        } else {
+           invoiceWindow.close();
+          alert("Payment verification failed");
+        }
+      } catch (err) {
+        console.error("Verification Error", err);
+        alert("Payment verification error");
+      }
+    },
+
+    theme: {
+      color: "#2e86de",
+    },
+  };
+
+  const rzp = new window.Razorpay(options);
+  rzp.open();
+};
+
+const handleQRPayment = async () => {
+  try {
+    setActive("qr_code");
+    setPaymentStatus("pending");
+
     const payload = {
-      payment_method: "credit",
       subtotal,
       tax,
       total,
@@ -471,160 +647,479 @@ const handleRazorpay = async () => {
       })),
     };
 
-    console.log("📤 Calling checkout_sale...");
-    const result = await checkout_sale(payload);
-    
-    if (!result?.status) {
-      showToastNotification(result?.message || "Payment initialization failed", "error");
-      return;
+    const result = await createQRPayment(payload);
+
+    if (result.status) {
+      setQrCodeData(result.data);
+
+      // Generate QR code from the payment URL
+      const qrDataUrl = await QRCode.toDataURL(result.data.qrCodeUrl, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'H'
+      });
+
+      setQrCodeImage(qrDataUrl);
+      setQrModalOpen(true);
+    } else {
+      alert("Failed to generate QR code");
     }
+  } catch (error) {
+    console.error("QR Payment Error:", error);
+    alert("Failed to create QR payment: " + (error.response?.data?.message || error.message));
+  }
+};
 
-    console.log("✅ API Success:", result);
+const handleConfirmPayment = async () => {
+  try {
+    if (!qrCodeData) return;
 
-    const payloadData = result.data?.data || result.data || {};
-    const amount = payloadData.amount || payloadData.total_amount || 0;
-    const razorpayOrderId = payloadData.razorpayOrderId || payloadData.razorpay_order_id || payloadData.order_id;
-    const saleId = payloadData.saleId || payloadData.sale_id;
+    setPaymentStatus("confirming");
 
-    if (!razorpayOrderId || !amount || amount <= 0) {
-      console.error("❌ Invalid data:", { razorpayOrderId, amount });
-      showToastNotification("Invalid payment data", "error");
-      return;
+    const confirmResult = await confirmQRPayment({
+      saleId: qrCodeData.saleId
+    });
+
+    if (confirmResult.status) {
+      setPaymentStatus("paid");
+
+      // Print invoice
+      setTimeout(() => {
+        // Check if it's split payment
+        const paymentDetails = qrCodeData.cash_amount && qrCodeData.online_amount
+          ? {
+              payment_method: 'split',
+              cash_amount: qrCodeData.cash_amount,
+              online_amount: qrCodeData.online_amount,
+              online_method: 'qr_code'
+            }
+          : { payment_method: 'qr_code' };
+
+        const invoice = buildExchangeInvoice(qrCodeData.saleData, paymentDetails);
+        printInvoice(invoice);
+
+        // Reset and close
+        setQrModalOpen(false);
+        setCart([]);
+        setQrCodeData(null);
+        setQrCodeImage(null);
+        setPaymentStatus("pending");
+      }, 1000);
+    } else {
+      alert("Failed to confirm payment. Please try again.");
+      setPaymentStatus("pending");
     }
+  } catch (error) {
+    console.error("Confirm Payment Error:", error);
+    alert("Error confirming payment");
+    setPaymentStatus("pending");
+  }
+};
 
-    const amountInPaise = Math.round(amount * 100);
-    console.log("💳 Opening Razorpay - Amount:", amountInPaise);
+const closeQRModal = () => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+    setPollingInterval(null);
+  }
+  setQrModalOpen(false);
+  setQrCodeData(null);
+  setQrCodeImage(null);
+  setPaymentStatus("pending");
+  setActive("");
+};
 
-    // Razorpay Options
-    const options = {
-      key: "rzp_test_RvRduZ5UNffoaN",
-      amount: amountInPaise,
-      currency: "INR",
-      order_id: razorpayOrderId,
-      name: "POS System",
-      description: `Payment - Order ${razorpayOrderId}`,
+// Handle Split Payment - QR Code
+const handleSplitQRPayment = async () => {
+  try {
+    setPaymentStatus("pending");
 
-      prefill: {
-        contact: "9999999999",
-      },
-
-      handler: async function (response) {
-        console.log("✅ Payment success:", response);
-        try {
-          // Verify Payment
-          const verifyPayload = {
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-            saleId: saleId,
-            amount: amount,
-          };
-
-          const verifyRes = await verifyPayment(verifyPayload);
-          
-          if (verifyRes.status === true) {
-            console.log("✅ Verified");
-            showToastNotification("Payment verified successfully", "success");
-            const invoice = buildExchangeInvoice(result.data.saleData || result.data);
-            printInvoice(invoice);
-            setCashOpen(false);
-            setCart([]);
-          } else {
-            showToastNotification(verifyRes.message || "Payment verification failed", "error");
-          }
-        } catch (err) {
-          console.error('Verification error:', err);
-          showToastNotification(err?.message || "Payment verification error", "error");
-        }
-      },
-
-      theme: {
-        color: "#2e86de",
-      },
+    const payload = {
+      payment_method: 'split',
+      cash_amount: Number(cashAmount),
+      online_amount: Number(onlineAmount),
+      online_method: 'qr_code',
+      subtotal,
+      tax,
+      total,
+      cart: cart.map(item => ({
+        product_id: item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        price: item.price,
+        tax: item.tax,
+        total: item.price * item.qty,
+        image: item.image,
+      })),
     };
 
-    console.log("🎯 Creating Razorpay instance...");
-    const rzp = new window.Razorpay(options);
-    console.log("📞 Opening modal...");
-    rzp.open();
-    console.log("✅ Modal opened");
+    const result = await createQRPayment({ ...payload, total: Number(onlineAmount) });
 
-  } catch (err) {
-    console.error('Error:', err);
-    showToastNotification(err?.message || "Payment failed", "error");
+    if (result.status) {
+      setQrCodeData({ ...result.data, cash_amount: Number(cashAmount), online_amount: Number(onlineAmount) });
+
+      const qrDataUrl = await QRCode.toDataURL(result.data.qrCodeUrl, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'H'
+      });
+
+      setQrCodeImage(qrDataUrl);
+      setSplitPaymentOpen(false);
+      setQrModalOpen(true);
+    } else {
+      alert("Failed to generate QR code");
+    }
+  } catch (error) {
+    console.error("Split QR Payment Error:", error);
+    alert("Failed to create split QR payment");
   }
+};
+
+// Handle Split Payment - POS Machine
+const handleSplitPOSPayment = async () => {
+  if (!posConnected) {
+    alert('POS device not connected! Please go to Settings > POS Settings to connect your device first.');
+    return;
+  }
+
+  setPosProcessing(true);
+
+  try {
+    const payload = {
+      payment_method: 'split',
+      cash_amount: Number(cashAmount),
+      online_amount: Number(onlineAmount),
+      online_method: 'pos_card',
+      subtotal,
+      tax,
+      total,
+      cart: cart.map(item => ({
+        product_id: item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        tax: item.tax,
+        price: item.price,
+        total: item.price * item.qty,
+        image: item.image
+      }))
+    };
+
+    const saleResult = await checkout_sale(payload);
+
+    if (!saleResult.status) {
+      alert('Failed to create sale');
+      setPosProcessing(false);
+      return;
+    }
+
+    alert(`Cash received: ₹${cashAmount}\nPlease process card payment for: ₹${onlineAmount}\n\nInsert, swipe, or tap the customer's card on the POS machine...`);
+
+    const paymentResult = await processPayment({
+      amount: Number(onlineAmount),
+      invoiceNo: saleResult.data.invoice_no,
+      saleId: saleResult.data.id || null
+    });
+
+    if (paymentResult.success && paymentResult.data.success) {
+      alert(`Split Payment Approved!\nCash: ₹${cashAmount}\nCard: ₹${onlineAmount}\nTransaction ID: ${paymentResult.data.transactionId}`);
+
+      const invoice = buildExchangeInvoice(saleResult.data, {
+        payment_method: 'split',
+        cash_amount: cashAmount,
+        online_amount: onlineAmount,
+        online_method: 'pos_card'
+      });
+      printInvoice(invoice);
+
+      setCart([]);
+      setSplitPaymentOpen(false);
+      setCashAmount("");
+      setOnlineAmount("");
+      setActive("");
+    } else {
+      alert('Card payment declined. Please try again or use another payment method.');
+    }
+  } catch (error) {
+    console.error('Split POS payment error:', error);
+    alert('Error processing split payment: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setPosProcessing(false);
+  }
+};
+
+// Handle Split Payment - Credit Card (Razorpay)
+const handleSplitCreditPayment = async () => {
+  const res = await loadRazorpay();
+  if (!res) {
+    alert("Razorpay SDK failed to load");
+    return;
+  }
+
+  const payload = {
+    payment_method: "split",
+    cash_amount: Number(cashAmount),
+    online_amount: Number(onlineAmount),
+    online_method: 'credit',
+    subtotal,
+    tax,
+    total,
+    cart: cart.map(item => ({
+      product_id: item.id,
+      product_name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      tax: item.tax,
+      total: item.price * item.qty,
+      image: item.image,
+    })),
+  };
+
+  const result = await checkout_sale(payload);
+  if (!result.status) return;
+
+  const options = {
+    key: "rzp_test_RvRduZ5UNffoaN",
+    amount: Number(onlineAmount) * 100,
+    currency: "INR",
+    order_id: result.data.data.razorpayOrderId,
+    name: "My POS",
+    description: `Split Payment - Cash: ₹${cashAmount}, Online: ₹${onlineAmount}`,
+
+    handler: async function (response) {
+      try {
+        const verifyPayload = {
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          saleId: result.data.data.saleId,
+          amount: Number(onlineAmount),
+        };
+
+        const verifyRes = await verifyPayment(verifyPayload);
+
+        if (verifyRes.status === true) {
+          const invoice = buildExchangeInvoice(result.data.saleData, {
+            payment_method: 'split',
+            cash_amount: cashAmount,
+            online_amount: onlineAmount,
+            online_method: 'credit'
+          });
+          printInvoice(invoice);
+
+          setSplitPaymentOpen(false);
+          setCart([]);
+          setCashAmount("");
+          setOnlineAmount("");
+          setActive("");
+        } else {
+          alert("Payment verification failed");
+        }
+      } catch (err) {
+        console.error("Verification Error", err);
+        alert("Payment verification error");
+      }
+    },
+
+    theme: {
+      color: "#2e86de",
+    },
+  };
+
+  setSplitPaymentOpen(false);
+  const rzp = new window.Razorpay(options);
+  rzp.open();
 };
 
   return (
     <>
-      <PosCart
-        title="Cart"
-        cart={cart}
-        deleteItem={deleteItem}
-        updateQty={updateQty}
-        updatePrice={updatePrice}
-        editingPriceId={editingPriceId}
-        setEditingPriceId={setEditingPriceId}
-        subtotal={subtotal}
-        tax={tax}
-        total={total}
-        totalTax={totalTax}
-        checkoutSale={checkoutSale}
-        renderPaymentButtons={
-          <div className="d-flex gap-2 mt-3  d-flex align-items-center text-dark justify-content-around">
-        {/* Discount */}
-            <Tooltip title="Apply Discount" placement="top" arrow>
-        <button className="btn  d-flex align-items-center justify-content-center no-hover">
-                <LocalOfferIcon fontSize="small" />
-              </button>
-            </Tooltip>
+    <aside className="cart p-3">
+      <h3 className="fw-bold mb-4" style={{color:"#5A8DEE"}}>Cart</h3>
 
-            <Tooltip title="Cash" placement="top" arrow>
-              <button className="btn  d-flex align-items-center justify-content-center no-hover"
-                style={getButtonStyle("cash")}
-                onClick={() => {
-                  setActive("cash");
-                  setCashOpen(true);
-                }}>
-                <PaymentsIcon />
-
-              </button>
-            </ Tooltip >
-
-            <Tooltip title="Credit" placement="top" arrow>
-          <button
-            className="btn d-flex align-items-center justify-content-center no-hover"
-            style={getButtonStyle("credit")}
-            onClick={() => {
-              setActive("credit");
-              handleRazorpay();
+      {/* Product List */}
+      <div className="mt-1">
+        {cart.map((item) => (
+          <div
+            key={item.id}
+            className="d-flex p-3 rounded-3 mb-3"
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e6e6e6",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+              alignItems: "center",
             }}
           >
-           <CreditCardIcon />
-          </button>
-            </ Tooltip >
+           <img
+             src={item.image}
+              alt="product"
+              className="rounded-3"
+              style={{ width: 55, height: 55, objectFit: "cover" }}
+            /> 
+
+            <div className="ms-3 flex-grow-1">
+              <div className="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 className="fw-semibold mb-1" style={{ fontSize: "15px" }}>
+                    {item.product_name}
+                  </h6>
+                  {/* <span className="text-muted" style={{ fontSize: "12px" }}>
+                    {item.category} • SKU: {item.sku}
+                  </span> */}
+                </div>
+
+                <button className="btn p-1 text-danger" onClick={() => deleteItem(item.id)}>
+                  <DeleteIcon fontSize="small" />
+                </button>
+              </div>
+
+              <div className="d-flex justify-content-between align-items-center mt-2">
+                {/* Quantity */}
+                <div
+                  className="d-flex align-items-center rounded-pill px-2 py-1"
+                  style={{
+                    border: "1px solid #dcdcdc",
+                    width: "90px",
+                    justifyContent: "space-between",
+                    height: "32px",
+                  }}
+                >
+                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
+                    −
+                  </button>
+                  <span className="fw-bold" style={{ fontSize: "14px" }}>
+                    {item.qty}
+                  </span>
+                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
+                    +
+                  </button>
+                </div>
+
+                {/* Price */}
+               {/* Price */}
+<div className="d-flex align-items-center gap-2">
+  {editingPriceId === item.id ? (
+    <input
+      type="number"
+      className="form-control form-control-sm"
+      style={{ width: "80px" }}
+      value={item.price}
+      autoFocus
+      onChange={(e) => updatePrice(item.id, e.target.value)}
+      onBlur={() => setEditingPriceId(null)}
+      onKeyDown={(e) => e.key === "Enter" && setEditingPriceId(null)}
+    />
+  ) : (
+    <h6 className="fw-bold mb-0" style={{ fontSize: "15px" }}>
+      ₹{item.price}
+    </h6>
+  )}
+
+  <button
+    className="btn btn-sm p-0 text-primary"
+    onClick={() => setEditingPriceId(item.id)}
+  >
+    <EditIcon fontSize="small" />
+  </button>
+</div>
+
+              </div>
+            </div>
           </div>
-        }
-        renderCartOptions={
-          <>
-    <div className="d-flex flex-row mt-3 gap-3 justify-content-around">
-    <Tooltip title="Hold Sale" arrow>
-   <button className="btn  pos-icon-btn no-hover" onClick={() => setOpenHoldModal(true)}><PauseCircleFilledIcon /></button>
-    </ Tooltip >
-    <Tooltip title="Clear Cart" arrow>
-      <button className="btn  no-hover" onClick={clearCart}>
-        <DeleteSweepIcon />
-          </button>
-    </ Tooltip >
-    <Tooltip title="Retrieve" arrow>
-      <button className="btn  no-hover" onClick={() => setOpenRetrieveModal(true)}>
-        <UnarchiveIcon />
-          </button>
-    </ Tooltip >
+        ))}
       </div>
-</>
-    }
-   />
+
+      {/* Totals */}
+      <div className="border-top pt-3 mt-4">
+        <div className="d-flex justify-content-between mb-2">
+          <span>Subtotal</span>
+          <span>₹{Number(subtotal).toFixed(2)}</span>
+        </div>
+        <div className="d-flex justify-content-between mb-2">
+          <span>Tax ({`${totalTax} %`})</span>
+          <span>₹{Number(tax).toFixed(2)}</span>
+        </div>
+        <div className="d-flex justify-content-between fw-bold border-top pt-3 mt-4">
+          <span style={{color:"#5A8DEE"}}>Total</span>
+          <span style={{color:"#5A8DEE"}}>₹{total.toFixed(2)}</span>
+        </div>
+
+        {/* Discount */}
+        <button className="btn btn-outline-secondary btn-sm w-100 mt-3 d-flex align-items-center text-dark justify-content-center">
+          % Apply Discount
+        </button>
+
+        {/* Payment Buttons */}
+        <div className="d-flex gap-2 mt-3">
+          <button
+            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("cash"), flex: 1}}
+            onClick={() => {
+              setActive("cash");
+              setCashOpen(true);
+            }}
+          >
+            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Cash
+          </button>
+
+          <button
+            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("online"), flex: 1}}
+            onClick={() => setOnlinePaymentOpen(true)}
+          >
+            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Online
+          </button>
+        </div>
+
+        {/* Cash + Online Split Payment Button */}
+        <div className="d-grid gap-2 mt-2">
+          <button
+            className="btn btn-outline-primary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("split")}}
+            onClick={() => {
+              setActive("split");
+              setSplitPaymentOpen(true);
+              setCashAmount("");
+              setOnlineAmount("");
+              setSplitPaymentMethod("");
+            }}
+          >
+            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Cash + Online
+          </button>
+        </div>
+
+        {/* Cart Options */}
+        <div className="d-flex flex-row mt-3 gap-3 justify-content-center">
+          <button className="btn btn-outline-secondary text-dark" onClick={() => setOpenHoldModal(true)}>Hold Sale</button>
+          <button className="btn btn-outline-secondary text-dark" onClick={clearCart}>
+            Clear Cart
+          </button>
+          <button className="btn btn-outline-secondary text-dark" onClick={() => setOpenRetrieveModal(true)}>
+            Retrieve
+          </button>
+        </div>
+
+        {/* Print */}
+        <div className="d-grid gap-2 mt-3">
+          <button className="btn btn-success" onClick={checkoutSale }>
+            <PrintIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Print Receipt
+          </button>
+        </div>
+      </div>
+    </aside>
+
+
 
     <Dialog open={openHoldModal} onClose={() => setOpenHoldModal(false)}>
   <DialogTitle>Hold Sale</DialogTitle>
@@ -744,8 +1239,418 @@ const handleRazorpay = async () => {
   </DialogActions>
 </Dialog>
 
-    {/* Toast Notification */}
-    <Toast show={showToast} message={toastMessage} type={toastType} />
+{/* Online Payment Options Modal */}
+<Dialog open={onlinePaymentOpen} onClose={() => setOnlinePaymentOpen(false)} maxWidth="sm" fullWidth>
+  <DialogTitle>Select Online Payment Method</DialogTitle>
+  <DialogContent>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+
+      {/* Credit Card / Razorpay */}
+      <Button
+        variant="outlined"
+        size="large"
+        fullWidth
+        startIcon={<CreditCardIcon />}
+        onClick={() => {
+          setOnlinePaymentOpen(false);
+          setActive("credit");
+          handleRazorpay();
+        }}
+        sx={{
+          justifyContent: 'flex-start',
+          py: 2,
+          px: 3,
+          textTransform: 'none',
+          borderColor: '#5A8DEE',
+          color: '#5A8DEE',
+          '&:hover': {
+            borderColor: '#5A8DEE',
+            backgroundColor: '#f0f4ff',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+          <Typography variant="body1" fontWeight="600">Credit Card</Typography>
+          <Typography variant="caption" color="text.secondary">Pay via Razorpay Gateway</Typography>
+        </Box>
+      </Button>
+
+      {/* QR Code Payment */}
+      <Button
+        variant="outlined"
+        size="large"
+        fullWidth
+        startIcon={<QrCode2Icon />}
+        onClick={() => {
+          setOnlinePaymentOpen(false);
+          handleQRPayment();
+        }}
+        sx={{
+          justifyContent: 'flex-start',
+          py: 2,
+          px: 3,
+          textTransform: 'none',
+          borderColor: '#28a745',
+          color: '#28a745',
+          '&:hover': {
+            borderColor: '#28a745',
+            backgroundColor: '#f0fff4',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+          <Typography variant="body1" fontWeight="600">QR Code / UPI</Typography>
+          <Typography variant="caption" color="text.secondary">Scan QR to pay via UPI</Typography>
+        </Box>
+      </Button>
+
+      {/* POS Machine */}
+      <Button
+        variant="outlined"
+        size="large"
+        fullWidth
+        startIcon={posProcessing ? <CircularProgress size={20} /> : <CreditCardIcon />}
+        onClick={() => {
+          setOnlinePaymentOpen(false);
+          handlePOSPayment();
+        }}
+        disabled={!posConnected || posProcessing}
+        sx={{
+          justifyContent: 'flex-start',
+          py: 2,
+          px: 3,
+          textTransform: 'none',
+          borderColor: posConnected ? '#ff6b6b' : '#999',
+          color: posConnected ? '#ff6b6b' : '#999',
+          '&:hover': {
+            borderColor: posConnected ? '#ff6b6b' : '#999',
+            backgroundColor: posConnected ? '#fff5f5' : '#f5f5f5',
+          },
+          '&:disabled': {
+            borderColor: '#ddd',
+            color: '#999',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+          <Typography variant="body1" fontWeight="600">
+            POS Machine {!posConnected && '⚠️'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {posConnected ? 'Card swipe/chip/contactless' : 'POS device not connected'}
+          </Typography>
+        </Box>
+      </Button>
+
+    </Box>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setOnlinePaymentOpen(false)}>Cancel</Button>
+  </DialogActions>
+</Dialog>
+
+<Dialog
+  open={qrModalOpen}
+  onClose={closeQRModal}
+  maxWidth="sm"
+  fullWidth
+>
+  <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
+    <QrCode2Icon sx={{ fontSize: 40, color: '#5A8DEE', mb: 1 }} />
+    <Typography variant="h5" fontWeight="bold">
+      Scan QR Code to Pay
+    </Typography>
+  </DialogTitle>
+
+  <DialogContent sx={{ textAlign: 'center', py: 3 }}>
+    {qrCodeData && (
+      <>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 3,
+            mb: 3,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 2
+          }}
+        >
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            Invoice: {qrCodeData.invoice_no}
+          </Typography>
+          <Typography variant="h4" fontWeight="bold" color="#5A8DEE" sx={{ mb: 2 }}>
+            ₹{Number(qrCodeData.amount).toFixed(2)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Items: {cart.length}
+          </Typography>
+        </Paper>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            mb: 3,
+            p: 2,
+            backgroundColor: 'white',
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}
+        >
+          {qrCodeImage ? (
+            <img
+              src={qrCodeImage}
+              alt="QR Code"
+              style={{
+                width: '400px',
+                height: '400px',
+                objectFit: 'contain'
+              }}
+            />
+          ) : (
+            <CircularProgress size={60} />
+          )}
+        </Box>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            backgroundColor: paymentStatus === 'paid' ? '#d4edda' : paymentStatus === 'confirming' ? '#cce5ff' : '#fff3cd',
+            borderRadius: 2,
+            border: `2px solid ${paymentStatus === 'paid' ? '#28a745' : paymentStatus === 'confirming' ? '#007bff' : '#ffc107'}`
+          }}
+        >
+          {paymentStatus === 'pending' && (
+            <Box>
+              <Typography variant="body1" fontWeight="bold" color="#856404" sx={{ mb: 2, textAlign: 'center' }}>
+                Scan QR code with any UPI app to pay
+              </Typography>
+              <Button
+                variant="contained"
+                color="success"
+                fullWidth
+                size="large"
+                onClick={handleConfirmPayment}
+                sx={{ mt: 1 }}
+              >
+                I Have Paid - Confirm Payment
+              </Button>
+            </Box>
+          )}
+
+          {paymentStatus === 'confirming' && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+              <CircularProgress size={24} sx={{ color: '#007bff' }} />
+              <Typography variant="body1" fontWeight="bold" color="#004085">
+                Confirming payment...
+              </Typography>
+            </Box>
+          )}
+
+          {paymentStatus === 'paid' && (
+            <Typography variant="body1" fontWeight="bold" color="#155724">
+              ✓ Payment Successful! Printing receipt...
+            </Typography>
+          )}
+        </Paper>
+
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+          1. Scan QR code with GPay/PhonePe/Paytm
+          2. Complete the payment
+          3. Click "I Have Paid" button above
+        </Typography>
+      </>
+    )}
+  </DialogContent>
+
+  <DialogActions sx={{ px: 3, pb: 2 }}>
+    <Button
+      onClick={closeQRModal}
+      variant="outlined"
+      disabled={paymentStatus === 'paid'}
+    >
+      Cancel
+    </Button>
+  </DialogActions>
+</Dialog>
+
+{/* Split Payment Modal */}
+<Dialog open={splitPaymentOpen} onClose={() => setSplitPaymentOpen(false)} maxWidth="sm" fullWidth>
+  <DialogTitle>Split Payment (Cash + Online)</DialogTitle>
+  <DialogContent>
+    <Box sx={{ mt: 2 }}>
+      <Typography variant="h6" sx={{ mb: 2, color: '#5A8DEE', fontWeight: 'bold' }}>
+        Total Amount: ₹{Number(total).toFixed(2)}
+      </Typography>
+
+      <TextField
+        label="Cash Amount"
+        type="number"
+        fullWidth
+        value={cashAmount}
+        onChange={(e) => {
+          const cash = Number(e.target.value);
+          setCashAmount(e.target.value);
+          if (cash > 0 && cash < total) {
+            setOnlineAmount((total - cash).toFixed(2));
+          } else if (cash >= total) {
+            setCashAmount(total.toFixed(2));
+            setOnlineAmount("0");
+          } else {
+            setOnlineAmount("");
+          }
+        }}
+        sx={{ mb: 2 }}
+        inputProps={{ min: 0, max: total, step: 0.01 }}
+        helperText={`Maximum: ₹${total.toFixed(2)}`}
+      />
+
+      <TextField
+        label="Online Payment Amount (Remaining)"
+        type="number"
+        fullWidth
+        value={onlineAmount}
+        disabled
+        sx={{ mb: 3 }}
+        InputProps={{
+          readOnly: true,
+        }}
+      />
+
+      {Number(cashAmount) > 0 && Number(onlineAmount) > 0 && (
+        <>
+          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
+            Select Online Payment Method for ₹{Number(onlineAmount).toFixed(2)}:
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* QR Code Payment */}
+            <Button
+              variant={splitPaymentMethod === 'qr' ? 'contained' : 'outlined'}
+              size="large"
+              fullWidth
+              startIcon={<QrCode2Icon />}
+              onClick={() => setSplitPaymentMethod('qr')}
+              sx={{
+                justifyContent: 'flex-start',
+                py: 2,
+                px: 3,
+                textTransform: 'none',
+                borderColor: '#28a745',
+                color: splitPaymentMethod === 'qr' ? '#fff' : '#28a745',
+                backgroundColor: splitPaymentMethod === 'qr' ? '#28a745' : 'transparent',
+                '&:hover': {
+                  borderColor: '#28a745',
+                  backgroundColor: splitPaymentMethod === 'qr' ? '#218838' : '#f0fff4',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+                <Typography variant="body1" fontWeight="600">QR Code / UPI</Typography>
+                <Typography variant="caption" color={splitPaymentMethod === 'qr' ? 'inherit' : 'text.secondary'}>
+                  Scan QR to pay remaining ₹{Number(onlineAmount).toFixed(2)}
+                </Typography>
+              </Box>
+            </Button>
+
+            {/* POS Machine */}
+            <Button
+              variant={splitPaymentMethod === 'pos' ? 'contained' : 'outlined'}
+              size="large"
+              fullWidth
+              startIcon={<CreditCardIcon />}
+              onClick={() => setSplitPaymentMethod('pos')}
+              disabled={!posConnected}
+              sx={{
+                justifyContent: 'flex-start',
+                py: 2,
+                px: 3,
+                textTransform: 'none',
+                borderColor: posConnected ? '#ff6b6b' : '#999',
+                color: splitPaymentMethod === 'pos' ? '#fff' : (posConnected ? '#ff6b6b' : '#999'),
+                backgroundColor: splitPaymentMethod === 'pos' ? '#ff6b6b' : 'transparent',
+                '&:hover': {
+                  borderColor: posConnected ? '#ff6b6b' : '#999',
+                  backgroundColor: splitPaymentMethod === 'pos' ? '#e63946' : (posConnected ? '#fff5f5' : '#f5f5f5'),
+                },
+                '&:disabled': {
+                  borderColor: '#ddd',
+                  color: '#999',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+                <Typography variant="body1" fontWeight="600">
+                  POS Machine {!posConnected && '⚠️'}
+                </Typography>
+                <Typography variant="caption" color={splitPaymentMethod === 'pos' ? 'inherit' : 'text.secondary'}>
+                  {posConnected ? `Card payment for ₹${Number(onlineAmount).toFixed(2)}` : 'POS device not connected'}
+                </Typography>
+              </Box>
+            </Button>
+
+            {/* Credit Card / Razorpay */}
+            <Button
+              variant={splitPaymentMethod === 'credit' ? 'contained' : 'outlined'}
+              size="large"
+              fullWidth
+              startIcon={<CreditCardIcon />}
+              onClick={() => setSplitPaymentMethod('credit')}
+              sx={{
+                justifyContent: 'flex-start',
+                py: 2,
+                px: 3,
+                textTransform: 'none',
+                borderColor: '#5A8DEE',
+                color: splitPaymentMethod === 'credit' ? '#fff' : '#5A8DEE',
+                backgroundColor: splitPaymentMethod === 'credit' ? '#5A8DEE' : 'transparent',
+                '&:hover': {
+                  borderColor: '#5A8DEE',
+                  backgroundColor: splitPaymentMethod === 'credit' ? '#4a7dd8' : '#f0f4ff',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+                <Typography variant="body1" fontWeight="600">Credit Card (Razorpay)</Typography>
+                <Typography variant="caption" color={splitPaymentMethod === 'credit' ? 'inherit' : 'text.secondary'}>
+                  Pay ₹{Number(onlineAmount).toFixed(2)} via Razorpay
+                </Typography>
+              </Box>
+            </Button>
+          </Box>
+        </>
+      )}
+    </Box>
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => {
+      setSplitPaymentOpen(false);
+      setCashAmount("");
+      setOnlineAmount("");
+      setSplitPaymentMethod("");
+    }}>
+      Cancel
+    </Button>
+
+    <Button
+      variant="contained"
+      color="success"
+      disabled={!cashAmount || !onlineAmount || !splitPaymentMethod || Number(cashAmount) <= 0 || Number(onlineAmount) <= 0}
+      onClick={() => {
+        if (splitPaymentMethod === 'qr') {
+          handleSplitQRPayment();
+        } else if (splitPaymentMethod === 'pos') {
+          handleSplitPOSPayment();
+        } else if (splitPaymentMethod === 'credit') {
+          handleSplitCreditPayment();
+        }
+      }}
+    >
+      Proceed to Payment
+    </Button>
+  </DialogActions>
+</Dialog>
 
     </>
   );

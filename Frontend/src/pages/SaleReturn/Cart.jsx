@@ -4,15 +4,8 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PrintIcon from "@mui/icons-material/Print";
 import EditIcon from "@mui/icons-material/Edit";
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import PaymentsIcon from "@mui/icons-material/Payments";
-import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
-import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
-import UnarchiveIcon from "@mui/icons-material/Unarchive";
-import Tooltip from "@mui/material/Tooltip";
-import ReplayIcon from "@mui/icons-material/Replay";
-import PosCart from "../../components/Cart/PosCart";
-
+import QrCode2Icon from "@mui/icons-material/QrCode2";
+import CircularProgress from "@mui/material/CircularProgress";
 import { Box,
   Typography,
   Paper,
@@ -36,27 +29,41 @@ import { Box,
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
 import { checkout_sale,verifyPayment } from "../../services/saleService";
 import {confirmReturn,confirmExchange,verifyManagerAuth} from "../../services/ReturnService";
-import { useToast } from "../../hooks/useToast";
-import Toast from "../../components/Toast/Toast";
+import { getDeviceStatus } from "../../services/posService";
+import {
+  handleCashExchange,
+  handleQRExchange,
+  handlePOSExchange,
+  handleCreditExchange,
+  handleSplitPayment
+} from "./paymentHandlers";
 
 export default function SaleReturnCart({ cart, setCart }) {
 
   const [active, setActive] = useState(""); 
   const [editingPriceId, setEditingPriceId] = useState(null);
   const [mobile, setMobile] = useState("");
-  const [openHoldModal, setOpenHoldModal] = useState(false);
-  const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
-  const [cashOpen, setCashOpen] = useState(false);
-  const [receivedAmount, setReceivedAmount] = useState("");
-  const [returnAmount, setReturnAmount] = useState(0);
-  const [holdItem, setHoldItem] = useState([]);
-  const [showApproval, setShowApproval] = useState(false);
-  const [managerUser, setManagerUser] = useState("");
-  const [managerPass, setManagerPass] = useState("");
-  const [approvalType, setApprovalType] = useState("");
-  
-  // Use custom toast hook
-  const { showToast, toastMessage, toastType, showToastNotification } = useToast(); 
+const [openHoldModal, setOpenHoldModal] = useState(false);
+const [openRetrieveModal, setOpenRetrieveModal] = useState(false);
+const [cashOpen, setCashOpen] = useState(false);
+const [receivedAmount, setReceivedAmount] = useState("");
+const [returnAmount, setReturnAmount] = useState(0);
+const [holdItem, setHoldItem] = useState([]);
+const [showApproval, setShowApproval] = useState(false);
+const[managerUser,setManagerUser]=useState("")
+const[managerPass,setManagerPass]=useState("")
+const [approvalType, setApprovalType] = useState("");
+const [onlinePaymentOpen, setOnlinePaymentOpen] = useState(false);
+const [splitPaymentOpen, setSplitPaymentOpen] = useState(false);
+const [cashAmount, setCashAmount] = useState("");
+const [onlineAmount, setOnlineAmount] = useState("");
+const [splitPaymentMethod, setSplitPaymentMethod] = useState("");
+const [qrModalOpen, setQrModalOpen] = useState(false);
+const [qrCodeData, setQrCodeData] = useState(null);
+const [qrCodeImage, setQrCodeImage] = useState(null);
+const [paymentStatus, setPaymentStatus] = useState("pending");
+const [posConnected, setPosConnected] = useState(false);
+const [posProcessing, setPosProcessing] = useState(false); 
   // Handle Quantity
  const updateQty = (id, type) => {
   setCart((prev) =>
@@ -99,23 +106,21 @@ export default function SaleReturnCart({ cart, setCart }) {
   // Clear Cart
   const clearCart = () => setCart([]);
 
-  // ✅ FIXED: Retrieve Cart with proper error handling and notifications
+  // Retrieve Example (Mock)
   const retrieveCart = async() => {
      try{
 
   if (mobile.length !== 10) {
-    showToastNotification("Enter valid mobile number", "warning");
+    alert("Enter valid mobile number");
     return;
   }
 
 const payload={customer_mobile: mobile}
 
-  const result = await retrieveHoldSale(payload);
-  if(result.status === true)
+  const result= await retrieveHoldSale(payload);
+  if(result.status===true)
   {
-    const { items, sale } = result.data;
-    const saleId = sale?.id || null; // 🔥 Extract sale_id from response
-    
+    const { items } = result.data;
       setCart(
     items.map(item => ({
       id: item.product_id || item.id,
@@ -124,19 +129,15 @@ const payload={customer_mobile: mobile}
       qty: item.qty,
       price: item.price,
       image: item.image,
-      tax: item.tax,
-      sale_id: saleId  // 🔥 Add sale_id to each item
+      tax: item.tax
     }))
      );
   setOpenRetrieveModal(false);
   setMobile("");
-  showToastNotification("Sale retrieved successfully", "success");
-  } else {
-    showToastNotification(result.message || "Failed to retrieve sale", "error");
   }
   }catch(error)
     {
-      showToastNotification(error.response?.data?.message || error.message || "Retrieve failed", "error");
+      console.log(error.message)
     } 
   };
 
@@ -180,52 +181,26 @@ const subtotal = cart.reduce((sum, item) => {
   return sum;
 }, 0);
 const getItemTaxAmount = (item) => {
-  const qty = item.qty || 1;
-  const price = Number(item.price) || 0;
-  const base = qty * price;
-  const taxPercent = Number(item.tax) || 0;
-
-  // In exchange mode, refund items contribute negatively to subtotal
-  // so their tax should also be negative. Detect signed contribution:
-  const sign = mode === "exchange" && item.cart_type === "refund" ? -1 : 1;
-  return sign * (base * taxPercent) / 100;
+  const base = item.qty * item.price;
+  const taxPercent = item.tax || 0;
+  return (base * taxPercent) / 100;
 };
-
-const tax = cart.reduce((sum, item) => sum + getItemTaxAmount(item), 0);
-
-// Determine a sensible tax percent label: if all items share the same tax percent, show it; otherwise leave blank
-const uniqueTaxPercents = Array.from(new Set(cart.map(i => Number(i.tax) || 0)));
-const totalTax = uniqueTaxPercents.length === 1 ? uniqueTaxPercents[0] : "";
-
-// Determine saleId robustly: prefer explicit `sale_id`/`saleId`/`invoice_no` on items
-const saleId = (() => {
-  if (!cart || cart.length === 0) return null;
-
-  // Look for explicit properties on any cart item
-  for (const it of cart) {
-    if (it.sale_id) return it.sale_id;
-    if (it.saleId) return it.saleId;
-    if (it.invoice_no && it.sale_id) return it.sale_id;
-  }
-
-  // Fallback: some flows store sale id on a top-level property
-  const first = cart[0];
-  return first?.sale_id || first?.saleId || null;
-})();
+const tax =  cart.reduce((sum, item) => sum + getItemTaxAmount(item),0);
+const totalTax = cart.reduce((sum, item) => sum + Number(item.tax), 0);
+const saleId = cart.length > 0 ? cart[0].id : null;
 
 const total = subtotal + tax;
 
-  // ✅ FIXED: submitHoldSale with proper success notification
   const submitHoldSale = async () => {
     try{
 
   if (mobile.length !== 10) {
-    showToastNotification("Enter valid mobile number", "warning");
+    alert("Enter valid mobile number");
     return;
   }
 
   if (cart.length === 0) {
-    showToastNotification("Cart is empty", "warning");
+    alert("Cart is empty");
     return;
   }
 
@@ -245,45 +220,43 @@ const total = subtotal + tax;
     }))
   };
 
-  const result = await holdSale(payload);
-  if(result.status === true)
+  const result= await holdSale(payload);
+  if(result.status===true)
   {
      setCart([]);        // clear cart
-     setMobile("");      // reset
-     setOpenHoldModal(false);
-     showToastNotification("Sale held successfully", "success");  // ✅ FIX: Added success notification
-  } else {
-    showToastNotification(result.message || "Failed to hold sale", "error");
+  setMobile("");      // reset
+  setOpenHoldModal(false);
   }
   }catch(error)
     {
-      showToastNotification(error.response?.data?.message || error.message || "Hold sale failed", "error");
+      console.log(error.message)
     }
  
 };
 
-const buildExchangeInvoice = (apiData) => {
-  // Handle both object and string responses
-  const invoiceNo = typeof apiData === 'string' ? apiData : apiData?.invoice_no || apiData?.data?.invoice_no || 'N/A';
-  
+const buildExchangeInvoice = (apiResult, paymentDetails = {}) => {
   return {
     shop_name: "My Super Store",
-    invoice_no: invoiceNo,
+    invoice_no: apiResult.invoice_no,
     date: new Date().toLocaleString(),
     items: cart.map(item => ({
       name: item.product_name,
-      qty: item.qty || item.return_qty || 0,
-      price: item.price || 0,
+      qty: item.qty,
+      price: item.price,
       type: item.cart_type, // refund / exchange
       total:
         item.cart_type === "refund"
-          ? -item.price * (item.qty || item.return_qty || 0)
-          : item.price * (item.qty || item.return_qty || 0)
+          ? -item.price * item.qty
+          : item.price * item.qty
     })),
     subtotal,
     tax,
     total,
-    difference: apiData?.difference || 0
+    difference: apiResult.difference,
+    payment_method: paymentDetails.payment_method || 'cash',
+    cash_amount: paymentDetails.cash_amount || null,
+    online_amount: paymentDetails.online_amount || null,
+    online_method: paymentDetails.online_method || null
   };
 };
 let printWindow=null;
@@ -364,6 +337,45 @@ const printInvoice = (invoice) => {
           }
         </p>
 
+        <div class="line"></div>
+
+        <table>
+          <tr>
+            <td colspan="2"><b>Payment Details</b></td>
+          </tr>
+          <tr>
+            <td>Payment Mode</td>
+            <td class="right">
+              ${
+                invoice.payment_method === 'cash' ? 'Cash' :
+                invoice.payment_method === 'credit' ? 'Credit Card' :
+                invoice.payment_method === 'qr_code' ? 'QR Code/UPI' :
+                invoice.payment_method === 'pos_card' ? 'POS Machine' :
+                invoice.payment_method === 'split' ? 'Split Payment' :
+                'Cash'
+              }
+            </td>
+          </tr>
+          ${
+            invoice.payment_method === 'split' && invoice.cash_amount && invoice.online_amount
+              ? `
+                <tr>
+                  <td>Cash Amount</td>
+                  <td class="right">₹${parseFloat(invoice.cash_amount).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Online Amount (${
+                    invoice.online_method === 'qr_code' ? 'QR/UPI' :
+                    invoice.online_method === 'pos_card' ? 'POS Card' :
+                    invoice.online_method === 'credit' ? 'Credit Card' : 'Online'
+                  })</td>
+                  <td class="right">₹${parseFloat(invoice.online_amount).toFixed(2)}</td>
+                </tr>
+              `
+              : ''
+          }
+        </table>
+
         <p style="text-align:center;">Thank You!</p>
 
         <script>
@@ -388,77 +400,37 @@ const printInvoice = (invoice) => {
   printWindow.document.close();
 };
 
-// ✅ FIXED: Improved checkoutSale with better error handling
 const checkoutSale = async () => {
-  try{
-    if (!cart || cart.length === 0) {
-      showToastNotification("Cart is empty", "warning");
-      return;
-    }
-
-    if (mode === "exchange" && !saleId) {
-      showToastNotification("Sale ID missing", "warning");
-      return;
-    }
-
-    const return_items = cart
-      .filter(item => item.cart_type === "refund" || mode === "refund")
-      .map(item => ({
-        sale_item_id: item.id,
-        product_id: item.product_id,
-        product_name: item.product_name,
-        image: item.image || null,
-        qty: Number(item.qty || item.return_qty) || 0,
-        tax: Number(item.tax) || 0,
-      }));
-     
-    const exchange_items = cart
-      .filter(i => i.cart_type === "exchange")
-      .map(i => ({
-        product_id: i.id,
-        product_name: i.product_name,
-        image: i.image,
-        qty: i.qty || 0,
-        price: i.price || 0,
-        tax: i.tax || 0,
-      }));
-
-    const payload = {
-      sale_id: saleId,
-      payment_method: "cash",
-      return_items,
-      exchange_items,
-    };
-
-    const result = await confirmExchange(payload);
-    if(result.status === true) {
-      const diff = result.data?.difference || 0;
-      if (diff > 0) {
-        showToastNotification(`Customer pays ₹${Math.abs(diff).toFixed(2)}`, "info");
-      } else if (diff < 0) {
-        showToastNotification(`Refund ₹${Math.abs(diff).toFixed(2)}`, "info");
-      } else {
-        showToastNotification("Even exchange – no payment", "info");
+  await handleCashExchange({
+    saleId,
+    cart,
+    printInvoice,
+    buildExchangeInvoice,
+    callbacks: {
+      onSuccess: () => {
+        setCashOpen(false);
+        setCart([]);
+        setReceivedAmount("");
+        setReturnAmount(0);
       }
-      
-      const invoice = buildExchangeInvoice(result.data);
-      printInvoice(invoice);
-      setCashOpen(false);
-      setCart([]);
-      setReceivedAmount("");
-      setReturnAmount(0);
-    } else {
-      showToastNotification(result.message || "Checkout failed", "error");
     }
-  } catch(error) {
-    const errorMsg = error.response?.data?.message || error.message || "Checkout failed";
-    showToastNotification(errorMsg, "error");
-  }
+  });
 };
 
 useEffect(()=>{
   holdlist()
+  checkPOSConnection()
 },[])
+
+// Check POS device connection status
+const checkPOSConnection = async () => {
+  try {
+    const status = await getDeviceStatus();
+    setPosConnected(status.data.connected);
+  } catch (error) {
+    setPosConnected(false);
+  }
+};
 
 const holdlist=async()=>{
   try{
@@ -481,9 +453,7 @@ const retrieveItem=async(id)=>{
   const result= await retrieveHoldItem(id);
   if(result.status===true)
   {
-    const { items, sale } = result.data;
-    const saleId = sale?.id || id; // 🔥 Extract sale_id - prefer sale object, fallback to id param
-    
+    const { items } = result.data;
       setCart(
     items.map(item => ({
       id: item.product_id || item.id,
@@ -493,59 +463,46 @@ const retrieveItem=async(id)=>{
       price: item.price,
       image: item.image,
       tax: item.tax,
-      sale_id: saleId  // 🔥 Add sale_id to each item
     }))
      );
   setOpenRetrieveModal(false);
   setMobile("");
-  showToastNotification("Item retrieved successfully", "success");
-  } else {
-    showToastNotification("Failed to retrieve item", "error");
   }
   }catch(error)
     {
-      showToastNotification(error.response?.data?.message || error.message || "Retrieve failed", "error");
+      console.log(error.message)
     }
 }
-
-// ✅ FIXED: Improved handleRefundSave with better error handling
-const handleRefundSave = async (manager_id) => {
-  try {
-    if (!cart || cart.length === 0) {
-      showToastNotification("Cart is empty", "warning");
-      return;
-    }
-
+ const handleRefundSave = async (manager_id) => {
+  
+   try{
     const payload = {
-      sale_id: saleId,
-      return_type: "refund",
-      manager_id,
-      items: cart.map(item => ({
-        sale_item_id: item.id,
-        product_id: item.product_id,
-        product_name: item.product_name,
-        image: item.image,
-        qty: Number(item.return_qty || item.qty) || 0,
-        price: item.price || 0,
-        tax: item.tax || 0
-      }))
-    };
+    sale_id: saleId,
+    return_type: "refund",
+    manager_id,
+    items: cart.map(item => ({
+      sale_item_id: item.id,
+      product_id: item.product_id,
+      product_name: item.product_name,
+      image: item.image,
+      qty: Number(item.return_qty),   // 👈 backend expects this
+      price: item.price,
+      tax: item.tax
+    }))
+  };
 
-    const result = await confirmReturn(payload);
-    if(result.status === true) {
-      const refundAmt = result.data?.refundAmount || 0;
-      showToastNotification(`Refund Amount ₹${refundAmt.toFixed(2)}`, "success");
-      const invoice = buildExchangeInvoice(result.data);
+  const result= await confirmReturn(payload);
+    if(result.status===true)
+    {
+      alert(`Refund Amount ₹${result.data.refundAmount}`);
+      setCart([])
+      const invoice = buildExchangeInvoice(result.data.invoice_no, { payment_method: 'cash' });
       printInvoice(invoice);
-      setCart([]);
-      setOpenHoldModal(false);
-    } else {
-      showToastNotification(result.message || "Refund processing failed", "error");
     }
-  } catch(error) {
-    const errorMsg = error.response?.data?.message || error.message || "Refund processing failed";
-    showToastNotification(errorMsg, "error");
-  }
+   }catch(error)
+   {
+    console.log(error.message)
+   }
 };
 
 const verifyManager = async () => {
@@ -564,281 +521,239 @@ const verifyManager = async () => {
         setCashOpen(true);
         break;
 
-      case "credit":
-        handleRazorpay();  
-        break;
+      // case "credit":
+      //   handleRazorpay();  
+      //   break;
 
       default:
-        showToastNotification("Invalid approval type", "error");
+        alert("Invalid approval type");
     }
-  } else {
-    showToastNotification(result.message || "Verification failed", "error");
   }
  }catch(error)
  {
-  const errorMsg = error.response?.data?.message || error.message || "Verification failed";
-  showToastNotification(errorMsg, "error");
+  alert(error.response?.data?.message || error.message)
  }
 };
 
-const loadRazorpay = () => {
-  return new Promise((resolve) => {
-    // If Razorpay already loaded
-    if (window.Razorpay) {
-      console.log("✅ Razorpay already loaded");
-      resolve(true);
-      return;
+const handleRazorpay = async () => {
+  await handleCreditExchange({
+    saleId,
+    cart,
+    printInvoice,
+    buildExchangeInvoice,
+    callbacks: {
+      onSuccess: () => {
+        setCashOpen(false);
+        setCart([]);
+      }
     }
-
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    
-    script.onload = () => {
-      console.log("✅ Razorpay SDK loaded");
-      resolve(true);
-    };
-    
-    script.onerror = () => {
-      console.error("❌ Failed to load Razorpay");
-      resolve(false);
-    };
-    
-    document.body.appendChild(script);
   });
 };
 
-// ✅ FIXED: Simplified handleRazorpay 
-const handleRazorpay = async () => {
-  try {
-    console.log("🔵 Starting Razorpay payment flow...");
-    
-    // Step 1: Load SDK
-    const loaded = await loadRazorpay();
-    if (!loaded || !window.Razorpay) {
-      showToastNotification("Failed to load Razorpay SDK", "error");
-      return;
-    }
-    console.log("✅ SDK ready");
-
-    // Step 2: Validate cart
-    if (!Array.isArray(cart) || cart.length === 0) {
-      showToastNotification("Cart is empty", "warning");
-      return;
-    }
-
-    // Step 3: Build payload
-    const return_items = cart
-      .filter(i => mode === "refund" || i.cart_type === "refund")
-      .map(i => ({
-        sale_item_id: i.id,
-        product_id: i.product_id,
-        product_name: i.product_name,
-        image: i.image ?? null,
-        qty: Number(i.return_qty ?? i.qty ?? 0),
-        tax: Number(i.tax ?? 0),
-      }))
-      .filter(i => i.qty > 0);
-
-    const exchange_items = cart
-      .filter(i => i.cart_type === "exchange")
-      .map(i => ({
-        product_id: i.id,
-        product_name: i.product_name,
-        image: i.image ?? null,
-        qty: Number(i.qty ?? 0),
-        price: Number(i.price ?? 0),
-        tax: Number(i.tax ?? 0),
-      }))
-      .filter(i => i.qty > 0);
-
-    const payload = {
-      sale_id: saleId,
-      payment_method: "credit",
-      return_items,
-      exchange_items,
-    };
-
-    console.log("📤 Exchange payload:", payload);
-
-    // Step 4: Call API
-    const result = await confirmExchange(payload);
-    
-    if (!result?.status) {
-      console.error("❌ API Error:", result);
-      showToastNotification(result?.message || "Exchange initialization failed", "error");
-      return;
-    }
-
-    console.log("✅ API Success:", result);
-
-    const data = result.data?.data ?? result.data ?? {};
-    const difference = Number(data.difference ?? 0);
-
-    // If no payment needed
-    if (difference <= 0) {
-      console.log("✅ Even exchange - no payment needed");
-      showToastNotification("Exchange completed successfully", "success");
-      printInvoice(buildExchangeInvoice(result.data));
-      setCart([]);
-      setCashOpen(false);
-      setShowApproval(false);
-      return;
-    }
-
-    // Step 5: Extract Razorpay details
-    const razorpayOrderId = data.razorpay_order_id || data.razorpayOrderId || data.order_id;
-    const amount = Number(data.amount ?? 0);
-    const orderId = data.sale_id ?? data.saleId;
-
-    console.log("💳 Razorpay Order:", { razorpayOrderId, amount, orderId });
-
-    if (!razorpayOrderId || amount <= 0) {
-      console.error("❌ Invalid payment data:", { razorpayOrderId, amount });
-      showToastNotification("Invalid payment data from server", "error");
-      return;
-    }
-
-    // Step 6: Open Razorpay
-    const options = {
-      key: "rzp_test_RvRduZ5UNffoaN",
-      amount: Math.round(amount * 100),
-      currency: "INR",
-      order_id: razorpayOrderId,
-      name: "POS System",
-      description: `Exchange - Order ${razorpayOrderId}`,
-      
-      prefill: {
-        contact: "9999999999",
-      },
-
-      handler: async (response) => {
-        console.log("✅ Payment response:", response);
-        try {
-          const verifyResult = await verifyPayment({
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-            saleId: orderId,
-            amount,
-          });
-
-          if (verifyResult?.status) {
-            showToastNotification("Payment successful!", "success");
-            printInvoice(buildExchangeInvoice(result.data));
-            setCart([]);
-            setCashOpen(false);
-            setShowApproval(false);
-          } else {
-            showToastNotification("Payment verification failed", "error");
-          }
-        } catch (err) {
-          console.error("❌ Verification error:", err);
-          showToastNotification("Payment verification error", "error");
-        }
-      },
-
-      theme: { color: "#5A8DEE" }
-    };
-
-    console.log("🎯 Opening Razorpay with options:", options);
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-    console.log("✅ Modal opened");
-
-  } catch (error) {
-    console.error("❌ Error:", error);
-    showToastNotification(error?.message || "Payment failed", "error");
-  }
-};
-
-
   return (
     <>
-   <PosCart
-  title="Sale Return"
-  cart={cart}
-  deleteItem={deleteItem}
-  updateQty={updateQty}
-  updatePrice={updatePrice}
-  editingPriceId={editingPriceId}
-  setEditingPriceId={setEditingPriceId}
-  subtotal={subtotal}
-  tax={tax}
-  total={total}
-  totalTax={totalTax}
-  checkoutSale={checkoutSale}
-  isReturn={true}
-  renderPaymentButtons={
-    <div className="d-flex gap-2 mt-3 justify-content-around">
-              {/* Discount */}
-        <Tooltip title="Apply Discount" placement="top" arrow>
-        <button className="btn  d-flex align-items-center justify-content-center no-hover">
-        <LocalOfferIcon fontSize="small" />
-              </button>
-            </Tooltip>
-          <Tooltip title="Refund" placement="top" arrow>
+    <aside className="cart p-3">
+      <h3 className="fw-bold mb-4" style={{color:"#5A8DEE"}}>Sale Return </h3>
+
+      {/* Product List */}
+      <div className="mt-1">
+        {cart.map((item) => (
+          <div
+            key={item.id}
+            className="d-flex p-3 rounded-3 mb-3"
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e6e6e6",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+              alignItems: "center",
+            }}
+          >
+           <img
+              src={item.image}
+              alt="product"
+              className="rounded-3"
+              style={{ width: 55, height: 55, objectFit: "cover" }}
+            /> 
+
+            <div className="ms-3 flex-grow-1">
+              <div className="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 className="fw-semibold mb-1" style={{ fontSize: "15px" }}>
+                    {item.product_name} 
+                  </h6>
+                  {/* <span className="text-muted" style={{ fontSize: "12px" }}>
+                    {item.category} • SKU: {item.sku}
+                  </span> */}
+                </div>
+
+                <button className="btn p-1 text-danger" onClick={() => deleteItem(item.id)}>
+                  <DeleteIcon fontSize="small" />
+                </button>
+              </div>
+
+              <div className="d-flex justify-content-between align-items-center mt-2">
+                {/* Quantity */}
+                <div
+                  className="d-flex align-items-center rounded-pill px-2 py-1"
+                  style={{
+                    border: "1px solid #dcdcdc",
+                    width: "90px",
+                    justifyContent: "space-between",
+                    height: "32px",
+                  }}
+                >
+                   {!item.return_qty ? (
+                    <>
+                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
+                    −
+                  </button>
+                  <span className="fw-bold" style={{ fontSize: "14px" }}>
+                    {item.return_qty}
+                  </span>
+                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
+                    +
+                  </button>
+                  </>
+                  ):(
+                    <span className="fw-bold" style={{ fontSize: "14px" }}>
+                    {item.qty}
+                  </span> 
+
+                  )}
+                </div>
+
+                {/* Price */}
+               {/* Price */}
+<div className="d-flex align-items-center gap-2">
+  {editingPriceId === item.id ? (
+    <input
+      type="number"
+      className="form-control form-control-sm"
+      style={{ width: "80px" }}
+      value={item.price}
+      autoFocus
+      onChange={(e) => updatePrice(item.id, e.target.value)}
+      onBlur={() => setEditingPriceId(null)}
+      onKeyDown={(e) => e.key === "Enter" && setEditingPriceId(null)}
+    />
+  ) : (
+    <h6 className="fw-bold mb-0" style={{ fontSize: "15px" }}>
+      ₹{item.price}
+    </h6>
+  )}
+
+  <button
+    className="btn btn-sm p-0 text-primary"
+    onClick={() => setEditingPriceId(item.id)}
+  >
+    <EditIcon fontSize="small" />
+  </button>
+</div>
+
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Totals */}
+      <div className="border-top pt-3 mt-4">
+        <div className="d-flex justify-content-between mb-2">
+          <span>Subtotal</span>
+          <span>₹{Number(subtotal).toFixed(2)}</span>
+        </div>
+        <div className="d-flex justify-content-between mb-2">
+          <span>Tax ({`${totalTax} %`})</span>
+          <span>₹{Number(tax).toFixed(2)}</span>
+        </div>
+        <div className="d-flex justify-content-between fw-bold border-top pt-3 mt-4">
+          <span style={{color:"#5A8DEE"}}>Total</span>
+          <span style={{color:"#5A8DEE"}}>₹{total.toFixed(2)}</span>
+        </div>
+
+        {/* Discount */}
+        <button className="btn btn-outline-secondary btn-sm w-100 mt-3 d-flex align-items-center text-dark justify-content-center">
+          % Apply Discount
+        </button>
+
+
+          <div className="d-flex gap-2 mt-3">
           <button
-            className="btn d-flex align-items-center justify-content-center no-hover"
+            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
             style={getButtonStyle("cash")} onClick={() => {
                 setApprovalType("refund");
                 setShowApproval(true);
               }}>
-            <ReplayIcon fontSize="small" />
-           
+            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Refund
           </button>
-          </Tooltip>
-          <Tooltip title="Cash" placement="top" arrow>
-          <button
-            className="btn d-flex align-items-center justify-content-center no-hover"
-            style={getButtonStyle("cash")}
-            onClick={() => {
-    setActive("cash");
-     setApprovalType("exchange");
-    setShowApproval(true);
-  }}
-          >
-           <PaymentsIcon />
-           
-          </button>
-          </Tooltip>
-          <Tooltip title="Credit" placement="top" arrow>
-          <button
-            className="btn d-flex align-items-center justify-content-center no-hover"
-            style={getButtonStyle("cash")}
-            onClick={() =>{
-               setActive("cash")
-              setApprovalType("credit");
-              setShowApproval(true);
-              }} >
-            <CreditCardIcon />
-          
-          </button>
-          </Tooltip>
+
         </div>
-  }
-  renderCartOptions={
-    <>
-    <div className="d-flex flex-row mt-3 gap-3 justify-content-evenly">
-    <Tooltip title="Hold Sale" arrow>
-      <button className="btn d-flex align-items-center justify-content-center no-hover" onClick={() => setOpenHoldModal(true)}>
-      <PauseCircleFilledIcon />
-      </button>
-      </Tooltip>
-      <Tooltip title="Clear Cart" arrow>
-      <button className="btn d-flex align-items-center justify-content-center no-hover" onClick={clearCart}>
-      <DeleteSweepIcon />
-      </button>
-      </Tooltip>
-      <Tooltip title="Retrieve" arrow>
-      <button className="btn d-flex align-items-center justify-content-center no-hover" onClick={() => setOpenRetrieveModal(true)}>
-      <UnarchiveIcon />
-      </button>
-      </Tooltip>
-    </div>
-</>
-  }
-/>
+
+        {/* Payment Buttons */}
+        <div className="d-flex gap-2 mt-3">
+          <button
+            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("cash"), flex: 1}}
+            onClick={() => {
+              setActive("cash");
+              setApprovalType("exchange");
+              setShowApproval(true);
+            }}
+          >
+            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Cash
+          </button>
+
+          <button
+            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("online"), flex: 1}}
+            onClick={() => setOnlinePaymentOpen(true)}
+          >
+            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Online
+          </button>
+        </div>
+
+        {/* Cash + Online Split Payment Button */}
+        <div className="d-grid gap-2 mt-2">
+          <button
+            className="btn btn-outline-primary d-flex align-items-center justify-content-center"
+            style={{...getButtonStyle("split")}}
+            onClick={() => {
+              setActive("split");
+              setSplitPaymentOpen(true);
+              setCashAmount("");
+              setOnlineAmount("");
+              setSplitPaymentMethod("");
+            }}
+          >
+            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Cash + Online
+          </button>
+        </div>
+
+        {/* Cart Options */}
+        <div className="d-flex flex-row mt-3 gap-3 justify-content-center">
+          <button className="btn btn-outline-secondary text-dark" onClick={() => setOpenHoldModal(true)}>Hold Sale</button>
+          <button className="btn btn-outline-secondary text-dark" onClick={clearCart}>
+            Clear Cart
+          </button>
+          <button className="btn btn-outline-secondary text-dark" onClick={() => setOpenRetrieveModal(true)}>
+            Retrieve
+          </button>
+        </div>
+
+        {/* Print  onClick={checkoutSale } */}
+        <div className="d-grid gap-2 mt-3">
+          <button className="btn btn-success" >
+            <PrintIcon style={{ fontSize: 18, marginRight: 5 }} />
+            Print Receipt
+          </button>
+        </div>
+      </div>
+    </aside>
 
 
 
@@ -930,37 +845,24 @@ const handleRazorpay = async () => {
   <DialogTitle>Cash Payment</DialogTitle>
 
   <DialogContent>
-    {/* Compute amountDue: positive => customer pays, negative => refund to customer */}
-    {total >= 0 ? (
-      <>
-        <Typography>Total Amount: ₹{Number(total).toFixed(2)}</Typography>
+    <Typography>Total Amount: ₹{Number(total).toFixed(2)}</Typography>
 
-        <TextField
-          label="Received Amount"
-          type="number"
-          fullWidth
-          sx={{ mt: 2 }}
-          value={receivedAmount}
-          onChange={(e) => {
-            const raw = e.target.value;
-            const val = raw === "" ? "" : Number(raw);
-            setReceivedAmount(val);
-            setReturnAmount((val === "" ? 0 : val) - total);
-          }}
-        />
+    <TextField
+      label="Received Amount"
+      type="number"
+      fullWidth
+      sx={{ mt: 2 }}
+      value={receivedAmount}
+      onChange={(e) => {
+        const val = Number(e.target.value);
+        setReceivedAmount(val);
+        setReturnAmount(val - total);
+      }}
+    />
 
-        <Typography sx={{ mt: 2 }} fontWeight="bold">
-          Return Amount: ₹{returnAmount > 0 ? returnAmount.toFixed(2) : "0.00"}
-        </Typography>
-      </>
-    ) : (
-      <>
-        <Typography fontWeight="bold">Refund To Customer: ₹{Math.abs(Number(total)).toFixed(2)}</Typography>
-        <Typography sx={{ mt: 2 }} color="text.secondary">
-          This is an exchange where the customer should receive a refund. Click below to process refund and print invoice.
-        </Typography>
-      </>
-    )}
+    <Typography sx={{ mt: 2 }} fontWeight="bold">
+      Return Amount: ₹{returnAmount > 0 ? returnAmount.toFixed(2) : "0.00"}
+    </Typography>
   </DialogContent>
 
   <DialogActions>
@@ -969,10 +871,10 @@ const handleRazorpay = async () => {
     <Button
       variant="contained"
       color="success"
-      disabled={total >= 0 ? (receivedAmount === "" || Number(receivedAmount) < total) : false}
+      disabled={receivedAmount < total}
       onClick={checkoutSale}
     >
-      {total >= 0 ? "OK & Print" : "Refund & Print"}
+      OK & Print
     </Button>
   </DialogActions>
 </Dialog>
@@ -994,7 +896,7 @@ const handleRazorpay = async () => {
       <DialogContent>
      <input
     type="password"
-    placeholder="Manager Password"
+    placeholder="Manager Passsword"
      className="form-control mt-2"
     value={managerPass}
     onChange={e => setManagerPass(e.target.value)}
@@ -1007,11 +909,462 @@ const handleRazorpay = async () => {
      Approve
     </Button>
   </DialogActions>
-   
+
 </Dialog>
 
-    {/* Toast Notification */}
-    <Toast show={showToast} message={toastMessage} type={toastType} />
+{/* Online Payment Options Modal */}
+<Dialog open={onlinePaymentOpen} onClose={() => setOnlinePaymentOpen(false)} maxWidth="sm" fullWidth>
+  <DialogTitle>Select Online Payment Method</DialogTitle>
+  <DialogContent>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+
+      {/* Credit Card / Razorpay */}
+      <Button
+        variant="outlined"
+        size="large"
+        fullWidth
+        startIcon={<CreditCardIcon />}
+        onClick={() => {
+          setOnlinePaymentOpen(false);
+          setActive("credit");
+          setApprovalType("credit");
+          handleRazorpay();
+        }}
+        sx={{
+          justifyContent: 'flex-start',
+          py: 2,
+          px: 3,
+          textTransform: 'none',
+          borderColor: '#5A8DEE',
+          color: '#5A8DEE',
+          '&:hover': {
+            borderColor: '#5A8DEE',
+            backgroundColor: '#f0f4ff',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+          <Typography variant="body1" fontWeight="600">Credit Card</Typography>
+          <Typography variant="caption" color="text.secondary">Pay via Razorpay Gateway</Typography>
+        </Box>
+      </Button>
+
+      {/* QR Code Payment */}
+      <Button
+        variant="outlined"
+        size="large"
+        fullWidth
+        startIcon={<QrCode2Icon />}
+        onClick={() => {
+          setOnlinePaymentOpen(false);
+          handleQRExchange({
+            saleId,
+            cart,
+            subtotal,
+            tax,
+            total,
+            callbacks: {
+              onQRGenerated: ({ qrCodeData, qrCodeImage }) => {
+                setQrCodeData(qrCodeData);
+                setQrCodeImage(qrCodeImage);
+                setQrModalOpen(true);
+              }
+            }
+          });
+        }}
+        sx={{
+          justifyContent: 'flex-start',
+          py: 2,
+          px: 3,
+          textTransform: 'none',
+          borderColor: '#28a745',
+          color: '#28a745',
+          '&:hover': {
+            borderColor: '#28a745',
+            backgroundColor: '#f0fff4',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+          <Typography variant="body1" fontWeight="600">QR Code / UPI</Typography>
+          <Typography variant="caption" color="text.secondary">Scan QR to pay via UPI</Typography>
+        </Box>
+      </Button>
+
+      {/* POS Machine */}
+      <Button
+        variant="outlined"
+        size="large"
+        fullWidth
+        startIcon={posProcessing ? <CircularProgress size={20} /> : <CreditCardIcon />}
+        onClick={() => {
+          setOnlinePaymentOpen(false);
+          handlePOSExchange({
+            saleId,
+            cart,
+            total,
+            printInvoice,
+            buildExchangeInvoice,
+            posConnected,
+            callbacks: {
+              onProcessing: setPosProcessing,
+              onSuccess: () => {
+                setCart([]);
+                setCashOpen(false);
+                setActive("");
+              }
+            }
+          });
+        }}
+        disabled={!posConnected || posProcessing}
+        sx={{
+          justifyContent: 'flex-start',
+          py: 2,
+          px: 3,
+          textTransform: 'none',
+          borderColor: posConnected ? '#ff6b6b' : '#999',
+          color: posConnected ? '#ff6b6b' : '#999',
+          '&:hover': {
+            borderColor: posConnected ? '#ff6b6b' : '#999',
+            backgroundColor: posConnected ? '#fff5f5' : '#f5f5f5',
+          },
+          '&:disabled': {
+            borderColor: '#ddd',
+            color: '#999',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+          <Typography variant="body1" fontWeight="600">
+            POS Machine {!posConnected && '⚠️'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {posConnected ? 'Card swipe/chip/contactless' : 'POS device not connected'}
+          </Typography>
+        </Box>
+      </Button>
+
+    </Box>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setOnlinePaymentOpen(false)}>Cancel</Button>
+  </DialogActions>
+</Dialog>
+
+{/* Split Payment Modal */}
+<Dialog open={splitPaymentOpen} onClose={() => setSplitPaymentOpen(false)} maxWidth="sm" fullWidth>
+  <DialogTitle>Split Payment (Cash + Online)</DialogTitle>
+  <DialogContent>
+    <Box sx={{ mt: 2 }}>
+      <Typography variant="h6" sx={{ mb: 2, color: '#5A8DEE', fontWeight: 'bold' }}>
+        Total Amount: ₹{Number(total).toFixed(2)}
+      </Typography>
+
+      <TextField
+        label="Cash Amount"
+        type="number"
+        fullWidth
+        value={cashAmount}
+        onChange={(e) => {
+          const cash = Number(e.target.value);
+          setCashAmount(e.target.value);
+          if (cash > 0 && cash < total) {
+            setOnlineAmount((total - cash).toFixed(2));
+          } else if (cash >= total) {
+            setCashAmount(total.toFixed(2));
+            setOnlineAmount("0");
+          } else {
+            setOnlineAmount("");
+          }
+        }}
+        sx={{ mb: 2 }}
+        slotProps={{ htmlInput: { min: 0, max: total, step: 0.01 } }}
+        helperText={`Maximum: ₹${total.toFixed(2)}`}
+      />
+
+      <TextField
+        label="Online Payment Amount (Remaining)"
+        type="number"
+        fullWidth
+        value={onlineAmount}
+        disabled
+        sx={{ mb: 3 }}
+        slotProps={{
+          input: {
+            readOnly: true,
+          }
+        }}
+      />
+
+      {Number(cashAmount) > 0 && Number(onlineAmount) > 0 && (
+        <>
+          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
+            Select Online Payment Method for ₹{Number(onlineAmount).toFixed(2)}:
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* QR Code Payment */}
+            <Button
+              variant={splitPaymentMethod === 'qr' ? 'contained' : 'outlined'}
+              size="large"
+              fullWidth
+              startIcon={<QrCode2Icon />}
+              onClick={() => setSplitPaymentMethod('qr')}
+              sx={{
+                justifyContent: 'flex-start',
+                py: 2,
+                px: 3,
+                textTransform: 'none',
+                borderColor: '#28a745',
+                color: splitPaymentMethod === 'qr' ? '#fff' : '#28a745',
+                backgroundColor: splitPaymentMethod === 'qr' ? '#28a745' : 'transparent',
+                '&:hover': {
+                  borderColor: '#28a745',
+                  backgroundColor: splitPaymentMethod === 'qr' ? '#218838' : '#f0fff4',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+                <Typography variant="body1" fontWeight="600">QR Code / UPI</Typography>
+                <Typography variant="caption" color={splitPaymentMethod === 'qr' ? 'inherit' : 'text.secondary'}>
+                  Scan QR to pay remaining ₹{Number(onlineAmount).toFixed(2)}
+                </Typography>
+              </Box>
+            </Button>
+
+            {/* POS Machine */}
+            <Button
+              variant={splitPaymentMethod === 'pos' ? 'contained' : 'outlined'}
+              size="large"
+              fullWidth
+              startIcon={<CreditCardIcon />}
+              onClick={() => setSplitPaymentMethod('pos')}
+              disabled={!posConnected}
+              sx={{
+                justifyContent: 'flex-start',
+                py: 2,
+                px: 3,
+                textTransform: 'none',
+                borderColor: posConnected ? '#ff6b6b' : '#999',
+                color: splitPaymentMethod === 'pos' ? '#fff' : (posConnected ? '#ff6b6b' : '#999'),
+                backgroundColor: splitPaymentMethod === 'pos' ? '#ff6b6b' : 'transparent',
+                '&:hover': {
+                  borderColor: posConnected ? '#ff6b6b' : '#999',
+                  backgroundColor: splitPaymentMethod === 'pos' ? '#e63946' : (posConnected ? '#fff5f5' : '#f5f5f5'),
+                },
+                '&:disabled': {
+                  borderColor: '#ddd',
+                  color: '#999',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+                <Typography variant="body1" fontWeight="600">
+                  POS Machine {!posConnected && '⚠️'}
+                </Typography>
+                <Typography variant="caption" color={splitPaymentMethod === 'pos' ? 'inherit' : 'text.secondary'}>
+                  {posConnected ? `Card payment for ₹${Number(onlineAmount).toFixed(2)}` : 'POS device not connected'}
+                </Typography>
+              </Box>
+            </Button>
+
+            {/* Credit Card / Razorpay */}
+            <Button
+              variant={splitPaymentMethod === 'credit' ? 'contained' : 'outlined'}
+              size="large"
+              fullWidth
+              startIcon={<CreditCardIcon />}
+              onClick={() => setSplitPaymentMethod('credit')}
+              sx={{
+                justifyContent: 'flex-start',
+                py: 2,
+                px: 3,
+                textTransform: 'none',
+                borderColor: '#5A8DEE',
+                color: splitPaymentMethod === 'credit' ? '#fff' : '#5A8DEE',
+                backgroundColor: splitPaymentMethod === 'credit' ? '#5A8DEE' : 'transparent',
+                '&:hover': {
+                  borderColor: '#5A8DEE',
+                  backgroundColor: splitPaymentMethod === 'credit' ? '#4a7dd8' : '#f0f4ff',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
+                <Typography variant="body1" fontWeight="600">Credit Card (Razorpay)</Typography>
+                <Typography variant="caption" color={splitPaymentMethod === 'credit' ? 'inherit' : 'text.secondary'}>
+                  Pay ₹{Number(onlineAmount).toFixed(2)} via Razorpay
+                </Typography>
+              </Box>
+            </Button>
+          </Box>
+        </>
+      )}
+    </Box>
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => {
+      setSplitPaymentOpen(false);
+      setCashAmount("");
+      setOnlineAmount("");
+      setSplitPaymentMethod("");
+    }}>
+      Cancel
+    </Button>
+
+    <Button
+      variant="contained"
+      color="success"
+      disabled={!cashAmount || !onlineAmount || !splitPaymentMethod || Number(cashAmount) <= 0 || Number(onlineAmount) <= 0}
+      onClick={() => {
+        handleSplitPayment({
+          saleId,
+          cart,
+          cashAmount,
+          onlineAmount,
+          onlineMethod: splitPaymentMethod === 'qr' ? 'qr_code' : splitPaymentMethod === 'pos' ? 'pos_card' : 'credit',
+          subtotal,
+          tax,
+          total,
+          posConnected,
+          printInvoice,
+          buildExchangeInvoice,
+          callbacks: {
+            onQRGenerated: ({ qrCodeData, qrCodeImage }) => {
+              setQrCodeData(qrCodeData);
+              setQrCodeImage(qrCodeImage);
+              setSplitPaymentOpen(false);
+              setQrModalOpen(true);
+            },
+            onProcessing: setPosProcessing,
+            onSuccess: () => {
+              setCart([]);
+              setSplitPaymentOpen(false);
+              setCashAmount("");
+              setOnlineAmount("");
+              setActive("");
+            }
+          }
+        });
+      }}
+    >
+      Proceed to Payment
+    </Button>
+  </DialogActions>
+</Dialog>
+
+{/* QR Code Modal */}
+<Dialog
+  open={qrModalOpen}
+  onClose={() => setQrModalOpen(false)}
+  maxWidth="sm"
+  fullWidth
+>
+  <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
+    <QrCode2Icon sx={{ fontSize: 40, color: '#5A8DEE', mb: 1 }} />
+    <Typography variant="h5" fontWeight="bold">
+      Scan QR Code to Pay
+    </Typography>
+  </DialogTitle>
+
+  <DialogContent sx={{ textAlign: 'center', py: 3 }}>
+    {qrCodeData && (
+      <>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 3,
+            mb: 3,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 2
+          }}
+        >
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            Invoice: {qrCodeData.invoice_no || 'N/A'}
+          </Typography>
+          <Typography variant="h4" fontWeight="bold" color="#5A8DEE" sx={{ mb: 2 }}>
+            ₹{Number(qrCodeData.online_amount || qrCodeData.amount || total).toFixed(2)}
+          </Typography>
+          {qrCodeData.cash_amount && (
+            <Typography variant="body2" color="text.secondary">
+              Cash: ₹{Number(qrCodeData.cash_amount).toFixed(2)} | Online: ₹{Number(qrCodeData.online_amount).toFixed(2)}
+            </Typography>
+          )}
+        </Paper>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            mb: 3,
+            p: 2,
+            backgroundColor: 'white',
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}
+        >
+          {qrCodeImage ? (
+            <img
+              src={qrCodeImage}
+              alt="QR Code"
+              style={{
+                width: '400px',
+                height: '400px',
+                objectFit: 'contain'
+              }}
+            />
+          ) : (
+            <CircularProgress size={60} />
+          )}
+        </Box>
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            backgroundColor: paymentStatus === 'paid' ? '#d4edda' : '#fff3cd',
+            borderRadius: 2,
+            border: `2px solid ${paymentStatus === 'paid' ? '#28a745' : '#ffc107'}`
+          }}
+        >
+          {paymentStatus === 'pending' && (
+            <Typography variant="body1" fontWeight="bold" color="#856404">
+              Scan QR code with any UPI app to complete payment
+            </Typography>
+          )}
+
+          {paymentStatus === 'paid' && (
+            <Typography variant="body1" fontWeight="bold" color="#155724">
+              ✓ Payment Successful!
+            </Typography>
+          )}
+        </Paper>
+
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+          1. Scan QR code with GPay/PhonePe/Paytm
+          <br />
+          2. Complete the payment
+          <br />
+          3. Payment will be confirmed automatically
+        </Typography>
+      </>
+    )}
+  </DialogContent>
+
+  <DialogActions sx={{ px: 3, pb: 2 }}>
+    <Button
+      onClick={() => {
+        setQrModalOpen(false);
+        setQrCodeData(null);
+        setQrCodeImage(null);
+        setPaymentStatus("pending");
+      }}
+      variant="outlined"
+    >
+      Close
+    </Button>
+  </DialogActions>
+</Dialog>
 
     </>
   );

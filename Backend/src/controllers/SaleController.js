@@ -21,31 +21,34 @@ export const SaleController={
     },
 
     checkoutSale:async(req,resp)=>{
-      
+
         try {
             const storeId = getStoreIdFromRequest(req);
             const requiredFields = [
              "subtotal", "tax", "total","payment_method","cart"
             ];
-        
+
             for (let field of requiredFields) {
               if (!req.body[field]) {
                 return sendResponse(resp, false, 400, `${field} is required`);
               }
             }
-        
+
             const {
               subtotal,
               tax,
               total,
               payment_method,
-              cart
+              cart,
+              cash_amount,
+              online_amount,
+              online_method
             } = req.body;
-        
+
             if (!Array.isArray(cart) || cart.length === 0) {
               return sendResponse(resp, false, 400, "cart cannot be empty");
             }
-        
+
             const invoice_no = await SaleService.generateInvoice();
               const userId = req.user.userId;
 
@@ -57,7 +60,10 @@ export const SaleController={
                      total,
                      payment_method,
                      payment_status:payment_method === "cash" ? "paid" : "pending",
-                     store_id: storeId
+                     store_id: storeId,
+                     cash_amount: payment_method === "split" ? cash_amount : null,
+                     online_amount: payment_method === "split" ? online_amount : null,
+                     online_method: payment_method === "split" ? online_method : null
                   };
             const saleId = await SaleService.createSale(saleData, storeId);
              
@@ -110,6 +116,28 @@ export const SaleController={
         
         if (payment_method === "cash") {
           return sendResponse(resp, true, 201, "Sale completed successfully",saleData);
+        }
+        else if (payment_method === "split") {
+          // For split payments, create Razorpay order only for online amount
+          const orderAmount = online_method === "qr_code" ? online_amount : online_amount;
+          const order = await razorpay.orders.create({
+            amount: Math.round(orderAmount * 100),
+            currency: "INR",
+            receipt: `sale_${saleId}_split`,
+          });
+          const data={
+            razorpayOrderId: order.id,
+            saleId,
+            amount: orderAmount,
+            cash_amount,
+            online_amount,
+            online_method
+          }
+          const invoiceData={
+            saleData,
+            data
+          }
+          return sendResponse(resp, true, 201, "Split payment created successfully", invoiceData);
         }
         else{
         const order = await razorpay.orders.create({
@@ -268,5 +296,195 @@ export const SaleController={
         }
     },
 
-   
+    createQRPayment: async (req, resp) => {
+        try {
+            const requiredFields = ["subtotal", "tax", "total", "cart"];
+
+            for (let field of requiredFields) {
+                if (!req.body[field]) {
+                    return sendResponse(resp, false, 400, `${field} is required`);
+                }
+            }
+
+            const { subtotal, tax, total, cart } = req.body;
+
+            if (!Array.isArray(cart) || cart.length === 0) {
+                return sendResponse(resp, false, 400, "cart cannot be empty");
+            }
+
+            const invoice_no = await SaleService.generateInvoice();
+            const userId = req.user.userId;
+
+            const saleData = {
+                invoice_no: invoice_no,
+                user_id: userId,
+                subtotal,
+                tax,
+                total,
+                payment_method: "qr_code",
+                payment_status: "pending"
+            };
+
+            const saleId = await SaleService.createSale(saleData);
+
+            if (!saleId) {
+                return sendResponse(resp, false, 400, "Something went wrong");
+            }
+
+            for (const item of cart) {
+                const itemData = {
+                    sale_id: saleId,
+                    product_id: item.product_id,
+                    product_name: item.product_name,
+                    price: item.price,
+                    tax: item.tax,
+                    qty: item.qty,
+                    image: item.image,
+                    total: item.price * item.qty
+                };
+                await SaleService.createSaleItem(itemData);
+            }
+
+            // Generate UPI Intent String for direct UPI payment
+            const upiId = process.env.UPI_ID || "merchant@upi";
+            const merchantName = process.env.MERCHANT_NAME || "POS Store";
+            const amount = total.toFixed(2);
+            const transactionNote = `Invoice ${invoice_no}`;
+
+            // UPI Intent URL - Opens directly in UPI apps
+            const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&am=${amount}&tn=${encodeURIComponent(transactionNote)}&cu=INR`;
+
+            console.log("✅ Generated UPI String:", upiString);
+            console.log("UPI ID:", upiId);
+            console.log("Merchant Name:", merchantName);
+            console.log("Amount:", amount);
+
+            return sendResponse(resp, true, 201, "QR Code created successfully", {
+                qrCodeId: saleId.toString(),
+                qrCodeUrl: upiString,
+                saleId,
+                invoice_no,
+                amount: total,
+                saleData,
+                upiId: upiId
+            });
+
+        } catch (error) {
+            console.error("❌ QR Payment Error:", error);
+            return sendResponse(resp, false, 500, error.message || "Something went wrong");
+        }
+    },
+
+    checkQRPaymentStatus: async (req, resp) => {
+        try {
+            const { saleId } = req.body;
+
+            if (!saleId) {
+                return sendResponse(resp, false, 400, "saleId is required");
+            }
+
+            // Check current payment status from database
+            const sale = await CommonModel.getSingle({
+                table: 'sales',
+                conditions: { id: saleId }
+            });
+
+            if (!sale) {
+                return sendResponse(resp, false, 404, "Sale not found");
+            }
+
+            // If already paid, return success
+            if (sale.payment_status === "paid") {
+                return sendResponse(resp, true, 200, "Payment successful", {
+                    status: "paid"
+                });
+            }
+
+            // Return pending status
+            return sendResponse(resp, true, 200, "Payment pending", {
+                status: sale.payment_status
+            });
+
+        } catch (error) {
+            console.error("❌ QR Payment Status Error:", error);
+            return sendResponse(resp, false, 500, error.message || "Something went wrong");
+        }
+    },
+
+    confirmQRPayment: async (req, resp) => {
+        try {
+            const { saleId, transactionId } = req.body;
+
+            if (!saleId) {
+                return sendResponse(resp, false, 400, "saleId is required");
+            }
+
+            // Update sale status to paid
+            await CommonModel.rawQuery(
+                `UPDATE sales SET payment_status='paid' WHERE id=?`,
+                [saleId]
+            );
+
+            // Record payment
+            await CommonModel.rawQuery(
+                `INSERT INTO payments
+                 (sale_id, razorpay_payment_id, amount, status, payment_method)
+                 SELECT id, ?, total, 'paid', 'qr_code' FROM sales WHERE id = ?`,
+                [transactionId || `UPI_${Date.now()}`, saleId]
+            );
+
+            // Update stock
+            const items = await CommonModel.getAllData({
+                table: 'sales_items',
+                conditions: { sale_id: saleId }
+            });
+
+            for (const item of items) {
+                const stockExists = await CommonModel.rawQuery(
+                    `SELECT * FROM stocks WHERE product_id = ? AND note = ? LIMIT 1`,
+                    [item.product_id, `Sale - QR Payment - ${saleId}`]
+                );
+
+                if (!stockExists || stockExists.length === 0) {
+                    await CommonModel.insertData({
+                        table: "stocks",
+                        data: {
+                            product_id: item.product_id,
+                            stock: item.qty,
+                            type: 'debit',
+                            note: `Sale - QR Payment - ${saleId}`,
+                        }
+                    });
+                }
+            }
+
+            // Delete hold sales if any
+            const userId = req.user.userId;
+            const getData = await CommonModel.getSingle({
+                table: "hold_sales",
+                conditions: { user_id: userId }
+            });
+
+            if (getData) {
+                await CommonModel.deleteData({
+                    table: "hold_sale_items",
+                    conditions: { hold_sale_id: getData.id }
+                });
+
+                await CommonModel.deleteData({
+                    table: "hold_sales",
+                    conditions: { id: getData.id }
+                });
+            }
+
+            return sendResponse(resp, true, 200, "Payment confirmed successfully", {
+                status: "paid"
+            });
+
+        } catch (error) {
+            console.error("❌ Confirm QR Payment Error:", error);
+            return sendResponse(resp, false, 500, error.message || "Something went wrong");
+        }
+    },
+
 }

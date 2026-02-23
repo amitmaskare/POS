@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@serialport/parser-readline": "^13.0.0",
     "aadhaar-validator": "^1.1.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -23,10 +24,13 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "mysql2": "^3.16.0",
+    "node-hid": "^3.3.0",
     "nodemailer": "^7.0.10",
     "path": "^0.12.7",
     "razorpay": "^2.9.6",
-    "slugify": "^1.6.6"
+    "serialport": "^13.0.0",
+    "slugify": "^1.6.6",
+    "usb": "^2.17.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

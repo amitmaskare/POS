@@ -247,7 +247,7 @@ await CommonModel.updateData({
   confirmExchange: async (req, res) => {
     try {
       const storeId = getStoreIdFromRequest(req);
-      const { sale_id, return_items, exchange_items,payment_method } = req.body;
+      const { sale_id, return_items, exchange_items, payment_method, cash_amount, online_amount, online_method } = req.body;
   
       /* ---------------- VALIDATION ---------------- */
       if (!sale_id)
@@ -277,7 +277,10 @@ await CommonModel.updateData({
           sale_id,
           payment_method,
           return_type: "exchange",
-          refund_amount: 0
+          refund_amount: 0,
+          cash_amount: payment_method === "split" ? cash_amount : null,
+          online_amount: payment_method === "split" ? online_amount : null,
+          online_method: payment_method === "split" ? online_method : null
         },
         storeId
       });
@@ -410,42 +413,49 @@ await CommonModel.updateData({
           exchangeAmount,
           difference
         });
-      } else if (payment_method === "credit") {
-        // 🔥 FIX: No payment needed if difference <= 0
-        if (difference <= 0) {
-          return sendResponse(res, true, 200, "Exchange processed successfully", {
-            return_id: returnId,
-            invoice_no: sale.invoice_no,
-            returnAmount,
-            exchangeAmount,
-            difference,
-            message: difference === 0 ? "Even exchange - no payment required" : `Refund ₹${Math.abs(difference).toFixed(2)}`
-          });
-        }
-        
-        try {
-          const razorpayAmount = difference;
-          const order = await razorpay.orders.create({
-            amount: Math.round(razorpayAmount * 100),
-            currency: "INR",
-            receipt: `sale_${sale_id}`,
-            payment_capture: 1,
-          });
-          const data={
-            razorpayOrderId: order.id,
-            saleId:sale_id,
-            amount:razorpayAmount,
-          }
-          const invoiceData={
-            invoice_no: sale.invoice_no,
-            data
-          }
-          return sendResponse(res, true, 201, "Exchange completed successfully", invoiceData);
-        } catch (razorpayError) {
-          const msg = razorpayError?.message || razorpayError?.error?.description || (typeof razorpayError === 'string' ? razorpayError : JSON.stringify(razorpayError));
-          console.error("🔴 Razorpay Error:", msg, razorpayError);
-          return sendResponse(res, false, 500, `Razorpay error: ${msg}`);
-        }
+      } else if (payment_method === "split") {
+        // For split payments, create Razorpay order only for online amount
+        const orderAmount = online_amount;
+        const order = await razorpay.orders.create({
+          amount: Math.round(orderAmount * 100),
+          currency: "INR",
+          receipt: `exchange_${sale_id}_split`,
+        });
+        const data = {
+          razorpayOrderId: order.id,
+          saleId: sale_id,
+          amount: orderAmount,
+          cash_amount,
+          online_amount,
+          online_method
+        };
+        const invoiceData = {
+          invoice_no: sale.invoice_no,
+          returnAmount,
+          exchangeAmount,
+          difference,
+          data
+        };
+        return sendResponse(res, true, 201, "Split exchange created successfully", invoiceData);
+      } else {
+        const order = await razorpay.orders.create({
+          amount: Math.round(exchangeAmount * 100),
+          currency: "INR",
+          receipt: `exchange_${sale_id}`,
+        });
+        const data = {
+          razorpayOrderId: order.id,
+          saleId: sale_id,
+          amount: difference,
+        };
+        const invoiceData = {
+          invoice_no: sale.invoice_no,
+          returnAmount,
+          exchangeAmount,
+          difference,
+          data
+        };
+        return sendResponse(res, true, 201, "Exchange completed successfully", invoiceData);
       }
     } catch (error) {
       const msg = error?.message || (typeof error === 'string' ? error : JSON.stringify(error));

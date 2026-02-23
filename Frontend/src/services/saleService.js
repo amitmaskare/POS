@@ -70,7 +70,7 @@ export const transactionList=async()=>{
           Authorization: `Bearer ${token}`,
         },
         })
-       
+
         return response.data
     }catch(error)
     {
@@ -78,4 +78,51 @@ export const transactionList=async()=>{
     }
 }
 
+export const createQRPayment=async(data)=>{
+    try{
+        const token = localStorage.getItem("token");
+        const response= await axios.post(`${apiUrl}/sale/createQRPayment`,data,{
+           headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        })
+
+        return response.data
+    }catch(error)
+    {
+      throw error
+    }
+}
+
+export const checkQRPaymentStatus=async(data)=>{
+    try{
+        const token = localStorage.getItem("token");
+        const response= await axios.post(`${apiUrl}/sale/checkQRPaymentStatus`,data,{
+           headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        })
+
+        return response.data
+    }catch(error)
+    {
+      throw error
+    }
+}
+
+export const confirmQRPayment=async(data)=>{
+    try{
+        const token = localStorage.getItem("token");
+        const response= await axios.post(`${apiUrl}/sale/confirmQRPayment`,data,{
+           headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        })
+
+        return response.data
+    }catch(error)
+    {
+      throw error
+    }
+}
 
