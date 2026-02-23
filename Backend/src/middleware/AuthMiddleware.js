@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import { sendResponse } from "../utils/sendResponse.js";
+
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 

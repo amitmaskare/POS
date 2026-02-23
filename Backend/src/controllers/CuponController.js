@@ -1,11 +1,13 @@
 import { CuponService } from "../services/CuponService.js";
 import {sendResponse} from "../utils/sendResponse.js"
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 
 export const CuponController={
     list:async(req,resp)=>{
         try{
-            const result=await CuponService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await CuponService.list(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -18,6 +20,7 @@ export const CuponController={
     },
     add:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const{cupon_code,discount}=req.body
             if(!cupon_code)
             {
@@ -27,7 +30,7 @@ export const CuponController={
             {
                 return sendResponse(resp,false,400,"discount field is required")
             }
-            const result= await CuponService.add(req.body)
+            const result= await CuponService.add(req.body, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
@@ -40,12 +43,13 @@ export const CuponController={
     },
     getById:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
             }
-            const result=await CuponService.getById(id)
+            const result=await CuponService.getById(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -58,6 +62,7 @@ export const CuponController={
     },
     update:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
              const {id,cupon_code,discount}=req.body
                         if(!id)
                         {
@@ -71,7 +76,7 @@ export const CuponController={
                         {
                             return sendResponse(resp,false,400,"discount field is required")
                         }
-                        const result= await CuponService.update(req.body)
+                        const result= await CuponService.update(req.body, storeId)
                         if(!result)
                         {
                             return sendResponse(resp,false,400,"Something went wrong")
@@ -85,8 +90,9 @@ export const CuponController={
     },
     deleteData:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
-            const result=await CuponService.deleteData(id)
+            const result=await CuponService.deleteData(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"ID not found")

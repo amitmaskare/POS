@@ -1,12 +1,14 @@
 import { RationcardService } from "../services/RationcardService.js";
 import {sendResponse} from "../utils/sendResponse.js"
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 
 export const RationcardController={
 
     list:async(req,resp)=>{
         try{
-            const result=await RationcardService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await RationcardService.list(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -19,6 +21,7 @@ export const RationcardController={
     },
     add:async(req,resp)=>{
         try{
+           const storeId = getStoreIdFromRequest(req);
            const requiredFields = [
         "card_type_id",
         "card_number",
@@ -34,7 +37,7 @@ export const RationcardController={
         }
       }
 
-            const result= await RationcardService.add(req.body)
+            const result= await RationcardService.add(req.body, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
@@ -47,12 +50,13 @@ export const RationcardController={
     },
     getById:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
             }
-            const result=await RationcardService.getById(id)
+            const result=await RationcardService.getById(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -65,6 +69,7 @@ export const RationcardController={
     },
     update:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
               const requiredFields = [
         "card_type_id",
         "card_number",
@@ -79,7 +84,7 @@ export const RationcardController={
           return sendResponse(resp, false, 400, `${field} is required`);
         }
       }
-                        const result= await RationcardService.update(req.body)
+                        const result= await RationcardService.update(req.body, storeId)
                         if(!result)
                         {
                             return sendResponse(resp,false,400,"Something went wrong")
@@ -93,8 +98,9 @@ export const RationcardController={
     },
     deleteData:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
-            const result=await RationcardService.deleteData(id)
+            const result=await RationcardService.deleteData(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"ID not found")

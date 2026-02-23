@@ -1,14 +1,16 @@
 import { CategoryService } from "../services/CategoryService.js";
 import {sendResponse} from "../utils/sendResponse.js"
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 
 export const CategoryController={
     list:async(req,resp)=>{
         try{
-            const result=await CategoryService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await CategoryService.list(storeId)
             if(!result || result.length===0)
             {
-                return sendResponse(reportError,false,400,"No Data Found")
+                return sendResponse(resp,false,400,"No Data Found")
             }
             return sendResponse(resp,true,200,"Fetch data successful",result)
         }catch(error)
@@ -18,13 +20,14 @@ export const CategoryController={
     },
     add:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const{category_name}=req.body
             if(!category_name)
             {
                 return sendResponse(resp,false,400,"category_name field is required")
             }
             
-            const result= await CategoryService.add(req.body)
+            const result= await CategoryService.add(req.body, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
@@ -37,12 +40,13 @@ export const CategoryController={
     },
     getById:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
             }
-            const result=await CategoryService.getById(id)
+            const result=await CategoryService.getById(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -55,6 +59,7 @@ export const CategoryController={
     },
     update:async(req,resp)=>{
         try{
+             const storeId = getStoreIdFromRequest(req);
              const {id,category_name}=req.body
                         if(!id)
                         {
@@ -64,7 +69,7 @@ export const CategoryController={
                         {
                             return sendResponse(resp,false,400,"category_name field is required")
                         }
-                        const result= await CategoryService.update(req.body)
+                        const result= await CategoryService.update(req.body, storeId)
                         if(!result)
                         {
                             return sendResponse(resp,false,400,"Something went wrong")
@@ -78,8 +83,9 @@ export const CategoryController={
     },
     deleteData:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
-            const result=await CategoryService.deleteData(id)
+            const result=await CategoryService.deleteData(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"ID not found")

@@ -11,26 +11,58 @@ export const RolePermissionController={
             {
                 return sendResponse(resp,false,400,"No Data Found")
             }
-            return sendResponse(resp,true,200,"Fetch data successful")
+            return sendResponse(resp,true,200,"Fetch data successful",result)
         }catch(error)
         {
             return sendResponse(resp,false,500,`Error : ${error.message}`)
         }
     },
 
+    // Get all permissions grouped by module
+    getAllPermissionsGrouped: async (req, resp) => {
+        try {
+            const result = await RolePermissionService.getAllPermissionsGrouped();
+            if (!result || result.length === 0) {
+                return sendResponse(resp, false, 400, "No permissions found");
+            }
+            return sendResponse(resp, true, 200, "Permissions fetched successfully", result);
+        } catch (error) {
+            return sendResponse(resp, false, 500, `Error: ${error.message}`);
+        }
+    },
+
     getById:async(req,resp)=>{
         try{
             const {id}=req.params
-           
+
             const result=await RolePermissionService.getById(id)
-            if(!result || result.length==0)
-            {
-                return sendResponse(resp,false,400,"ID not found")
-            }
-            return sendResponse(resp,true,200,"get by id data",result)
+            // Return empty array if no permissions found (valid scenario)
+            return sendResponse(resp,true,200,"Role permissions fetched",result)
         }catch(error)
         {
             return sendResponse(resp,false,500,`Error : ${error.message}`)
+        }
+    },
+
+    // Update role permissions (new toggle-based approach)
+    updateRolePermissions: async (req, resp) => {
+        try {
+            const { role_id, permission_ids } = req.body;
+
+            if (!role_id) {
+                return sendResponse(resp, false, 400, "role_id field is required");
+            }
+
+            // permission_ids can be empty array (remove all permissions)
+            if (!Array.isArray(permission_ids)) {
+                return sendResponse(resp, false, 400, "permission_ids must be an array");
+            }
+
+            await RolePermissionService.updateRolePermissions(role_id, permission_ids);
+
+            return sendResponse(resp, true, 200, "Role permissions updated successfully");
+        } catch (error) {
+            return sendResponse(resp, false, 500, `Error: ${error.message}`);
         }
     },
 
@@ -66,7 +98,7 @@ export const RolePermissionController={
 
         }
     }
-       
+
         return sendResponse(resp,true,200,"Role permission added successful")
     }catch(error)
     {

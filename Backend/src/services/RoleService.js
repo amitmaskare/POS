@@ -4,7 +4,7 @@ import pool from "../config.js";
 export const RoleService={
 
     list:async()=>{
-        const result= await CommonModel.getAllData({ table:"roles",fields:["roleId,name"]})
+        const result= await CommonModel.getAllData({ table:"roles",fields:["roleId,name,created_at"]})
         return result
     },
 

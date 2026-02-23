@@ -3,30 +3,30 @@ import {CommonModel} from "../models/CommonModel.js"
 
 export const PackageService={
 
-    list:async()=>{
-        const result=await CommonModel.getAllData({table:"packages"})
+    list:async(storeId)=>{
+        const result=await CommonModel.getAllData({table:"packages", storeId})
         return result      
     },
 
-    add:async(data)=>{
-        const result=await CommonModel.insertData({table:"packages",data:data})
+    add:async(data, storeId)=>{
+        const result=await CommonModel.insertData({table:"packages",data:data, storeId})
         return result
     },
 
-    getById:async(id)=>{
-        const result=await CommonModel.getSingle({table:"packages",conditions:{id}})
+    getById:async(id, storeId)=>{
+        const result=await CommonModel.getSingle({table:"packages",conditions:{id}, storeId})
         return result
     },
 
-    update:async(data)=>
+    update:async(data, storeId)=>
     {
         const {id,package_name}=data
-        const result=await CommonModel.updateData({table:"packages",data:data,conditions:{id}})
+        const result=await CommonModel.updateData({table:"packages",data:data,conditions:{id}, storeId})
         return result
     },
 
-    deleteData:async(id)=>{
-      const result=await CommonModel.deleteData({table:"packages",conditions:{id}})  
+    deleteData:async(id, storeId)=>{
+      const result=await CommonModel.deleteData({table:"packages",conditions:{id}, storeId})  
       return result
     }
 }
