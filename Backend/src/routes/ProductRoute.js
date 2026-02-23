@@ -19,5 +19,6 @@ route.get("/product/favouriteList",ProductController.favouriteList)
 route.get("/product/looseItemList",ProductController.looseItemList)
 route.get("/product/inventoryList",ProductController.inventoryList)
 route.post("/product/addStock",ProductController.addStock)
+route.get("/product/lowStock", Permission('view-reports'), ProductController.lowStockReport)
 
 export default route

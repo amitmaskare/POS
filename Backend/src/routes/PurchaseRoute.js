@@ -1,6 +1,7 @@
 import { PurchaseController } from "../controllers/PurchaseController.js";
 import express from "express"
 import AuthMiddleware from "../middleware/AuthMiddleware.js"
+import { Permission } from "../middleware/Permission.js"
 
 const route=express.Router()
 
@@ -14,4 +15,5 @@ route.get('/purchase/generateNextPONumber',PurchaseController.generateNextPONumb
 
 route.get('/purchase/receiveItems',PurchaseController.receiveItems)
 route.post('/purchase/receiveQuantity',PurchaseController.receiveQuantity)
+route.get('/purchase/purchaseReport', Permission('view-reports'), PurchaseController.purchaseReport)
 export default route

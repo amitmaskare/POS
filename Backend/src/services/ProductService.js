@@ -175,6 +175,30 @@ export const ProductService = {
     return await CommonModel.rawQuery(query, [storeId]);
   },
 
+  lowStockReport: async (storeId) => {
+    const query = `
+      SELECT 
+        p.id,
+        p.product_name,
+        p.sku,
+        p.reorder_level,
+        p.min_stock,
+        p.selling_price,
+        IFNULL(
+          SUM(CASE WHEN st.type = 'credit' THEN st.stock ELSE 0 END) -
+          SUM(CASE WHEN st.type = 'debit' THEN st.stock ELSE 0 END),
+        0) AS stock
+      FROM products p
+      LEFT JOIN stocks st ON st.product_id = p.id
+      WHERE p.store_id = ?
+      GROUP BY p.id
+      HAVING stock <= COALESCE(p.reorder_level, p.min_stock, 0)
+      ORDER BY stock ASC
+    `;
+
+    return await CommonModel.rawQuery(query, [storeId]);
+  },
+
 
 
 };

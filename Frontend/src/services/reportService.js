@@ -47,6 +47,26 @@ export const getProductList = async () => {
   }
 };
 
+// Fetch purchase report data
+export const getPurchaseReport = async () => {
+  try {
+    const response = await axios.get(`${apiUrl}/purchase/purchaseReport`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Fetch low stock report
+export const getLowStockReport = async () => {
+  try {
+    const response = await axios.get(`${apiUrl}/product/lowStock`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 // Export report as PDF (backend or generate here)
 export const downloadReport = async (reportType, data) => {
   try {
