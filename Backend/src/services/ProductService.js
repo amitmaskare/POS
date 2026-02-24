@@ -81,7 +81,7 @@ export const ProductService = {
 
   searchProduct: async (search, storeId) => {
     const query = `
-      SELECT 
+      SELECT
         p.id,
         p.product_name,
         p.selling_price,
@@ -92,7 +92,7 @@ export const ProductService = {
         o.offer_price,
         o.offer_qty_price
       FROM products p
-      LEFT JOIN offers o 
+      LEFT JOIN offers o
         ON o.product_id = p.id
         AND o.status = 'active'
         AND CURDATE() BETWEEN o.start_date AND o.end_date
