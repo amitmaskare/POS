@@ -42,6 +42,7 @@ const menuItems = [
   { title: "Inventory", icon: <InventoryIcon />, path: "/inventory", permission: "view-inventory" },
   { title: "Reports", icon: <AssessmentIcon />, path: "/reports", permission: "view-reports" },
   { title: "Customers", icon: <PeopleIcon />, path: "/customers", permission: "view-customer" },
+  { title: "Stores", icon: <LuStore />, path: "/stores", permission: "view-store" },
   { title: "Users", icon: <PersonIcon />, path: "/users", permission: "view-user" },
   { title: "Ration Cards", icon: <InventoryIcon />, path: "/rationcards", permission: "view-rationcard" },
   { title: "Offers", icon: <InventoryIcon />, path: "/offers", permission: "view-offer" },
