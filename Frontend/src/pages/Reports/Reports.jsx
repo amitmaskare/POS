@@ -32,6 +32,10 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
+import PointOfSaleOutlinedIcon from "@mui/icons-material/PointOfSaleOutlined";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import Header from "../../components/MainContentComponents/Title";
 import Stats from "../../components/MainContentComponents/Stats";
 import {
@@ -89,7 +93,21 @@ const Reports = () => {
             value: `$${stats.totalSales}`,
             change: "+12.5%",
             color: "#6ca0fe",
-            icon: <BarChartIcon sx={{ fontSize: 30, color: "#6ca0fe" }} />,
+            icon: (
+              <Box
+                sx={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: "50%",
+                  backgroundColor: "#e3f2fd",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <PointOfSaleOutlinedIcon sx={{ fontSize: 26, color: "#1565c0" }} />
+              </Box>
+            ),
           },
           {
             title: "Transactions",
@@ -97,23 +115,69 @@ const Reports = () => {
             change: "+4.2%",
             color: "green",
             icon: (
-              <BarChartIcon sx={{ fontSize: 30, color: "green" }} />
+              <Box
+                sx={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: "50%",
+                  backgroundColor: "#ede7f6",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ReceiptLongOutlinedIcon
+                  sx={{ fontSize: 26, color: "#5e35b1" }}
+                />
+              </Box>
             ),
           },
           {
-            title: "Average Transaction",
+            title: "Avg Transaction",
             value: `$${stats.avgTransaction}`,
             change: "+3.1%",
             color: "#ffc44d",
-            icon: <TrendingUpIcon sx={{ fontSize: 30, color: "#ffc44d" }} />,
+            icon: (
+              <Box
+                sx={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: "50%",
+                  backgroundColor: "#eceff1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <TrendingUpOutlinedIcon
+                  sx={{ fontSize: 26, color: "#455a64" }}
+                />
+              </Box>
+            ),
           },
           {
             title: "Top Product",
             value: stats.topProduct,
             sub: "15 sold",
             color: "#6ca0fe",
-            icon: <BarChartIcon sx={{ fontSize: 30, color: "#6ca0fe" }} />,
-          },
+            icon: (
+              <Box
+                sx={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: "50%",
+                  backgroundColor: "#e0f2f1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Inventory2OutlinedIcon
+                  sx={{ fontSize: 26, color: "#00897b" }}
+                />
+              </Box>
+            ),
+          }
         ]);
 
         setSalesChartData(chartData);
@@ -224,75 +288,99 @@ const Reports = () => {
           </Box>
 
           {/* Charts */}
-          <Grid container spacing={3} mb={4} justifyContent="space-around">
-            {/* Sales Overview Chart */}
             <Grid item xs={12} md={6}>
               <Card
                 sx={{
-                  border: "1px solid #5A8DEE",
-                  borderRadius: 2,
-                }}
-              >
-                <CardContent>
-                  <Typography fontWeight={600} mb={2} color="#5A8DEE">
+                  border: "1px solid #e0e0e0",
+      borderRadius: 3,
+      mt: 3,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      transition: "0.3s",
+      "&:hover": {
+        boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+      },
+    }}
+  >
+    <CardContent sx={{ p: 3 }}>
+      <Typography
+        fontWeight={600}
+        fontSize="16px"
+        mb={2}
+        color="#415A77"
+      >
                     Sales Overview
                   </Typography>
 
                   {salesChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={salesChartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="date" stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" />
                         <Tooltip
+              contentStyle={{
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+              }}
                           formatter={(value) => `$${value.toFixed(2)}`}
                         />
-                        <Legend />
-                        <Bar dataKey="sales" fill="#6ca0fe" />
+                        <Bar dataKey="sales" fill="#415A77" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
                     <Box textAlign="center" mt={6}>
-                      <BarChartIcon
-                        sx={{ fontSize: 50, color: "#6ca0fe" }}
-                      />
-                      <Typography mt={1}>No sales data available</Typography>
+                      <BarChartIcon sx={{ fontSize: 50, color: "#94a3b8" }} />
+                      <Typography mt={1} color="text.secondary">
+                        No sales data available
+                      </Typography>
                     </Box>
                   )}
                 </CardContent>
               </Card>
-            </Grid>
 
             {/* Product Performance Chart */}
             <Grid item xs={12} md={6}>
               <Card
                 sx={{
-                  border: "1px solid #5A8DEE",
-                  borderRadius: 2,
-                }}
-              >
-                <CardContent>
-                  <Typography fontWeight={600} mb={2} color="#5A8DEE">
+                  border: "1px solid #e0e0e0",
+      borderRadius: 3,
+      mt: 3,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      transition: "0.3s",
+      "&:hover": {
+        boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+      },
+    }}
+  >
+    <CardContent sx={{ p: 3 }}>
+      <Typography
+        fontWeight={600}
+        fontSize="16px"
+        mb={2}
+        color="#415A77"
+      >
                     Product Performance
                   </Typography>
 
                   {productChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={productChartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => value.toFixed(2)} />
-                        <Legend />
-                        <Bar dataKey="value" fill="#52c41a" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="name" stroke="#94a3b8" />
+            <YAxis stroke="#94a3b8" />
+            <Tooltip
+              contentStyle={{
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+              }}
+            />
+            <Bar dataKey="value" fill="#52c41a" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
                     <Box textAlign="center" mt={6}>
-                      <TrendingUpIcon
-                        sx={{ fontSize: 50, color: "green" }}
-                      />
-                      <Typography mt={1}>
+                      <TrendingUpIcon sx={{ fontSize: 50, color: "#415A77" }} />
+                      <Typography mt={1} color="#415A77" fontWeight={600}>
                         No product data available
                       </Typography>
                     </Box>
@@ -305,7 +393,7 @@ const Reports = () => {
           {/* Recent Reports Section */}
           <Card sx={{ borderRadius: 2, mb: 4 }}>
             <CardContent>
-              <Typography fontWeight={600} mb={2} color="#5A8DEE">
+              <Typography fontWeight={600} mb={2} color="#415A77">
                 Recent Reports
               </Typography>
 
@@ -320,10 +408,10 @@ const Reports = () => {
                   mb={1}
                   borderRadius={1}
                 >
-                  <Box display="flex" alignItems="center" gap={2}>
+                  <Box display="flex" alignItems="center" gap={2} color="#415A77">
                     <DescriptionIcon />
                     <Box>
-                      <Typography fontWeight={600}>
+                      <Typography fontWeight={600} color="#415A77">
                         {report.title}
                       </Typography>
                       <Typography variant="body2">{report.desc}</Typography>

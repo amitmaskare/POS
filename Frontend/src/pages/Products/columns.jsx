@@ -28,17 +28,46 @@ export const columns = [
       label: "Actions",
       render: (row,extra) => (
         <Box display="flex" gap={1}>
-           <Button size="small" variant="outlined" color="primary" onClick={() =>extra?.stock(row?.id)}>
-            Add Stock
-          </Button>
-          <Button size="small" variant="outlined" color="primary" onClick={() => extra?.edit(row?.id)}>
-            Edit
-          </Button>
-    
-          <Button size="small" variant="outlined" color="error" onClick={() => extra?.deleteItem(row?.id)}>
-            Delete
-          </Button>
-        </Box>
+  <Button
+    variant="outlined"
+    size="small"
+    onClick={() =>extra?.stock(row?.id)}
+    sx={{
+      fontSize: "11px",
+      padding: "2px 8px",
+      minWidth: "auto",
+    }}
+  >
+    Add Stock
+  </Button>
+
+  <Button
+    variant="outlined"
+    size="small"
+    onClick={() => extra?.edit(row?.id)}
+    sx={{
+      fontSize: "11px",
+      padding: "2px 8px",
+      minWidth: "auto",
+    }}
+  >
+    Edit
+  </Button>
+
+  <Button
+    variant="outlined"
+    size="small"
+    color="error"
+    onClick={() => extra?.deleteItem(row?.id)}
+    sx={{
+      fontSize: "11px",
+      padding: "2px 8px",
+      minWidth: "auto",
+    }}
+  >
+    Delete
+  </Button>
+</Box>
       ),
     }
   ];

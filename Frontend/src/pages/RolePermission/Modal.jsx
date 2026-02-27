@@ -93,7 +93,7 @@ const ModalLayout = ({ open, onClose,onSaved,editData   }) => {
         outline: "none",
       }}
     >
-      <Typography variant="h6" mb={2} color="#5A8DEE" fontWeight="bold">
+      <Typography variant="h6" mb={2} color="#415A77" fontWeight="bold">
         Add Role
       </Typography>
 

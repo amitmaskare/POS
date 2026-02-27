@@ -26,13 +26,14 @@ export default function CashierCheckoutModal({ open, onClose }) {
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      sx={{
+      sx={{     
         "& .MuiDialog-container": {
-            mt: 5, 
-         
-           
+            mt: 6, 
            
         },
+        "& .MuiPaper-root": {
+          borderRadius: "1.2rem",   
+        }
       }}
     >
       {/* HEADER */}
@@ -41,7 +42,8 @@ export default function CashierCheckoutModal({ open, onClose }) {
     fontSize: 20,
     fontWeight: 600,
     borderBottom: "1px solid #e0e0e0",
-    color:"#415a77",
+    color:"#fff",
+    backgroundColor:"#415a77",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -54,7 +56,7 @@ export default function CashierCheckoutModal({ open, onClose }) {
     onClick={onClose}
     sx={{
       minWidth: "auto",
-      color: "#475569",
+      color: "#fff",
       "&:hover": { background: "transparent", color: "#1e293b" },
     }}
   >
@@ -171,7 +173,7 @@ export default function CashierCheckoutModal({ open, onClose }) {
                   <Typography fontSize={26} fontWeight={700} color="#1e293b">
                     0
                   </Typography>
-                  <Typography fontSize={13} color="#64748b">
+                  <Typography fontSize={13} color="#415a77">
                     Total Transactions
                   </Typography>
                 </Box>
@@ -185,7 +187,7 @@ export default function CashierCheckoutModal({ open, onClose }) {
                   <Typography fontSize={26} fontWeight={700} color="#1e293b">
                     $0.00
                   </Typography>
-                  <Typography fontSize={13} color="#64748b">
+                  <Typography fontSize={13} color="#415a77">
                     Total Sales
                   </Typography>
                 </Box>
@@ -210,7 +212,7 @@ export default function CashierCheckoutModal({ open, onClose }) {
 
           <Grid container spacing={2} justifyContent={"space-between"}>
             <Grid item xs={6}>
-              <Typography fontSize={14} color="#64748b">
+              <Typography fontSize={14} color="#415a77">
                 Expected Cash Amount
               </Typography>
               <Typography fontSize={22} fontWeight={700} color="#1e293b">
@@ -219,7 +221,7 @@ export default function CashierCheckoutModal({ open, onClose }) {
             </Grid>
 
             <Grid item xs={6}>
-              <Typography fontSize={14} color="#64748b">
+              <Typography fontSize={14} color="#415a77">
                 Actual Cash Amount *
               </Typography>
 
@@ -253,8 +255,8 @@ export default function CashierCheckoutModal({ open, onClose }) {
             sx={{
               mr: 2,
               textTransform: "none",
-              borderColor: "#94a3b8",
-              color: "#475569",
+              borderColor: "#415a77",
+              color: "#415a77",
               borderRadius: 2,
               "&:hover": { borderColor: "#64748b" },
             }}
@@ -269,7 +271,7 @@ export default function CashierCheckoutModal({ open, onClose }) {
             sx={{
               ml: 2,
               textTransform: "none",
-              background: "#3b82f6",
+              background: "#415a77",
               borderRadius: 2,
               "&:hover": { background: "#2563eb" },
             }}

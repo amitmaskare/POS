@@ -109,12 +109,12 @@ const outOfStock = data.filter(
           {
             label: "Import",
             icon: <FileUploadIcon />,
-            variant: "outlined",
+            variant: "contained",
           },
           {
             label: "Export",
             icon: <FileDownloadIcon />,
-            variant: "outlined",
+            variant: "contained",
           },
         ]} />
 
@@ -131,14 +131,14 @@ const outOfStock = data.filter(
               label: "Filter",
               icon: <FilterListIcon />,
               variant: "outlined",
-              sx: { borderColor: "#5A8DEE", px: 2 },
+              sx: { borderColor: "#415a77", px: 2 ,color:"#415a77"},
               onClick: () => console.log("Filter clicked"),
             },
             {
               label: "Export",
               icon: <DownloadIcon />,
               variant: "outlined",
-              sx: { borderColor: "#5A8DEE", px: 2 },
+              sx: { borderColor: "#415a77", px: 2,color:"#415a77" },
               onClick: () => console.log("Export clicked"),
             },
           ]}
@@ -146,7 +146,7 @@ const outOfStock = data.filter(
       </Box>
       
       {/* Inventory Items */}
-      <Typography variant="h5" color="#415a77" mt={3}>Inventory Items</Typography>
+      <Typography variant="h6" color="#415a77" mt={3}>Inventory Items</Typography>
       <Divider sx={{ mb: 2, bgcolor: '#333' }} />
 
       <Grid container spacing={1}>
@@ -160,40 +160,53 @@ const outOfStock = data.filter(
           lg={12}      // 4 per row on desktop
         >
           <Box
-            key={index}
             sx={{
-              border: "1px solid #333",
-              borderRadius: "10px",
-              p: 2,
-              mb: 2,
+              borderRadius: "12px",
+              p: 2.5,
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center"
+              alignItems: "center",
+              backgroundColor: "#ffffff",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+                transform: "translateY(-2px)",
+              },
             }}
           >
             {/* LEFT CONTENT */}
-            <Box display="flex" gap={2}>
+            <Box display="flex" gap={2} alignItems="center">
               {/* Icon Box */}
               <Box
                 sx={{
                   width: 45,
                   height: 45,
-                  borderRadius: "8px",
+                  borderRadius: "10px",
+                  backgroundColor: "#f4f6f8",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center"
+                  justifyContent: "center",
                 }}
               >
-                <InventoryIcon sx={{ color:"#415a77"}} />
+                <InventoryIcon sx={{ color: "#415a77", fontSize: 26 }} />
               </Box>
 
               {/* Text Info */}
               <Box>
-                {/* Name + Stock-Level Badge */}
                 <Box display="flex" alignItems="center" gap={1}>
-                  <Typography sx={{ color:"#415a77", fontWeight:600, fontSize:"16px"}}>
-                    {item.product_name}
-                  </Typography>
+                <Typography
+  sx={{
+    fontWeight: 600,
+    fontSize: "16px",
+    color: "#415a77",
+  }}
+>
+  {item.product_name
+    ? item.product_name.charAt(0).toUpperCase() +
+      item.product_name.slice(1)
+    : ""}
+</Typography>
 
                   <Chip
                     label={
@@ -204,38 +217,39 @@ const outOfStock = data.filter(
                           : "In Stock"
                     }
                     size="small"
-                    color={
+        sx={{
+          fontSize: "11px",
+          height: 22,
+          backgroundColor:
+            Number(item.stock) === 0
+              ? "#fdecea"
+              : Number(item.stock) <= 2
+              ? "#fff4e5"
+              : "#edf7ed",
+                    color:
                       Number(item.stock) === 0
-                        ? "error"
+                        ? "#d32f2f"
                         : Number(item.stock) <= 2
-                          ? "warning"
-                          : "success"
-                    }
+                          ? "#ed6c02"
+              : "#2e7d32",
+          fontWeight: 500,
+        }}
                   />
                 </Box>
 
-                {/* Category + Price in one row */}
-                
-                  <Typography variant="body1" >
+                  <Typography variant="body2" sx={{ color: "#415a77", mt: 0.5 }}>
                     Category: {item.category_name}
                   </Typography>
-                  <Typography variant="body2"  >
-                    Price: ${item.cost_price}
+    <Box display="flex" gap={3} mt={0.5}>
+      <Typography variant="body2" sx={{ color: "#495057" }}>
+        Stock: <strong>{item.stock}</strong>
                   </Typography>
-               
-
-                {/* Stock + Updated in one row */}
-                <Box display="flex" gap={2} mt={0.5 } >
-                  <Typography variant="body2" >
-                    Stock: {item.stock}
+                  <Typography variant="body2" sx={{ color: "#495057" }}>
+                    Price: <strong>${item.cost_price}</strong>
                   </Typography>
-                  {/* <Typography variant="body2" >
-                    Last updated: {item.updated}
-                  </Typography> */}
-                </Box>
               </Box>
             </Box>
-
+          </Box>
             {/* RIGHT SIDE ACTION */}
             {/* RIGHT SIDE — replace your existing right box with this */}
            
@@ -248,44 +262,138 @@ const outOfStock = data.filter(
 
 
       {/* Bottom Panels */}
-      <Grid container spacing={2} mt={4} alignItems="stretch" justifyContent={'space-around'}>
+      <Grid
+  container
+  spacing={3}
+  mt={4}
+  justifyContent="center"
+>
+  {/* LOW STOCK */}
+  <Grid item xs={12} md={6} lg={4}>
+    <Card
+      sx={{
+        height: "100%",
+        borderRadius: 3,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+      }}
+    >
+      <CardContent>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            color: "#415A77",
+            mb: 2,
+          }}
+        >
+          Low in Stock
+        </Typography>
 
-        <Grid item xs={4}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent sx={{ height: "100%" }}>
-              <Typography variant="h6" color="#5A8DEE">Low in Stock</Typography>
-              {lowStock.map((item, i) => (
-                <Chip key={i} label={item.product_name} sx={{ m: 0.5, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }} />
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
+        <Box display="flex" flexWrap="wrap" gap={1}>
+          {lowStock.map((item, i) => (
+            <Chip
+              key={i}
+              label={item.product_name}
+              size="small"
+              sx={{
+                bgcolor: "#fff7ed",
+                color: "#c2410c",
+                fontWeight: 500,
+                borderRadius: "8px",
+              }}
+            />
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
+  </Grid>
 
-        <Grid item xs={4}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent sx={{ height: "100%" }}>
-              <Typography variant="h6" color="#5A8DEE">Out of Stock</Typography>
-              {outOfStock.map((item, i) => (
-                <Chip key={i} label={item.product_name} color="error" sx={{ m: 0.5 }} />
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
+  {/* OUT OF STOCK */}
+  <Grid item xs={12} md={6} lg={4}>
+    <Card
+      sx={{
+        height: "100%",
+        borderRadius: 3,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+      }}
+    >
+      <CardContent>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            color: "#415A77",
+            mb: 2,
+          }}
+        >
+          Out of Stock
+        </Typography>
 
-        <Grid item xs={4}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent sx={{ height: "100%" }}>
-              <Typography variant="h6" color="#5A8DEE">Recent Activity</Typography>
-              {data.slice(0, 5).map((item, i) => (
-                <Typography key={i} variant="body2" sx={{ mt: 1 }}>
-                  2 days ago: {item.product_name} updated
-                </Typography>
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
+        <Box display="flex" flexWrap="wrap" gap={1}>
+          {outOfStock.map((item, i) => (
+            <Chip
+              key={i}
+              label={item.product_name}
+              size="small"
+              sx={{
+                bgcolor: "#fee2e2",
+                color: "#b91c1c",
+                fontWeight: 500,
+                borderRadius: "8px",
+              }}
+            />
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
+  </Grid>
 
-      </Grid>
+  {/* RECENT ACTIVITY */}
+ <Grid item xs={12} md={6} lg={4}>
+    <Card
+      sx={{
+        height: "100%",
+        borderRadius: 3,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+      }}
+    >
+      <CardContent>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            color: "#415A77",
+            mb: 2,
+          }}
+        >
+          Recent Activity
+        </Typography>
+
+        {data.slice(0, 5).map((item, i) => (
+          <Box
+            key={i}
+            sx={{
+              p: 1.5,
+              mb: 1,
+              borderRadius: 2,
+              background: "#f8fafc",
+            }}
+          >
+            <Typography variant="body2" sx={{ color: "#475569" }}>
+              2 days ago
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 500, color: "#0f172a" }}
+            >
+              {item.product_name} updated
+            </Typography>
+          </Box>
+        ))}
+      </CardContent>
+    </Card>
+  </Grid>
+</Grid>
 
     </Box>
   );

@@ -132,16 +132,15 @@ const [product, setProduct] = useState([]);
     <Paper
       sx={{
         position: "absolute",
-        top: "50%",
+        top: "55%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        width: "25%",
         p: 4,
         borderRadius: 3,
         outline: "none",
       }}
     >
-      <Typography variant="h6" mb={2} color="#5A8DEE" fontWeight="bold">
+      <Typography variant="h6" mb={2} color="#415A77" fontWeight="bold">
         Add New offer
       </Typography>
 
@@ -219,7 +218,7 @@ const [product, setProduct] = useState([]);
             />
               <TextField
                                 label="Status"
-                                name="status"
+                                name="status"           
                                 select
                                 fullWidth
                                 required
@@ -234,8 +233,8 @@ const [product, setProduct] = useState([]);
         <input type="hidden" name="id" value={form.id || ''} />
 
         <Box mt={3} display="flex" justifyContent="flex-end" gap={1}>
-          <Button variant="outlined" type="button" onClick={onClose}>Cancel</Button>
-          <Button variant="contained" type="submit">Submit</Button>
+          <Button variant="contained" sx={{backgroundColor:"#f44336"}} type="button" onClick={onClose}>Cancel</Button>
+          <Button variant="contained" sx={{backgroundColor:"#415A77"}} type="submit">Submit</Button>
         </Box>
       </Box>
     </Paper>

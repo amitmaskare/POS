@@ -5,19 +5,46 @@ const Stats = ({ stats = [] }) => {
   const safeStats = Array.isArray(stats) ? stats : [];
   
   return (
-    <Grid container spacing={3} justifyContent="space-between" alignItems="stretch">
+    <Grid
+    container
+    spacing={3}
+    alignItems="stretch"
+    sx={{
+      justifyContent: {
+        xs: "center",       // mobile
+        sm: "center",
+        md: "space-between" // desktop and above
+      }
+    }}
+  >
       {safeStats.map((card, index) => {
         if (!card) return null; // Skip null/undefined cards
         
         return (
-        <Grid item xs={12} sm={6} md={3} key={index}>
+          <Grid
+          item
+          xs={12}
+          sm={6}
+          md={3}
+          key={index}
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
           <Card
-            sx={{
+  sx={{
+    width: {
+      xs: 255,   // fixed width on mobile
+      sm: 255,
+      md: 255,
+    },
+    maxWidth: 280,
               borderRadius: 3,
-              boxShadow: 3,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.05)",
               height: "100%",
               transition: "0.3s ease",
-              "&:hover": { transform: "translateY(-5px)" },
+              "&:hover": { transform: "translateY(-4px)", boxShadow: "0 8px 24px rgba(0,0,0,0.08)" },
             }}
           >
             <CardContent
@@ -44,7 +71,7 @@ const Stats = ({ stats = [] }) => {
 
               {/* Text */}
               <Box>
-                <Typography variant="subtitle1" color="text.dark">
+                <Typography variant="subtitle2" color="#415A77" sx={{ fontWeight: 900 }}>
                   {card?.title || "N/A"}
                 </Typography>
                 <Typography variant="h5" fontWeight="bold" color={card?.color || "inherit"}>

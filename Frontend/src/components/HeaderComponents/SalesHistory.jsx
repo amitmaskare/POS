@@ -59,17 +59,19 @@ export default function SalesHistoryModal({ open, onClose }) {
           fontSize: 20,
           borderBottom: "1px solid #e2e8f0",
           display: "flex",
+          color:"#fff",
+          backgroundColor:"#415a77",
           justifyContent: "space-between",
         }}
       >
-        <Box display="flex" alignItems="center" gap={1} color="#415a77">
+        <Box display="flex" alignItems="center" gap={1}>
           <HistoryIcon />
           Sales History
         </Box>
 
         <IconButton
           onClick={onClose}
-          sx={{ "&:hover": { background: "transparent" } }}
+          sx={{ color:"#fff" }}
         >
           <CloseIcon />
         </IconButton>
@@ -91,18 +93,18 @@ export default function SalesHistoryModal({ open, onClose }) {
     >
       {/* Row 1 */}
       <Box display="flex" justifyContent="space-between">
-        <Typography fontWeight={600} color="#415a77">
+        <Typography fontWeight={600} color="#415a77" sx={{ fontSize: 15 }}>
           # {txn.invoice_no}
         </Typography>
 
         <Box display="flex" alignItems="center" gap={0.5} color="#64748b">
           <AccessTimeIcon sx={{ fontSize: 18 }} />
-          <Typography fontSize={14}>{txn.sale_time}</Typography>
+          <Typography color="#415a77" fontSize={14}>{txn.sale_time}</Typography>
         </Box>
       </Box>
 
       {/* Amount */}
-      <Typography fontSize={26} fontWeight={700} mt={1}>
+      <Typography fontSize={16} fontWeight={700} mt={1}>
         {txn.amount}
       </Typography>
 

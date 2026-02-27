@@ -162,7 +162,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
             borderRadius: "10px",
           },
           "&::-webkit-scrollbar-thumb": {
-            background: "#5A8DEE",
+            background: "#415A77",
             borderRadius: "10px",
             "&:hover": {
               background: "#4a7dd9",
@@ -170,7 +170,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
           },
           // Firefox Scrollbar
           scrollbarWidth: "thin",
-          scrollbarColor: "#5A8DEE #f1f1f1",
+          scrollbarColor: "#415A77 #f1f1f1",
         }}
       >
         <List sx={{ padding: 0 }}>
@@ -185,14 +185,14 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
                 sx={{
                   mb: 1,
                   borderRadius: "10px",
-                  backgroundColor: isActive ? "#415a77" : "transparent",
+                  backgroundColor: isActive ? "#415A77" : "transparent",
                   color: isActive ? "#fff" : "black",
                   justifyContent: sidebarState === "collapsed" && !isMobile ? "center" : "flex-start",
                   px: sidebarState === "collapsed" && !isMobile ? 1.5 : 2,
                   py: isMobile ? 1.5 : 1, // Larger tap targets on mobile
                   minHeight: isMobile ? "48px" : "auto", // Touch-friendly height
                   "&:hover": {
-                    backgroundColor: isActive ? "#415a77" : "#e9efff",
+                    backgroundColor: isActive ? "#415A77" : "#e9efff",
                   },
                 }}
               >

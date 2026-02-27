@@ -204,19 +204,19 @@ export default function RolePermission() {
                 alignItems="center"
                 mb={3}
               >
-                <Typography variant="h6" fontWeight={600} color="#5A8DEE">
+                <Typography variant="h6" fontWeight={600} color="#415A77">
                   Module Permissions
                 </Typography>
                 <Chip
                   label={`${selectedPermissions.size} permissions selected`}
-                  color="primary"
-                  variant="outlined"
+                 sx={{backgroundColor:"#415A77",color:"#fff"}}
+                  variant="conained"
                 />
               </Box>
 
               <Divider sx={{ mb: 3 }} />
 
-              <Grid container spacing={3}>
+              <Grid container spacing={4} sx={{ display:"flex", justifyContent:"center"}}>
                 {permissions.map((module) => {
                   const modulePermIds = module.permissions.map(
                     (p) => p.permissionId
@@ -231,30 +231,41 @@ export default function RolePermission() {
                   return (
                     <Grid item xs={12} md={6} lg={4} key={module.module}>
                       <Paper
-                        elevation={1}
+                        elevation={0}
                         sx={{
-                          p: 2.5,
-                          border: "1px solid #e0e0e0",
-                          borderRadius: 2,
-                          transition: "all 0.3s",
+                          p: 0,
+                          borderRadius: 3,
+                          backgroundColor: "#ffffff",
+                          border: "1px solid #e3eaf2",
+                          transition: "all 0.3s ease",
+                          overflow: "hidden",
+                          height: "100%",
                           "&:hover": {
-                            boxShadow: 3,
-                            borderColor: "#5A8DEE",
+                            boxShadow: "0 8px 24px rgba(65, 90, 119, 0.12)",
+                            transform: "translateY(-3px)",
                           },
                         }}
                       >
-                        {/* Module Header with Master Toggle */}
-                        <Box
-                          display="flex"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          mb={2}
+                        {/* Module Header */}
+  <Box
+    sx={{
+      px:8,
+      py: 1,
+      background:
+        "linear-gradient(135deg, #415A77 0%, #3B536E 100%)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
                         >
                           <Typography
                             variant="subtitle1"
-                            fontWeight={700}
-                            color="#333"
-                            sx={{ textTransform: "capitalize" }}
+      sx={{
+        color: "#fff",
+        fontWeight: 600,
+        letterSpacing: 0.5,
+        textTransform: "capitalize",
+      }}
                           >
                             {module.moduleName}
                           </Typography>
@@ -266,40 +277,41 @@ export default function RolePermission() {
                             }
                             sx={{
                               "& .MuiSwitch-switchBase.Mui-checked": {
-                                color: "#5A8DEE",
+                                color: "#fff",
                               },
                               "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                                 {
-                                  backgroundColor: "#5A8DEE",
+                                  backgroundColor: "rgba(255,255,255,0.5)",
                                 },
                             }}
                           />
                         </Box>
 
-                        <Divider sx={{ mb: 1.5 }} />
-
-                        {/* Individual Permissions */}
+                  {/* Permission List */}
+                <Box sx={{ px:3, py: 2 }}>
                         {module.permissions.map((perm) => (
                           <Box
                             key={perm.permissionId}
-                            display="flex"
-                            justifyContent="space-between"
-                            alignItems="center"
-                            sx={{
-                              py: 1,
-                              px: 1.5,
-                              borderRadius: 1,
-                              transition: "background-color 0.2s",
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          px: 2,
+          py: 1.2,
+          
+          borderRadius: 2,
+          transition: "all 0.2s ease",
                               "&:hover": {
-                                backgroundColor: "#f5f5f5",
+                                backgroundColor: "#f4f7fb",
                               },
                             }}
                           >
                             <Typography
                               variant="body2"
-                              color="text.secondary"
                               sx={{
-                                fontSize: "13px",
+            fontWeight: 500,
+            color: "#415A77",
+            fontWeight: 600,
                                 textTransform: "capitalize",
                               }}
                             >
@@ -315,17 +327,18 @@ export default function RolePermission() {
                               }
                               sx={{
                                 "& .MuiSwitch-switchBase.Mui-checked": {
-                                  color: "#4CAF50",
+                                  color: "#415A77",
                                 },
                                 "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                                   {
-                                    backgroundColor: "#4CAF50",
+                                    backgroundColor: "#415A77",
                                   },
                               }}
                             />
                           </Box>
                         ))}
-                      </Paper>
+                      </Box>
+                    </Paper>
                     </Grid>
                   );
                 })}
@@ -340,14 +353,12 @@ export default function RolePermission() {
                   onClick={handleSave}
                   disabled={saving}
                   sx={{
-                    backgroundColor: "#5A8DEE",
-                    px: 5,
-                    py: 1.5,
-                    fontSize: "16px",
+                    backgroundColor: "#415A77",
+                    px: 1,
+                    py: 1,
+                    fontSize: "14px",
                     fontWeight: 600,
-                    "&:hover": {
-                      backgroundColor: "#4a7dd9",
-                    },
+                    
                   }}
                 >
                   {saving ? "Saving..." : "Save Permissions"}

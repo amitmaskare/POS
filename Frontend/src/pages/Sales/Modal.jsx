@@ -26,9 +26,9 @@ export default function ViewSaleModal({ open, onClose, viewData }) {
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
 
       {/* ---------- TITLE ---------- */}
-      <DialogTitle>
+      <DialogTitle color="#fff" variant="h6" sx={{color:"#fff",background:"#415A77"}}>
         Invoice Details
-        <Typography variant="subtitle2" color="text.secondary">
+        <Typography variant="subtitle2" color="#fff">
           Invoice No: {sale.invoice_no}
         </Typography>
       </DialogTitle>
@@ -79,7 +79,7 @@ export default function ViewSaleModal({ open, onClose, viewData }) {
 
       {/* ---------- ACTIONS ---------- */}
       <DialogActions>
-        <Button onClick={onClose} variant="outlined">
+        <Button onClick={onClose} variant="contained" sx={{color:"#fff",background:"#415A77"}}>
           Close
         </Button>
       </DialogActions>

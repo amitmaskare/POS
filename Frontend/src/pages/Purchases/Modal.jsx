@@ -18,6 +18,11 @@ import {
   Checkbox,
   IconButton
 } from "@mui/material";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+} from "@mui/material";
 
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
@@ -284,54 +289,48 @@ const getGrandTotal = () => {
 };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box
+    <Dialog open={open} onClose={onClose}
+    fullWidth
+    maxWidth="md"
         sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "75%",
+        bgcolor: "#fff",
+        marginTop:6,
+        marginLeft:25,
+        borderRadius: 3,
           maxHeight: "90vh",
-          overflowY: "auto",
-          bgcolor: "#0f172a",
-          p: 4,
-          borderRadius: 3,
-          color: "#fff",
-        }}
-      >
-        <Typography variant="h6" mb={2} color="#5A8DEE">
-          New Purchase Order
-        </Typography>
-
-        {/* PO DETAILS */}
-        <Paper sx={{ p: 3, mb: 3, background: "#1e293b", color: "#fff" }}>
-          <Typography fontWeight={600} mb={2} color="#5A8DEE">
+      }}
+   
+  ><DialogTitle variant="h6" mb={2} sx={{color:"#fff",background:"#415A77"}}>
+  New Purchase Order
+</DialogTitle>
+    <DialogContent  sx={{ p: 0 }}>
+  
+      <Box sx={{ p: 3 }}>
+  
+        <Paper sx={{ p: 3, mb: 3, background: "#fff", color: "#fff" }}>
+          <Typography fontWeight={600} mb={2} color="#415A77">
             Purchase Order Details
           </Typography>
-
           <Box display="flex" gap={2} mb={2}>
             <TextField
               label="PO Number"
               fullWidth
               value={poNumber}
-              InputLabelProps={{ style: { color: "#94a3b8" } }}
+              InputLabelProps={{ style: { color: "#415A77",fontWeight:"600" } }}
               sx={{ input: { color: "#fff" } }}
             />
         <input type="hidden" value={purchaseId} onChange={(e) => setPurchaseId(e.target.value)} />
-        
             <TextField
               label="Date"
               fullWidth
               value={currentDateTime}
-              InputLabelProps={{ style: { color: "#94a3b8" } }}
+              InputLabelProps={{ style: { color: "#415A77",fontWeight:"600" } }}
               sx={{ input: { color: "#fff" } }}
             />
           </Box>
-
           <Box display="flex" gap={2}>
             <FormControl fullWidth>
-              <InputLabel sx={{ color: "#94a3b8" }}>Filter by Supplier</InputLabel>
+              <InputLabel sx={{ color: "#415A77" }}>Filter by Supplier</InputLabel>
               <Select
                 value={supplierId}
                 onChange={(e) => setSupplierId(e.target.value)}
@@ -348,16 +347,14 @@ const getGrandTotal = () => {
             </FormControl>
           </Box>
         </Paper>
-
         {/* ITEM TABLE */}
-        <Paper sx={{ p: 3, background: "#1e293b" }}>
-          <Typography fontWeight={600} mb={2} color="#facc15">
+        <Paper sx={{ p: 3, background: "#fff" }}>
+          <Typography fontWeight={600} mb={2} color="red">
             ⚠ Items Requiring Reorder ({items.length} items)
           </Typography>
-
           <Table>
             <TableHead>
-              <TableRow sx={{ background: "#5A8DEE" }}>
+              <TableRow sx={{ background: "#415A77" }}>
                 <TableCell sx={{ color: "#fff" }}>Select</TableCell>
                 <TableCell sx={{ color: "#fff" }}>Product</TableCell>
           {(!editData || editData?.purchase?.type === "draft") && (
@@ -372,7 +369,6 @@ const getGrandTotal = () => {
                 <TableCell sx={{ color: "#fff" }}>Total</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
               {items.map((item) => (
                 <TableRow key={item.id}>
@@ -385,68 +381,117 @@ const getGrandTotal = () => {
                   </TableCell>
 
                   <TableCell>
-                    <img
-                  src={item?.image || ""}
-              alt="product"
-              className="rounded-3"
-              style={{ width: 55, height: 55, objectFit: "cover" }}
-            />
-                    <Typography fontWeight={600} color="#fff">
-                      
-                      {item.product_name}
-                    </Typography>
-                    <Typography fontSize="12px" color="#94a3b8">
-                      {item.category_name}
-                    </Typography>
-                  </TableCell>
+  <Box display="flex" alignItems="center" gap={2}>
+    
+    <img
+      src={item?.image || ""}
+      alt="product"
+      style={{
+        width: 45,
+        height: 45,
+        objectFit: "cover",
+        borderRadius: "50%",   // 👈 makes image round
+      }}
+    />
+
+    <Box>
+      <Typography fontWeight={600} fontSize="14px" color="#415A77">
+        {item.product_name}
+      </Typography>
+
+      <Typography fontSize="12px" color="#415A77">
+        {item.category_name}
+      </Typography>
+    </Box>
+
+  </Box>
+</TableCell>
           {(!editData || editData?.purchase?.type === "draft") && (
                 <>
-                  <TableCell sx={{ color: "#fff" }}>{item.supplier_name}</TableCell>
-                  <TableCell sx={{ color: "#fff" }}>{item.stock}</TableCell>
+                  <TableCell sx={{ color: "black" }}>{item.supplier_name}</TableCell>
+                  <TableCell sx={{ color: "black" }}>{item.stock}</TableCell>
                 
                   <TableCell>
                     <Chip
                       label={item.status}
                       size="small"
                       sx={{
-                        bgcolor: "#fee2e2",
-                        color: "#b91c1c",
+                        bgcolor: "rgba(0,128,0,0.15)",
+                        color: "green",
                         fontWeight: "bold",
                       }}
                     />
                   </TableCell>
                   </>
           )}
-                  <TableCell sx={{ color: "#fff" }}>
+                  <TableCell sx={{ color: "black" }}>
                     ₹{item.cost_price.toFixed(2)}
                   </TableCell>
 
-                  <TableCell>
-                    {item.selected ? (
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <IconButton onClick={() => decreaseQty(item.id)} sx={{ color: "#fff" }}>
-                          <RemoveIcon />
-                        </IconButton>
+                  <TableCell align="center">
+  {item.selected ? (
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+    >
+      <Box
+        display="flex"
+        alignItems="center"
+        sx={{
+          
+          borderRadius: "8px",
+          overflow: "hidden",
+          background: "#415A77",
+        }}
+      >
+        <IconButton
+          onClick={() => decreaseQty(item.id)}
+          size="small"
+          sx={{
+            color: "#fff",
+            
+            borderRadius: 0,
+          }}
+        >
+          <RemoveIcon fontSize="small" />
+        </IconButton>
 
-                        <TextField
-                          value={item.qty}
-                           onChange={(e) => updateQty(item.id, e.target.value)}
-                          sx={{
-                            width: "60px",
-                            input: { color: "#fff", textAlign: "center" },
-                          }}
-                        />
+        <TextField
+          value={item.qty}
+          onChange={(e) => updateQty(item.id, e.target.value)}
+          variant="standard"
+          InputProps={{
+            disableUnderline: true,
+            sx: {
+              width: "12px",
+              textAlign: "center",
+              color: "#fff",
+              fontSize:"14px",
+              fontWeight: 600,
+            },
+          }}
+        />
 
-                        <IconButton onClick={() => increaseQty(item.id)} sx={{ color: "#fff" }}>
-                          <AddIcon />
-                        </IconButton>
-                      </Box>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
+        <IconButton
+          onClick={() => increaseQty(item.id)}
+          size="small"
+          sx={{
+            color: "#fff",
+            
+            borderRadius: 0,
+          }}
+        >
+          <AddIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    </Box>
+  ) : (
+    "-"
+  )}
+</TableCell>
 
-                  <TableCell sx={{ color: "#fff" }}>
+                  <TableCell sx={{ color: "black" }}>
                     {item.selected ? "₹" + (item.qty * item.cost_price).toFixed(2) : "-"}
                   </TableCell>
                 </TableRow>
@@ -463,7 +508,7 @@ const getGrandTotal = () => {
           {(!editData || editData?.purchase?.type === "draft") && (
   <Button
     variant="contained"
-    sx={{ bgcolor: "#5A8DEE" }}
+    sx={{ bgcolor: "#415A77" }}
     onClick={() => handleCreatePurchase("draft")}
   >
     Save as Draft
@@ -472,7 +517,7 @@ const getGrandTotal = () => {
 
             <Button
               variant="contained"
-              sx={{ bgcolor: "#5A8DEE" }}
+              sx={{ bgcolor: "#415A77" }}
               onClick={() => handleCreatePurchase("send")}
             >
               Create Purchase Order
@@ -480,6 +525,7 @@ const getGrandTotal = () => {
           </Box>
         </Paper>
       </Box>
-    </Modal>
+    </DialogContent>
+  </Dialog>
   );
 }

@@ -7,6 +7,14 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import CloseIcon from "@mui/icons-material/Close";
 import PriceCheckIcon from "@mui/icons-material/PriceCheck";
 import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
+import { Divider } from "@mui/material";
+import {
+  ShoppingCart,
+  PriceCheck,
+  Badge,
+  Replay,
+  History
+} from "@mui/icons-material";
 import {
   Box,
   Typography,
@@ -227,45 +235,74 @@ export default function Header({ sidebarState, setCartOpen }) {
               anchorEl={actionsAnchorEl}
               open={actionsOpen}
               onClose={handleActionsClose}
-              sx={{
-                "& .MuiMenuItem-root": {
-                  border: "1px solid #415A77",
-                  borderRadius: "6px",
-                  mx: 1,
-                  my: 2,
-                  transition: "all 0.2s ease",
-            
-                  "&:hover": {
-                    backgroundColor: "#415A77",
-                    color: "#ffffff"
-                  }
-                }
-              }}
-            >
-              <MenuItem onClick={() => { setopenCheckout(true); handleActionsClose(); }} >
-                Check Out
-              </MenuItem>
+  PaperProps={{
+    elevation: 0,
+    sx: {
+      mt: 1.5,
+      borderRadius: 3,
+      minWidth: 230,
+      backgroundColor: "#ffffff",
+      border: "1px solid #e3eaf2",
+      boxShadow: "0 12px 30px rgba(65, 90, 119, 0.12)",
+      overflow: "hidden",
+    },
+  }}
+>
+  <Divider />
 
-              <MenuItem onClick={() => { setopenCheckPrice(true); handleActionsClose(); }}>
-                Check Price
-              </MenuItem>
+  {[
+    { label: "Check Out", icon: <ShoppingCart fontSize="small" />, action: () => setopenCheckout(true) },
+    { label: "Check Price", icon: <PriceCheck fontSize="small" />, action: () => setopenCheckPrice(true) },
+    { label: "Enter Aadhaar", icon: <Badge fontSize="small" />, action: handleOpenAadhaar },
+    { label: "Sale Return", icon: <Replay fontSize="small" />, action: () => navigate("/salereturn") },
+    { label: "Sales History", icon: <History fontSize="small" />, action: () => setopenSalesHistory(true) },
+  ].map((item, index) => (
+    <MenuItem
+      key={index}
+      onClick={() => {
+        item.action();
+        handleActionsClose();
+      }}
+      sx={{
+        mx: 1.5,
+        my: 0.5,
+        borderRadius: 2,
+        px: 2,
+        py: 1.2,
+        fontSize: "14px",
+        fontWeight: 500,
+        color: "#415A77",
+        display: "flex",
+        gap: 1.5,
+        alignItems: "center",
+        position: "relative",
+        transition: "all 0.2s ease",
 
-              <MenuItem onClick={() => { handleOpenAadhaar(); handleActionsClose(); }}>
-                Enter Aadhaar
-              </MenuItem>
+        "&:hover": {
+          backgroundColor: "#f4f7fb",
+        },
 
-              <MenuItem onClick={() => { navigate("/salereturn"); handleActionsClose(); }}>
-                Sale Return
-              </MenuItem>
-
-              <MenuItem onClick={() => { setopenSalesHistory(true); handleActionsClose(); }}>
-                Sales History
-              </MenuItem>
-            </Menu>
+        "&:hover::before": {
+          content: '""',
+          position: "absolute",
+          left: 0,
+          top: 6,
+          bottom: 6,
+          width: "3px",
+          borderRadius: "4px",
+          backgroundColor: "#415A77",
+        },
+      }}
+    >
+      {item.icon}
+      {item.label}
+    </MenuItem>
+  ))}
+</Menu>
             {isMobile && (
               <IconButton onClick={() => setCartOpen(prev => !prev)}>
                 <ShoppingCartIcon sx={{
-       color:"#415a77"
+            color:"#415a77"
        
       }} />
               </IconButton>
@@ -289,7 +326,7 @@ export default function Header({ sidebarState, setCartOpen }) {
                 "&:hover": {
                   backgroundColor: "#415a77",
                   color: "#fff",
-                  borderColor: "#D32F2F"
+                  
                 }
               }}
             >
@@ -309,7 +346,7 @@ export default function Header({ sidebarState, setCartOpen }) {
                 "&:hover": {
                   backgroundColor: "#415a77",
                   color: "#fff",
-                  borderColor: "#D32F2F"
+                  
                 }
               }}
             >
@@ -329,7 +366,7 @@ export default function Header({ sidebarState, setCartOpen }) {
             "&:hover": {
               backgroundColor: "#415a77",
               color: "#fff",
-              borderColor: "#D32F2F"
+             
             }
           }}
         >
@@ -349,7 +386,7 @@ export default function Header({ sidebarState, setCartOpen }) {
                 "&:hover": {
                   backgroundColor: "#415a77",
                   color: "#fff",
-                  borderColor: "#D32F2F"
+                  
                 }
               }}
             >
@@ -369,7 +406,7 @@ export default function Header({ sidebarState, setCartOpen }) {
                 "&:hover": {
                   backgroundColor: "#415a77",
                   color: "#fff",
-                  borderColor: "#D32F2F"
+                 
                 }
               }}
               

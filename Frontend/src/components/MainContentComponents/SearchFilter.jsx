@@ -10,7 +10,7 @@ const SearchFilter = ({
   extraFields = [],
 }) => {
   return (
-    <Box sx={{ p: 1, borderRadius: 2, width: "100%" }}>
+    <Box sx={{ p: 1, borderRadius: 2, width: "90%",ml:2,mt:2 }}>
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={2}
@@ -23,7 +23,7 @@ const SearchFilter = ({
           placeholder={placeholder}
           onChange={onSearchChange}
           value={value}
-          sx={{ flex: 1, bgcolor: "#fff" }}
+          sx={{ flex: 1, bgcolor: "#fff",color:"#415a77" }}
         />
 
         {/* Extra Fields (e.g., Select Dropdown) */}

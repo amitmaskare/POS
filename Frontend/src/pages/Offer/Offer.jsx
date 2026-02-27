@@ -100,7 +100,7 @@ export default function Users() {
             label: "Add Offer",
             icon: <FaRegSquarePlus />,
             variant: "contained",
-            bgcolor: "#5A8DEE",
+            bgcolor: "#415A77",
              onClick: () => {
       setEditData(null);   // ← RESET edit data
       setOpen(true);       // ← OPEN modal
@@ -119,7 +119,7 @@ export default function Users() {
       
       {/* USERS TABLE */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3} mt={3}>
-        <Typography variant="h6" fontWeight={700}>
+        <Typography variant="h6" sx={{color:"#415A77"}} fontWeight={700}>
           System Offer
         </Typography>
       </Box>

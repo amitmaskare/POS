@@ -37,7 +37,7 @@ const Aadhaar = ({ open, onClose }) => {
           <CloseIcon />
         </IconButton>
 
-        <Typography variant="h6"  color="#415a77" fontWeight="bold" sx={{ textAlign: "left", mt: 1 }}>
+        <Typography variant="h6"  color="#415a77" fontWeight="bold" sx={{ textAlign: "left"}}>
           Enter Aadhaar Number
         </Typography>
 

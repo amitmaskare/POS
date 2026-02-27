@@ -93,7 +93,7 @@ const ModalLayout = ({ open, onClose,onSaved,editData   }) => {
         outline: "none",
       }}
     >
-      <Typography variant="h6" mb={2} color="#5A8DEE" fontWeight="bold">
+      <Typography variant="h6" mb={2} color="#415A77" fontWeight="bold">
         Add Role
       </Typography>
 
@@ -118,7 +118,7 @@ const ModalLayout = ({ open, onClose,onSaved,editData   }) => {
         <input type="hidden" name="roleId" value={form.roleId || ''} />
 
         <Box mt={3} display="flex" justifyContent="flex-end" gap={1}>
-          <Button variant="contained" type="submit">Submit</Button>
+          <Button variant="contained" sx={{backgroundColor:"#415A77"}} type="submit">Submit</Button>
         </Box>
       </Box>
     </Paper>

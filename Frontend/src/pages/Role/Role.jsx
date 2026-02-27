@@ -99,7 +99,7 @@ export default function Role() {
             label: "Add Role",
             icon: <FaRegSquarePlus />,
             variant: "contained",
-            bgcolor: "#5A8DEE",
+            bgcolor: "#415A77",
              onClick: () => {
       setEditData(null);   // ← RESET edit data
       setOpen(true);       // ← OPEN modal

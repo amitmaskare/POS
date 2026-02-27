@@ -194,9 +194,7 @@ const SaveStock=async()=>{
           value={stock}
           onChange={(e) => setStock(e.target.value)}
           margin="normal"
-          sx={{
-            border: "1px solid #415A77"
-          }}
+         
         />
     
         <Button

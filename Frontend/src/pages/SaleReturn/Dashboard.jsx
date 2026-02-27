@@ -258,7 +258,7 @@ const updateReturnedQty = (sale_item_id, type) => {
               justifyContent: "space-between",
             }}
           >
-            <Box display="flex" alignItems="center" gap={1} color="#5A8DEE">
+            <Box display="flex" alignItems="center" gap={1} color="#415a77">
               <HistoryIcon />
              Sale Return
             </Box>

@@ -231,11 +231,54 @@ const handleAddSupplier = async () => {
           Add New Product
         </Typography>
 
-        <Tabs value={tab} onChange={handleTabChange} mb={2} variant="fullWidth">
-          <Tab label="Basic Info" />
-          <Tab label="Pricing" />
-          {/* <Tab label="Inventory" /> */}
-          <Tab label="Supplier" />
+        <Tabs value={tab} onChange={handleTabChange} variant="fullWidth"
+  sx={{
+    mb: 2,
+    "& .MuiTabs-indicator": {
+      backgroundColor: "#415A77", // indicator color
+      height: 3,
+      borderRadius: 2,
+    },
+  }}
+>
+        <Tab
+  label="Basic Info"
+  sx={{
+    textTransform: "none",
+    fontWeight: 500,
+    color: "#6c757d",
+    "&.Mui-selected": {
+      color: "#415A77",
+      fontWeight: 600,
+    },
+  }}
+/>
+
+<Tab
+  label="Pricing"
+  sx={{
+    textTransform: "none",
+    fontWeight: 500,
+    color: "#6c757d",
+    "&.Mui-selected": {
+      color: "#415A77",
+      fontWeight: 600,
+    },
+  }}
+/>
+
+<Tab
+  label="Supplier"
+  sx={{
+    textTransform: "none",
+    fontWeight: 500,
+    color: "#6c757d",
+    "&.Mui-selected": {
+      color: "#415A77",
+      fontWeight: 600,
+    },
+  }}
+/>
         </Tabs>
 
         <Box component="form" onSubmit={handleSubmit} display="grid" gap={2} mt={3}>
@@ -326,9 +369,8 @@ const handleAddSupplier = async () => {
   <Grid item xs={2}>
     <Button
       variant="contained"
-     
       fullWidth
-      sx={{ height: "46px" }} // match TextField height
+      sx={{ height: "46px",backgroundColor:"#415A77"}} // match TextField height
       onClick={() => setOpenAddCategory(true)}
     >
       +
@@ -404,7 +446,7 @@ const handleAddSupplier = async () => {
             <Grid container spacing={2} alignItems="center">
   {/* Dropdown */}
   <Grid>
-    <TextField  sx={{ width: "95%" }}
+    <TextField 
       label="Supplier"
       name="supplier_id"
       select
@@ -422,13 +464,14 @@ const handleAddSupplier = async () => {
    
   </Grid>
 
+  
   {/* Add Button */}
   <Grid item xs={2}>
     <Button
       variant="contained"
       color="primary"
       fullWidth
-      sx={{ height: "56px" }} // TextField default height
+      sx={{ height: "56px",backgroundColor:"#415A77"}} // TextField default height
       onClick={() => setOpenAddSupplier(true)}
     >
       +
@@ -453,15 +496,15 @@ const handleAddSupplier = async () => {
           <input type="hidden" name="id" value={form.id || ''}/>
           <Box mt={3} display="flex" justifyContent="flex-end" gap={1}>
             {tab > 0 && (
-              <Button variant="outlined" onClick={() => setTab(tab - 1)}>Previous</Button>
+              <Button variant="contained" sx={{backgroundColor:"#415A77",color:"#fff"}} onClick={() => setTab(tab - 1)}>Previous</Button>
             )}
 
             {tab < 2 && (
-              <Button variant="contained" onClick={() => setTab(tab + 1)}>Next</Button>
+              <Button variant="contained" sx={{backgroundColor:"#415A77"}} onClick={() => setTab(tab + 1)}>Next</Button>
             )}
 
             {tab === 2 && (
-              <Button variant="contained" type="submit">Save Product</Button>
+              <Button variant="contained" sx={{backgroundColor:"#415A77"}} type="submit">Save Product</Button>
             )}
           </Box>
         </Box>

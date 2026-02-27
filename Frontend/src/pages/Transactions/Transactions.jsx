@@ -47,12 +47,14 @@ useEffect(() => {
           {
             label: "Date Range",
             icon: <CalendarTodayIcon />,
-            variant: "outlined",
+            variant: "contained",
+            bgcolor: "#3b82f6",
           },
           {
             label: "Filter",
             icon: <FilterListIcon />,
-            variant: "outlined",
+            variant: "contained",
+            bgcolor: "#3b82f6",
           },
           {
             label: "New Transaction",

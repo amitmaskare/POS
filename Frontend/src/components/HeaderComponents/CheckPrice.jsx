@@ -60,21 +60,28 @@ export default function CheckPriceModal({ open, onClose }) {
       {/* Header */}
       <DialogTitle
         sx={{
+        fontSize: 20,
           fontWeight: 600,
-          fontSize: 20,
-          borderBottom: "1px solid #e2e8f0",
+          borderBottom: "1px solid #e0e0e0",
+         color:"#fff",
+         backgroundColor:"#415a77",
           display: "flex",
+          alignItems: "center",
           justifyContent: "space-between",
         }}
       >
-        <Box display="flex" alignItems="center" gap={1}  color="#415a77">
+        <Box display="flex" alignItems="center" gap={1}  >
           <HistoryIcon />
          Check Price
         </Box>
 
         <IconButton
           onClick={onClose}
-          sx={{ "&:hover": { background: "transparent" } }}
+          sx={{
+            minWidth: "auto",
+            color: "#fff",
+            "&:hover": { background: "transparent", color: "#1e293b" },
+          }}
         >
           <CloseIcon />
         </IconButton>
@@ -109,7 +116,7 @@ export default function CheckPriceModal({ open, onClose }) {
             </Box>
 
             {/* Amount */}
-            <Typography fontSize={26} fontWeight={700} mt={1}>
+            <Typography fontSize={20} fontWeight={700} mt={1}>
               ${item.price}
             </Typography>
 

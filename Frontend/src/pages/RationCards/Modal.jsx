@@ -125,14 +125,13 @@ const [cardType, setCardType] = useState([]);
         position: "absolute",
         top: "50%",
         left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: "25%",
+        transform: "translate(-50%, -50%)",      
         p: 4,
         borderRadius: 3,
         outline: "none",
       }}
     >
-      <Typography variant="h6" mb={2} color="#5A8DEE" fontWeight="bold">
+      <Typography variant="h6" mb={2} color="#415A77" fontWeight="bold">
         Add New Ration Card
       </Typography>
 
@@ -200,7 +199,7 @@ const [cardType, setCardType] = useState([]);
         </Grid>
         <input type="hidden" name="id" value={form.id || ''} />
         <Box mt={3} display="flex" justifyContent="flex-end" gap={1}>
-          <Button variant="contained" type="submit">Submit</Button>
+          <Button variant="contained" sx={{backgroundColor:"#415A77"}} type="submit">Submit</Button>
         </Box>
       </Box>
     </Paper>

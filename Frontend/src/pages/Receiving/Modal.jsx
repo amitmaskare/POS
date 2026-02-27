@@ -19,6 +19,12 @@ import {
   IconButton
 } from "@mui/material";
 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+} from "@mui/material";
+
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
 import { useState, useEffect } from "react";
@@ -221,35 +227,33 @@ useEffect(() => {
   
   return (
     <>
-      <Modal open={open} onClose={onClose}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "75%",
-            maxHeight: "90vh",
-            overflowY: "auto",
-            bgcolor: "#0f172a",
-            p: 4,
-            borderRadius: 3,
-            color: "#fff",
-          }}
+       <Dialog open={open} onClose={onClose}
+    fullWidth
+    maxWidth="md"
+        sx={{
+        bgcolor: "#fff",
+        marginTop:6,
+        marginLeft:25,
+        borderRadius: 3,
+          maxHeight: "90vh",
+      }}
+   
         >
-          <Typography variant="h6" mb={2} color="#5A8DEE">
-           Receiving Items
-          </Typography>
-
+          <DialogTitle variant="h6" mb={2} sx={{color:"#fff",background:"#415A77"}}>
+          Receiving Items</DialogTitle>
+          
+          <DialogContent  sx={{ p: 0 }}>
+  
+  <Box sx={{ p: 3 }}>
+    <Paper sx={{ p: 3, mb: 3, background: "#fff", color: "#fff" }}>
           {/* PO DETAILS */}
-          <Paper sx={{ p: 3, mb: 3, background: "#1e293b", color: "#fff" }}>
            
             <Box display="flex" gap={2} mb={2}>
               <TextField
                 label="PO Number"
                 fullWidth
                 value={poNumber}
-                InputLabelProps={{ style: { color: "#94a3b8" } }}
+                InputLabelProps={{ style: { color: "#415A77",fontWeight:"600" } }}
                 sx={{ input: { color: "#fff" } }}
               />
 
@@ -258,7 +262,7 @@ useEffect(() => {
 
             <Box display="flex" gap={2}>
               <FormControl fullWidth>
-                <InputLabel sx={{ color: "#94a3b8" }}>Filter by Supplier</InputLabel>
+                <InputLabel sx={{ color: "#415A77", fontWeight:"600" }}>Filter by Supplier</InputLabel>
                 <Select
                   value={supplierId}
                   onChange={(e) => setSupplierId(e.target.value)}
@@ -277,17 +281,18 @@ useEffect(() => {
           </Paper>
 
           {/* ITEM TABLE */}
-          <Paper sx={{ p: 3, background: "#1e293b" }}>
-            <Typography fontWeight={600} mb={2} color="#facc15">
+          <Paper sx={{ p: 3, background: "#fff" }}>
+            <Typography fontWeight={600} mb={2} color="#415A77">
               Receiving Items ({items.length} items)
             </Typography>
 
             <Table>
               <TableHead>
-                <TableRow sx={{ background: "#5A8DEE" }}>
+                <TableRow sx={{ background: "#415A77" }}>
                   <TableCell sx={{ color: "#fff" }}>Select</TableCell>
                   <TableCell sx={{ color: "#fff" }}>Product</TableCell>
                   <TableCell sx={{ color: "#fff" }}>Order Quantity</TableCell>
+                  <TableCell sx={{ color: "#fff" }}>-</TableCell>
                   <TableCell sx={{ color: "#fff" }}>Received Quantity</TableCell>
                   <TableCell sx={{ color: "#fff" }}>Reason</TableCell>
                 </TableRow>
@@ -313,48 +318,85 @@ useEffect(() => {
                           style={{ width: "50px", height: "50px", objectFit: "cover" }}
                         />
                       )}
-                      <Typography fontWeight={600} color="#fff">
+                      <Typography fontWeight={600} color="#415A77">
                         {item?.product_name || "Unknown"}
                       </Typography>
-                      <Typography fontSize="12px" color="#94a3b8">
+                      <Typography fontSize="12px" color="#415A77">
                         {item?.category_name || "N/A"}
                       </Typography>
                     </TableCell>
 
-                    <TableCell sx={{ color: "#fff" }}>{item?.order_qty || 0}</TableCell>
-                    <TableCell sx={{ color: "#fff" }}>
+                    <TableCell sx={{ color: "#415A77" }}>{item?.order_qty || 0}</TableCell>
+                    <TableCell sx={{ color: "#415A77" }}>
                       {item?.qty > item?.order_qty ? (
-                        <span style={{ color: "#ff6b6b" }}>
+                        <span style={{ color: "#415A77" }}>
                           Cannot receive more than {item?.order_qty || 0} (Already received: {(item?.qty || 0) - (item?.order_qty || 0)})
                         </span>
                       ) : null}
                     </TableCell>
                     <TableCell>
                       {item?.selected ? (
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <IconButton onClick={() => item?.product_id && decreaseQty(item.product_id)} sx={{ color: "#fff" }}>
-                            <RemoveIcon />
-                          </IconButton>
-
-                          <TextField
-                            value={item?.qty || 0}
-                            onChange={(e) => item?.product_id && updateQty(item.product_id, e.target.value)}
-                            sx={{
-                              width: "60px",
-                              input: { color: "#fff", textAlign: "center" },
-                            }}
-                          />
-
-                          <IconButton onClick={() => item?.product_id && increaseQty(item.product_id)} sx={{ color: "#fff" }}>
-                            <AddIcon />
-                          </IconButton>
-                        </Box>
+                         <Box
+                         display="flex"
+                         alignItems="center"
+                         justifyContent="center"
+                       >
+                         <Box
+                           display="flex"
+                           alignItems="center"
+                           sx={{
+                             
+                             borderRadius: "8px",
+                             overflow: "hidden",
+                             background: "#415A77",
+                           }}
+                         >
+                           <IconButton
+                             onClick={() => decreaseQty(item.id)}
+                             size="small"
+                             sx={{
+                               color: "#fff",
+                               
+                               borderRadius: 0,
+                             }}
+                           >
+                             <RemoveIcon fontSize="small" />
+                           </IconButton>
+                         <TextField
+                             value={item.qty}
+                             onChange={(e) => updateQty(item.id, e.target.value)}
+                             variant="standard"
+                             InputProps={{
+                               disableUnderline: true,
+                               sx: {
+                                 width: "12px",
+                                 textAlign: "center",
+                                 color: "#fff",
+                                 fontSize:"14px",
+                                 fontWeight: 600,
+                               },
+                             }}
+                           />
+                   
+                           <IconButton
+                             onClick={() => increaseQty(item.id)}
+                             size="small"
+                             sx={{
+                               color: "#fff",
+                               
+                               borderRadius: 0,
+                             }}
+                           >
+                             <AddIcon fontSize="small" />
+                           </IconButton>
+                         </Box>
+                       </Box>
                       ) : (
                         "-"
                       )}
                     </TableCell>
 
-                    <TableCell sx={{ color: "#fff" }}>
+                    <TableCell sx={{ color: "#415A77" }}>
                       {item?.selected ? (
                         <TextField
                           placeholder="Reason (optional)"
@@ -363,7 +405,7 @@ useEffect(() => {
                           size="small"
                           sx={{
                             width: "150px",
-                            input: { color: "#fff", fontSize: "12px" },
+                            input: { color: "#415A77", fontSize: "12px" },
                             "& .MuiOutlinedInput-root": {
                               "& fieldset": { borderColor: "#475569" }
                             }
@@ -376,7 +418,7 @@ useEffect(() => {
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ color: "#fff", py: 3 }}>
+                    <TableCell colSpan={5} align="center" sx={{ color: "#415A77", py: 3 }}>
                       No items available
                     </TableCell>
                   </TableRow>
@@ -391,7 +433,7 @@ useEffect(() => {
               </Button>
               <Button
                 variant="contained"
-                sx={{ bgcolor: "#5A8DEE" }}
+                sx={{ bgcolor: "#415A77" }}
                 onClick={() => handleReceivedQty()}
               >
                 Submit
@@ -399,7 +441,8 @@ useEffect(() => {
             </Box>
           </Paper>
         </Box>
-      </Modal>
+        </DialogContent>
+  </Dialog>
       <Toast show={showToast} message={toastMessage} type={toastType} />
     </>
   );

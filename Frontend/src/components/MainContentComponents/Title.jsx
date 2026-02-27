@@ -9,7 +9,7 @@ const Title = ({
   <Stack direction="row" justifyContent="space-between" alignItems="center">
     {/* Left section */}
     <Box>
-      <Typography variant="h4" fontWeight="bold" color="#415a77">
+      <Typography variant="h5" fontWeight="bold" color="#415a77">
         {title}
       </Typography>
       <Typography variant="subtitle1" color="text.dark">

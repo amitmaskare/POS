@@ -14,13 +14,13 @@ const theme = createTheme({
       styleOverrides: {
         tooltip: {
           backgroundColor: "#fff",
-          color: "#5A8DEE",
+          color: "#415A77",
           fontSize: "14px",
-          border: "1px solid #5A8DEE",
+          border: "1px solid #415A77",
           fontWeight: 600,
         },
         arrow: {
-          color: "#1e293b",
+          color: "#415A77",
         },
       },
     },

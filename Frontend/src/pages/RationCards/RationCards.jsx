@@ -101,7 +101,7 @@ export default function RationCards() {
             label: "Add Ration Card",
             icon: <FaRegSquarePlus />,
             variant: "contained",
-            bgcolor: "#5A8DEE",
+            bgcolor: "#415A77",
              onClick: () => {
       setEditData(null);   // ← RESET edit data
       setOpen(true);       // ← OPEN modal
@@ -134,7 +134,7 @@ export default function RationCards() {
       </Box>
 
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3} mt={3}>
-        <Typography variant="h6" fontWeight={700} color='#5A8DEE'>
+        <Typography variant="h6" fontWeight={700} color='#415A77'>
           Registered Ration Cards (2)
         </Typography>
       </Box>
