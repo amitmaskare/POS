@@ -106,15 +106,15 @@ export default function Login({ onLogin }) {
                   justifyContent: "center",
                 }}
               >
-                <LuStore size={30} color="#5A8DEE" />
+                <LuStore size={30} color="#415a77" />
               </Box>
-              <Typography variant="h5" fontWeight="bold">
+              <Typography variant="h5" fontWeight="bold" color="#415a77">
                 POS System
               </Typography>
             </Box>
           }
           subheader={
-            <Typography align="center" variant="body2" color="text.secondary">
+            <Typography align="center" variant="body2" color="black">
               Sign in to access your point of sale system
             </Typography>
           }
@@ -145,7 +145,7 @@ export default function Login({ onLogin }) {
             </FormControl>
 
             <Typography align="right" variant="body2">
-              <Link component="button" onClick={() => setOpenForgot(true)}>
+              <Link component="button" onClick={() => setOpenForgot(true)} >
                 Forgot Password?
               </Link>
             </Typography>
@@ -154,7 +154,7 @@ export default function Login({ onLogin }) {
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 2, py: 1.2 }}
+              sx={{ mt: 2, py: 1.2, backgroundColor:"#415a77" }}
               disabled={loading}
             >
               {loading ? "Signing In..." : "Sign In"}

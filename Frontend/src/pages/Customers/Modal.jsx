@@ -104,7 +104,7 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
         outline: "none",
       }}
     >
-      <Typography variant="h6" mb={2} color="#5A8DEE" fontWeight="bold">
+      <Typography variant="h6" mb={2} color="#415a77" fontWeight="bold">
         Add New Customer
       </Typography>
 
@@ -158,7 +158,7 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
         </Grid>
         <input type="hidden" name="id" value={form.id || ''} />
         <Box mt={3} display="flex" justifyContent="flex-end" gap={1}>
-          <Button variant="contained" type="submit">Submit</Button>
+          <Button variant="contained" type="submit" sx={{backgroundColor:"#415a77"}}>Submit</Button>
         </Box>
       </Box>
     </Paper>

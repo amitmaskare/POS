@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
-import DeleteIcon from "@mui/icons-material/Delete";
-import PrintIcon from "@mui/icons-material/Print";
-import EditIcon from "@mui/icons-material/Edit";
-import JsBarcode from "jsbarcode";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
@@ -12,15 +7,10 @@ import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import UnarchiveIcon from "@mui/icons-material/Unarchive";
 import Tooltip from "@mui/material/Tooltip";
 import PosCart from "../../components/Cart/PosCart";
-import { Box,
+import {
   Typography,
   Paper,
-  Modal,
-  Tabs,
-  Tab,
-  Grid,
   TextField,
-  MenuItem,
   Button,
   Dialog,
   DialogTitle,
@@ -230,35 +220,172 @@ const printInvoice = (invoice) => {
 
   printWindow.document.open();
   printWindow.document.write(`
-    <html>
-      <head>
-        <title>Exchange Invoice</title>
-        <style>
-          body { font-family: monospace; font-size: 12px; }
-          h3, h4 { text-align: center; margin: 4px 0; }
-          .shop { text-align: center; font-weight: bold; font-size: 16px; }
-          .subtitle { text-align: center; font-size: 12px; color: #333; }
-          table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          th, td { padding: 6px 4px; border-bottom: 1px dashed #ddd; }
-          th { text-align: left; }
-          .right { text-align: right; }
-          .line { border-top: 1px dashed #000; margin: 8px 0; }
-          .totals td { padding: 4px 0; }
+  <html>
+  <head>
+  <title>Exchange Invoice</title>
+  
+  <style>
+  
+  body{
+    font-family:"Segoe UI", Arial, sans-serif;
+    font-size:12px;
+    border-radius:1rem;
+    
+    
+  }
+  
+  /* RECEIPT CARD */
+  .receipt{
+    background:#ffffff;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 8px 20px rgba(0,0,0,0.08);
+    padding:14px;   /* add inner spacing */
+  }
+  
+  /* HEADER */
+  .header{
+    background:#415a77;
+    padding:10px;
+    text-align:center;
+    border-radius:1rem;
+  }
+  .invoice{
+    color:white;
+  }
+  .shop{
+    font-weight:700;
+    font-size:20px;
+    color:white;
+    letter-spacing:1px;
+  }
+  
+  .subtitle{
+    font-size:12px;
+    color:#415a77;
+  }
+  
+  /* HEADER INFO */
+  .headerinfo{
+    text-align:center;
+    font-size:12px;
+    padding:10px;
+    color:#415a77;
+  }
+  
+  /* BARCODE */
+  .barcode{
+    text-align:center;
+    margin:6px 0;
+  }
+  
+  /* DIVIDER */
+  .line{
+    border-top:1px dashed #d8def0;
+    margin:10px 0;
+    color:#415a77;
+  }
+  
+  /* TABLE */
+  table{
+    width:95%;      /* slightly smaller */
+    margin:auto;    /* center table */
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  
+  /* TABLE HEADER */
+  thead{
+    background:#eef2ff;
+  }
+  
+  th{
+    padding:8px 6px;
+    text-align:left;
+    background:#415a77;
+    color:#fff;
+    font-weight:600;
+  }
+  
+  td{
+    padding:7px 6px;
+    border-bottom:1px dashed #e2e6f0;
+  }
+  
+  .right{
+    text-align:right;
+  }
+  
+  /* ROW COLORS */
+  tbody tr:nth-child(even){
+    background:#fafbff;
+  }
+  
+  /* TOTALS */
+  .totals{
+    background:#f7f9ff;
+    border-radius:6px;
+    padding:6px 10px;   /* ADD THIS */
+  }
+  
+  .totals td{
+    padding:10px 12px;
+  }
+  .totals td:first-child{
+    padding-left:12px;
+  }
+  
+  .totals td:last-child{
+    padding-right:12px;
+  }
+  
+  /* GRAND TOTAL */
+  .grand{
+    font-size:16px;
+    font-weight:700;
+    color:#415a77;
+  }
+  
+  .grand td{
+    padding-top:12px;
+    padding-bottom:12px;
+  }
+  
+  /* FOOTER */
+  .footer{
+    text-align:center;
+    margin-top:10px;
+    font-size:11px;
+    color:#415a77;
+    padding:8px 6px;
+  }
+  * {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
         </style>
 
-        <!-- JsBarcode CDN -->
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
       </head>
 
       <body>
+      <div class="receipt">
+      <div class="header">
         <div class="shop">${invoice.shop_name}</div>
         <div class="subtitle">TAX INVOICE</div>
-        <p style="text-align:center; margin:6px 0 10px 0;">
-          Invoice: ${invoice.invoice_no}<br/>
-          <svg id="barcode"></svg><br/>
-          Date: ${invoice.date}
-        </p>
-
+        <b class="invoice">Invoice: ${invoice.invoice_no}</b><br/>
+  </div>
+  
+  <div class="headerinfo">
+  
+  
+  <div class="barcode">
+  <svg id="barcode"></svg>
+  </div>
+  
+  <b>Date: ${invoice.date}</b>
+  </div>
+  
         <div class="line"></div>
 
         <table>
@@ -295,35 +422,37 @@ const printInvoice = (invoice) => {
         <table class="totals" style="width:100%;">
           <tr>
             <td>Subtotal</td>
-            <td class="right">${Number(invoice.subtotal).toFixed(2)}</td>
+            <td class="right">₹${Number(invoice.subtotal).toFixed(2)}</td>
           </tr>
           <tr>
             <td>Total Tax</td>
-            <td class="right">${Number(invoice.tax).toFixed(2)}</td>
+            <td class="right">₹${Number(invoice.tax).toFixed(2)}</td>
           </tr>
-          <tr>
-            <td><b>Grand Total</b></td>
-            <td class="right"><b>${Number(invoice.total).toFixed(2)}</b></td>
+        <tr class="grand">
+  <td>Grand Total</td>
+            <td class="right">₹${Number(invoice.total).toFixed(2)}</td>
           </tr>
         </table>
 
         <div class="line"></div>
 
-        <p style="text-align:center; margin:8px 0;">${invoice.message || `Thank you for shopping at ${invoice.shop_name}`}</p>
-
+        <div class="footer">
+ <b> ${invoice.message || `Thank you for shopping at ${invoice.shop_name}`}</b>
+  </div>
+  </div>
+  
         <script>
-          window.onload = function () {
+          window.onload = function () {  
             JsBarcode("#barcode", "${invoice.invoice_no}", {
               format: "CODE128",
               width: 2,
               height: 40,
               displayValue: false
             });
-
             setTimeout(() => {
               window.print();
               window.close();
-            }, 300);
+            }, 350);
           };
         </script>
       </body>

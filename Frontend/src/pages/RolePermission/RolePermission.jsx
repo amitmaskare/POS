@@ -209,14 +209,14 @@ export default function RolePermission() {
                 </Typography>
                 <Chip
                   label={`${selectedPermissions.size} permissions selected`}
-                 sx={{backgroundColor:"#415A77",color:"#fff"}}
+                  sx={{ backgroundColor: "#415A77", color: "#fff" }}
                   variant="conained"
                 />
               </Box>
 
               <Divider sx={{ mb: 3 }} />
 
-              <Grid container spacing={4} sx={{ display:"flex", justifyContent:"center"}}>
+              <Grid container spacing={4} sx={{ display: "flex", justifyContent: "center" }}>
                 {permissions.map((module) => {
                   const modulePermIds = module.permissions.map(
                     (p) => p.permissionId
@@ -247,25 +247,25 @@ export default function RolePermission() {
                         }}
                       >
                         {/* Module Header */}
-  <Box
-    sx={{
-      px:8,
-      py: 1,
-      background:
-        "linear-gradient(135deg, #415A77 0%, #3B536E 100%)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
+                        <Box
+                          sx={{
+                            px: 8,
+                            py: 1,
+                            background:
+                              "linear-gradient(135deg, #415A77 0%, #3B536E 100%)",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
                         >
                           <Typography
                             variant="subtitle1"
-      sx={{
-        color: "#fff",
-        fontWeight: 600,
-        letterSpacing: 0.5,
-        textTransform: "capitalize",
-      }}
+                            sx={{
+                              color: "#fff",
+                              fontWeight: 600,
+                              letterSpacing: 0.5,
+                              textTransform: "capitalize",
+                            }}
                           >
                             {module.moduleName}
                           </Typography>
@@ -280,65 +280,65 @@ export default function RolePermission() {
                                 color: "#fff",
                               },
                               "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                                {
-                                  backgroundColor: "rgba(255,255,255,0.5)",
-                                },
+                              {
+                                backgroundColor: "rgba(255,255,255,0.5)",
+                              },
                             }}
                           />
                         </Box>
 
-                  {/* Permission List */}
-                <Box sx={{ px:3, py: 2 }}>
-                        {module.permissions.map((perm) => (
-                          <Box
-                            key={perm.permissionId}
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          px: 2,
-          py: 1.2,
-          
-          borderRadius: 2,
-          transition: "all 0.2s ease",
-                              "&:hover": {
-                                backgroundColor: "#f4f7fb",
-                              },
-                            }}
-                          >
-                            <Typography
-                              variant="body2"
+                        {/* Permission List */}
+                        <Box sx={{ px: 3, py: 2 }}>
+                          {module.permissions.map((perm) => (
+                            <Box
+                              key={perm.permissionId}
                               sx={{
-            fontWeight: 500,
-            color: "#415A77",
-            fontWeight: 600,
-                                textTransform: "capitalize",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                px: 2,
+                                py: 1.2,
+
+                                borderRadius: 2,
+                                transition: "all 0.2s ease",
+                                "&:hover": {
+                                  backgroundColor: "#f4f7fb",
+                                },
                               }}
                             >
-                              {perm.action}
-                            </Typography>
-                            <Switch
-                              size="small"
-                              checked={selectedPermissions.has(
-                                perm.permissionId
-                              )}
-                              onChange={() =>
-                                handleTogglePermission(perm.permissionId)
-                              }
-                              sx={{
-                                "& .MuiSwitch-switchBase.Mui-checked": {
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 500,
                                   color: "#415A77",
-                                },
-                                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                                  fontWeight: 600,
+                                  textTransform: "capitalize",
+                                }}
+                              >
+                                {perm.action}
+                              </Typography>
+                              <Switch
+                                size="small"
+                                checked={selectedPermissions.has(
+                                  perm.permissionId
+                                )}
+                                onChange={() =>
+                                  handleTogglePermission(perm.permissionId)
+                                }
+                                sx={{
+                                  "& .MuiSwitch-switchBase.Mui-checked": {
+                                    color: "#415A77",
+                                  },
+                                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                                   {
                                     backgroundColor: "#415A77",
                                   },
-                              }}
-                            />
-                          </Box>
-                        ))}
-                      </Box>
-                    </Paper>
+                                }}
+                              />
+                            </Box>
+                          ))}
+                        </Box>
+                      </Paper>
                     </Grid>
                   );
                 })}
@@ -358,7 +358,7 @@ export default function RolePermission() {
                     py: 1,
                     fontSize: "14px",
                     fontWeight: 600,
-                    
+
                   }}
                 >
                   {saving ? "Saving..." : "Save Permissions"}

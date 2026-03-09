@@ -258,13 +258,13 @@ const Reports = () => {
         actions={[
           {
             label: "Today",
-            color: "#5A8DEE",
-            variant: "outlined",
+            color: "#fff",
+            variant: "contained",
           },
           {
             label: "Custom Range",
-            variant: "outlined",
-            color: "#5A8DEE",
+            variant: "contained",
+            color: "#fff",
           },
         ]}
       />
@@ -452,7 +452,7 @@ const Reports = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>
+        <DialogTitle sx={{color:"#415a77",fontWeight:600}}>
           {selectedReport ? selectedReport.title : "Report"} Details
         </DialogTitle>
         <DialogContent>
@@ -482,11 +482,11 @@ const Reports = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+          <Button sx={{backgroundColor:"#e53935",color:"#fff"}} onClick={() => setViewDialogOpen(false)}>Close</Button>
           {selectedReport && (
             <Button
               variant="contained"
-              color="primary"
+              sx={{backgroundColor:"#415a77"}}
               onClick={() => {
                 handleDownloadReport(selectedReport);
                 setViewDialogOpen(false);

@@ -156,7 +156,7 @@ export default function Users() {
       
       {/* USERS TABLE */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3} mt={3}>
-        <Typography variant="h6" fontWeight={700}>
+        <Typography variant="h6" fontWeight={700} sx={{color:"#415a77"}}>
           System Users
         </Typography>
       </Box>

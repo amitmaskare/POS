@@ -1,19 +1,54 @@
 import { Button,Box } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 export const Column = [
     { id: "name", label: "Name" },
   
-    { id: "created_at", label: "Created Date" },
+    {
+      id: "created_at",
+      label: "Created Date",
+      render: (row) => {
+        if (!row?.created_at) return "";
+        const [date, time] = row.created_at.split("T");       // split at 'T'
+        const formattedTime = time.split(".")[0];             // remove .000Z
+        return (
+          <span style={{ fontSize: "14px", color: "#415a77", lineHeight: 1.4 }}>
+            {date} <br />
+            {formattedTime}
+          </span>
+        );
+      },
+    },
     {
       id: "actions",
       label: "Actions",
       render: (row,extra) => (
         <Box display="flex" gap={1}>
-          <Button size="small" variant="outlined" color="primary"  onClick={() => extra?.edit(row?.roleId)}>
-            Edit
+          <Button size="small" variant="outlined" color="primary"  onClick={() => extra?.edit(row?.roleId)}sx={{
+      minWidth: "30px",
+      width: "30px",
+      height: "30px",
+      padding: "0",
+      borderRadius: "50%",
+      border: "1px solid #2196F3",
+      backgroundColor: "#D6EAF8",
+      color: "#1565C0"
+    }}>
+             <EditIcon sx={{ fontSize: 16 }}/>
           </Button>
     
-          <Button size="small" variant="outlined" color="error" onClick={() => extra?.deleteItem(row?.roleId)}>
-            Delete
+          <Button size="small" variant="outlined" color="error" onClick={() => extra?.deleteItem(row?.roleId)} sx={{
+      minWidth: "30px",
+      width: "30px",
+      height: "30px",
+      padding: "0",
+      borderRadius: "50%",
+      border: "1px solid #F44336",
+      backgroundColor: "#FAD4D4",
+      color: "#D32F2F"
+    }}
+  >
+    <DeleteIcon sx={{ fontSize: 16 }}/>
           </Button>
         </Box>
       ),

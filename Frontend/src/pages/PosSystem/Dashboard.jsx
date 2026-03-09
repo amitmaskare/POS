@@ -1,27 +1,15 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box,
-  Typography,
-  Paper,
-  Modal,
-  Tabs,
-  Tab,
-  Grid,
   TextField,
-  MenuItem,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-} from "@mui/material";
-import SearchIcon from '@mui/icons-material/Search';
+} from "@mui/material"; 
 import SearchFilter from "../../components/MainContentComponents/SearchFilter";
 import TableLayout from "../../components/MainContentComponents/Table";
-import FilterListIcon from "@mui/icons-material/FilterList";
-import DownloadIcon from "@mui/icons-material/Download";
 import { columns } from "./columns";
-import { rows } from "./rows";
 import { searchProduct,add_product,favouriteList,looseItemList } from "../../services/productService";
 import { useOutletContext } from "react-router-dom";
 import { useToast } from "../../hooks/useToast";
@@ -31,8 +19,6 @@ export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState("All");
   const filters = ["All", "Favourite","Loose Items"];
   const { addToCart } = useOutletContext();
-  const[data,setData]=useState([])
-  const[loading,setLoading]=useState(false)
   const [confirmAdd, setConfirmAdd] = useState(false);
   const [openAddModal, setOpenAddModal] = useState(false);
   const [barcode, setBarcode] = useState("");
