@@ -1,11 +1,13 @@
 import { SubcategoryService } from "../services/SubcategoryService.js";
 import {sendResponse} from "../utils/sendResponse.js"
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 
 export const SubcategoryController={
     list:async(req,resp)=>{
         try{
-            const result=await SubcategoryService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await SubcategoryService.list(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(reportError,false,400,"No Data Found")
@@ -18,16 +20,17 @@ export const SubcategoryController={
     },
     add:async(req,resp)=>{
         try{
-            const{category_id,subcategory_name}=req.body
-             if(!category_id)
+            const storeId = getStoreIdFromRequest(req);
+            const{categoryId,subcategory_name}=req.body
+             if(!categoryId)
             {
-                return sendResponse(resp,false,400,"category_id field is required")
+                return sendResponse(resp,false,400,"categoryId field is required")
             }
             if(!subcategory_name)
             {
                 return sendResponse(resp,false,400,"subcategory_name field is required")
             }
-            const result= await SubcategoryService.add(req.body)
+            const result= await SubcategoryService.add(req.body, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
@@ -40,12 +43,13 @@ export const SubcategoryController={
     },
     getById:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
             }
-            const result=await SubcategoryService.getById(id)
+            const result=await SubcategoryService.getById(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -58,20 +62,21 @@ export const SubcategoryController={
     },
     update:async(req,resp)=>{
         try{
-             const {id,category_id,subcategory_name}=req.body
+             const storeId = getStoreIdFromRequest(req);
+             const {id,categoryId,subcategory_name}=req.body
                         if(!id)
                         {
                             return sendResponse(resp,false,400,"id field is reuired")
                         }
-                         if(!category_id)
+                         if(!categoryId)
                         {
-                            return sendResponse(resp,false,400,"category_id field is reuired")
+                            return sendResponse(resp,false,400,"categoryId field is reuired")
                         }
                         if(!subcategory_name)
                         {
                             return sendResponse(resp,false,400,"subcategory_name field is required")
                         }
-                        const result= await SubcategoryService.update(req.body)
+                        const result= await SubcategoryService.update(req.body, storeId)
                         if(!result)
                         {
                             return sendResponse(resp,false,400,"Something went wrong")
@@ -85,8 +90,9 @@ export const SubcategoryController={
     },
     deleteData:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
-            const result=await SubcategoryService.deleteData(id)
+            const result=await SubcategoryService.deleteData(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"ID not found")

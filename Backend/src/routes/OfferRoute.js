@@ -12,4 +12,5 @@ route.get("/offer/getById/:id",OfferController.getById)
 route.post("/offer/update",OfferController.update)
 route.delete("/offer/delete/:id",OfferController.deleteData)
 
+
 export default route

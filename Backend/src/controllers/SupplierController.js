@@ -1,12 +1,14 @@
 import  {SupplierService}  from "../services/SupplierService.js";
 import {sendResponse} from "../utils/sendResponse.js"
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 
 export const SupplierController={
 
     list:async(req,resp)=>{
         try{
-            const result=await SupplierService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await SupplierService.list(storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(reportError,false,400,"No Data Found")
@@ -19,12 +21,13 @@ export const SupplierController={
     },
     add:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const{name}=req.body
             if(!name)
             {
                 return sendResponse(resp,false,400,"name field is required")
             }
-            const result= await SupplierService.add(req.body)
+            const result= await SupplierService.add(req.body, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
@@ -37,12 +40,13 @@ export const SupplierController={
     },
     getById:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
             }
-            const result=await SupplierService.getById(id)
+            const result=await SupplierService.getById(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -55,6 +59,7 @@ export const SupplierController={
     },
     update:async(req,resp)=>{
         try{
+             const storeId = getStoreIdFromRequest(req);
              const {id,name}=req.body
                         if(!id)
                         {
@@ -64,7 +69,7 @@ export const SupplierController={
                         {
                             return sendResponse(resp,false,400,"name field is required")
                         }
-                        const result= await SupplierService.update(req.body)
+                        const result= await SupplierService.update(req.body, storeId)
                         if(!result)
                         {
                             return sendResponse(resp,false,400,"Something went wrong")
@@ -78,8 +83,9 @@ export const SupplierController={
     },
     deleteData:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
-            const result=await SupplierService.deleteData(id)
+            const result=await SupplierService.deleteData(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"ID not found")

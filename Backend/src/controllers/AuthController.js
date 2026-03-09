@@ -43,39 +43,45 @@ export const AuthController = {
 
   login: async (req, resp) => {
     try {
-      if (!req.body) {
-        return sendResponse(resp, false, 400, "user_id,password is required");
+      const { user_id, password } = req.body;
+  
+      if (!user_id || !password) {
+        return sendResponse(resp, false, 400, "user_id & password required");
       }
-      const { user_id,password } = req.body;
-      if(!user_id)
-      {
-        return sendResponse(resp, false, 400, "user_id is required");
-      }
-      if (!password) {
-        return sendResponse(resp, false, 400, "password is required");
-      }
+  
       const userData = await AuthService.loginByPassword(req.body);
-      if (!userData) {
-        return sendResponse(resp, false, 400, "Invalid User Id and Password");
-      }
+  
       const token = jwt.sign(
         {
           userId: userData.userId,
           email: userData.email,
           name: userData.name,
+          role: userData.role_name,
+          store_id: userData.store_id,       // ✅ ADD STORE_ID TO JWT
+          permissions: userData.permissions
         },
         JWT_SECRET,
-        { expiresIn: "1d" }
+        { expiresIn: "12h" }
       );
+  
       const data = {
-        token: `${token}`,
+        token,
+        user: {
+          id: userData.userId,
+          name: userData.name,
+          role: userData.role_name,
+          store_id: userData.store_id,       // ✅ ADD STORE_ID TO RESPONSE
+          permissions: userData.permissions
+        }
       };
+  
       return sendResponse(resp, true, 200, "Login Successful", data);
+  
     } catch (error) {
-     
-        return sendResponse(resp, false, 500, error.message);
+      return sendResponse(resp, false, 500, error.message);
     }
   },
+  
 
   logout: async (req, resp) => {
     try {
@@ -254,5 +260,99 @@ export const AuthController = {
       return sendResponse(resp,false,500,`Error : ${error.message}`)
     }
   },
+
+  userList:async(req,resp)=>{
+    try{
+      const result=await AuthService.userList()
+      if(!result || result.length===0)
+      {
+        return sendResponse(resp,false,400,"No Data Found")
+      }
+      return sendResponse(resp,true,200,"Fetch data successful",result)
+    }catch(error)
+    {
+      return sendResponse(resp,false,500,`Error : ${error.message}`)
+    }
+  },
+
+  add:async(req,resp)=>{
+    try {
+      const { name, email, role } = req.body;
+      if (!name) {
+        return sendResponse(resp, false, 400, "name field is required");
+      }
+      if (!email) {
+        return sendResponse(resp, false, 400, "email field is required");
+      }
+      if (!role) {
+        return sendResponse(resp, false, 400, "role field is required");
+      }
+      const result = await AuthService.add(req.body);
+      if (!result) {
+        return sendResponse(resp, false, 400, "Something went wrong");
+      }
+      return sendResponse(resp, true, 201, "User added Successful");
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error : ${error.message}`);
+    }
+},
+getById:async(req,resp)=>{
+    try{
+        const {id}=req.params
+        if(!id)
+        {
+        return sendResponse(resp,false,400,"userId not found")
+        }
+        const result=await AuthService.getById(id)
+        if(!result || result.length===0)
+        {
+            return sendResponse(resp,false,400,"No Data Found")
+        }
+        return sendResponse(resp,true,200,"get by id data",result)
+    }catch(error)
+    {
+        return sendResponse(resp,false,500,`Error : ${error.message}`)
+    }
+},
+update:async(req,resp)=>{
+  try {
+    const {userId, name, email, role } = req.body;
+    if(!userId)
+    {
+        return sendResponse(resp,false,400,"userId field is reuired")
+    }
+    if (!name) {
+      return sendResponse(resp, false, 400, "name field is required");
+    }
+    if (!email) {
+      return sendResponse(resp, false, 400, "email field is required");
+    }
+    if (!role) {
+      return sendResponse(resp, false, 400, "role field is required");
+    }
+    const result = await AuthService.update(req.body);
+    if (!result) {
+      return sendResponse(resp, false, 400, "Something went wrong");
+    }
+    return sendResponse(resp, true, 201, "User updated Successful");
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error : ${error.message}`);
+  }
+},
+deleteData:async(req,resp)=>{
+    try{
+        const {id}=req.params
+        const result=await AuthService.deleteData(id)
+        if(!result || result.length===0)
+        {
+            return sendResponse(resp,false,400,"userId not found")
+        }
+        return sendResponse(resp,true,200,"Item deleted successful")
+    }catch(error)
+    {
+        return sendResponse(resp,false,500,`Error : ${error.message}`)
+    }
+},
+
 
 };

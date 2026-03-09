@@ -1,12 +1,14 @@
 import { CardService } from "../services/CardService.js";
 import {sendResponse} from "../utils/sendResponse.js"
 import { CommonModel } from "../models/CommonModel.js";
+import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 export const CardController={
     list:async(req,resp)=>{
        
         try{
-            const result=await CardService.list()
+            const storeId = getStoreIdFromRequest(req);
+            const result=await CardService.list(storeId)
            
             if(!result || result.length===0)
             {
@@ -22,6 +24,7 @@ export const CardController={
 
     add:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const{type,items}=req.body
             if(!type)
             {
@@ -41,7 +44,7 @@ export const CardController={
                  items: JSON.stringify(items),
                  created_at:new Date(),
             }
-            const result= await CardService.add(saveData)
+            const result= await CardService.add(saveData, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"Something went wrong")
@@ -55,13 +58,14 @@ export const CardController={
 
     getById:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
            
             if(!id)
             {
             return sendResponse(resp,false,400,"ID not found")
             }
-            const result=await CardService.getById(id)
+            const result=await CardService.getById(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -73,7 +77,7 @@ export const CardController={
         }
     },
     update:async(req,resp)=>{
-        try{
+        try{storeId = getStoreIdFromRequest(req);
              const {id,type,items}=req.body
                         if(!id)
                         {
@@ -91,7 +95,7 @@ export const CardController={
         {
             return sendResponse(resp,false,400,"Card name already exits")
         }
-                        const result= await CardService.update(req.body)
+                        const result= await CardService.update(req.body, storeId)
                         if(!result)
                         {
                             return sendResponse(resp,false,400,"Something went wrong")
@@ -105,8 +109,9 @@ export const CardController={
     },
     deleteData:async(req,resp)=>{
         try{
+            const storeId = getStoreIdFromRequest(req);
             const {id}=req.params
-            const result=await CardService.deleteData(id)
+            const result=await CardService.deleteData(id, storeId)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"ID not found")
