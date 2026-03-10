@@ -2,45 +2,56 @@ import React from "react";
 import { Modal, Box, Typography, TextField, Button, InputAdornment, IconButton } from "@mui/material";
 import DocumentScannerIcon from "@mui/icons-material/DocumentScanner";
 import CloseIcon from "@mui/icons-material/Close";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle
+} from "@mui/material";
 
 const Aadhaar = ({ open, onClose }) => {
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      sx={{
+        "& .MuiDialog-container": {
+          mt: 6,
+
+        },
+        "& .MuiPaper-root": {
+          borderRadius: "1.2rem",
+        }
+      }}
+    >
+      {/* Close Icon */}
+
+
+      <DialogTitle
         sx={{
-          position: "absolute",
-          top: "50%",
-          left: "60%",
-          transform: "translate(-50%, -50%)",
-          width: 400,
-          bgcolor: "background.paper",
-          borderRadius: 2,
-          boxShadow: 24,
-          p: 4,
+          fontSize: 20,
+          fontWeight: 600,
+          borderBottom: "1px solid #e0e0e0",
+          color: "#fff",
+          backgroundColor: "#415a77",
           display: "flex",
-          flexDirection: "column",
-          gap: 2,
-          position: "relative",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
-      >
-        {/* Close Icon */}
-        <IconButton
+      >  Enter Aadhaar Number
+        <Button
           onClick={onClose}
           sx={{
-            position: "absolute",
-            
-            right: 10,
-            color: "#475569",
+            minWidth: "auto",
+            color: "#fff",
             "&:hover": { background: "transparent", color: "#1e293b" },
           }}
         >
-          <CloseIcon />
-        </IconButton>
-
-        <Typography variant="h6"  color="#415a77" fontWeight="bold" sx={{ textAlign: "left"}}>
-          Enter Aadhaar Number
-        </Typography>
-
+          ✕
+        </Button>
+      </DialogTitle>
+      <DialogContent sx={{ p: 3, mt: 3 }}>
         <TextField
           label="XXXX XXXX XXXX"
           variant="outlined"
@@ -56,11 +67,11 @@ const Aadhaar = ({ open, onClose }) => {
           }}
         />
 
-        <Button variant="contained"  onClick={onClose}>
+        <Button variant="contained" onClick={onClose} sx={{ mt: 3, backgroundColor: "#415a77" }}>
           Submit
         </Button>
-      </Box>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 };
 

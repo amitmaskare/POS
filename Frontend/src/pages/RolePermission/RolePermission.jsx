@@ -23,6 +23,11 @@ import {
   getById,
   updateRolePermissions,
 } from "../../services/RolePermissionService";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import PersonIcon from "@mui/icons-material/Person";
+import WorkIcon from "@mui/icons-material/Work";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 
 export default function RolePermission() {
   const [roles, setRoles] = useState([]);
@@ -156,26 +161,105 @@ export default function RolePermission() {
       />
 
       {/* Role Selection */}
-      <Paper elevation={2} sx={{ p: 3, mt: 3, borderRadius: 2 }}>
-        <FormControl fullWidth>
-          <InputLabel>Select Role</InputLabel>
-          <Select
-            value={selectedRole}
-            label="Select Role"
-            onChange={(e) => setSelectedRole(e.target.value)}
-            sx={{ backgroundColor: "#fff" }}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {roles.map((role) => (
-              <MenuItem key={role.roleId} value={role.roleId}>
-                {role.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Paper>
+      <Paper
+  elevation={0}
+  sx={{
+    p: 3,
+    mt: 3,
+    borderRadius: 3,
+    border: "1px solid #e5e7eb",
+    background: "#fafafa"
+  }}
+>
+  <Box display="flex" alignItems="center" gap={1} mb={2}>
+    <ManageAccountsIcon sx={{color:"#415a77"}}/>
+    <Typography variant="subtitle1" fontWeight={600} sx={{color:"#415a77"}}>
+      Role Permissions
+    </Typography>
+  </Box>
+
+  <FormControl
+  fullWidth
+  size="small"
+  sx={{
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": {
+        borderColor: "#415a77", // default border
+      },
+      "&:hover fieldset": {
+        borderColor: "#415a77", // hover border
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#415a77", // focused border
+      },
+    },
+  }}
+>
+  <InputLabel
+    sx={{
+      color: "#415a77", // label color
+      "&.Mui-focused": {
+        color: "#415a77", // label when focused
+      },
+    }}
+  >
+    Select Role
+  </InputLabel>
+
+  <Select
+    value={selectedRole}
+    label="Select Role"
+    onChange={(e) => setSelectedRole(e.target.value)}
+    sx={{
+      backgroundColor: "#fff",
+      borderRadius: 2,
+    }}
+  >
+      
+
+      {roles.map((role) => {
+  const icon =
+    role.name.toLowerCase() === "admin" ? (
+      <AdminPanelSettingsIcon fontSize="small" color="primary" />
+    ) : role.name.toLowerCase() === "manager" ? (
+      <WorkIcon fontSize="small" color="success" />
+    ) : (
+      <PersonIcon fontSize="small"sx={{color:"#415a77"}}/>
+    );
+
+  return (
+    <MenuItem
+      key={role.roleId}
+      value={role.roleId}
+      sx={{
+        py: 1.2,
+        px: 2,
+        borderRadius: 2,
+        mx: 1,
+        my: 0.3,
+        "&:hover": {
+          backgroundColor: "#f3f4f6"
+        }
+      }}
+    >
+      <Box display="flex" alignItems="center" gap={1.5}>
+        {icon}
+
+        <Typography
+          sx={{
+            textTransform: "capitalize",
+            fontWeight: 500
+          }}
+        >
+          {role.name}
+        </Typography>
+      </Box>
+    </MenuItem>
+  );
+})}
+    </Select>
+  </FormControl>
+</Paper>
 
       {/* Success/Error Messages */}
       {success && (
@@ -249,7 +333,7 @@ export default function RolePermission() {
                         {/* Module Header */}
                         <Box
                           sx={{
-                            px: 8,
+                            px: 7,
                             py: 1,
                             background:
                               "linear-gradient(135deg, #415A77 0%, #3B536E 100%)",
@@ -371,22 +455,44 @@ export default function RolePermission() {
 
       {/* Empty State */}
       {!selectedRole && !loading && (
-        <Paper
-          elevation={1}
-          sx={{
-            p: 6,
-            mt: 3,
-            textAlign: "center",
-            backgroundColor: "#f9f9f9",
-          }}
-        >
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No Role Selected
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Please select a role from the dropdown above to manage permissions
-          </Typography>
-        </Paper>
+       <Paper
+       elevation={3}
+       sx={{
+         p: 6,
+         mt: 3,
+         textAlign: "center",
+         backgroundColor: "#ffffff",
+         borderRadius: 3,
+         border: "1px solid #e0e0e0",
+         display: "flex",
+         flexDirection: "column",
+         alignItems: "center",
+         justifyContent: "center",
+         gap: 2,
+       }}
+     >
+       <Box
+         sx={{
+           backgroundColor: "#e3f2fd",
+           borderRadius: "50%",
+           width: 60,
+           height: 60,
+           display: "flex",
+           alignItems: "center",
+           justifyContent: "center",
+           mb: 1,
+         }}
+       >
+         <AssignmentIcon sx={{ fontSize: 32, color: "#415a77" }} />
+       </Box>
+     
+       <Typography variant="h6" fontWeight={600} color="#415a77">
+         No Role Selected
+       </Typography>
+       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 300 }}>
+         Please select a role from the dropdown above to manage permissions.
+       </Typography>
+     </Paper>
       )}
     </Box>
   );

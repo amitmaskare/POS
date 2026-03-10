@@ -182,7 +182,16 @@ const SaveStock=async()=>{
     </Box>
 
     <Dialog open={openStock}>
-      <DialogTitle  sx={{ display: "flex", justifyContent: "space-between", alignItems: "center",color:"#415A77", fontWeight:"600" }}>Add Stock
+      <DialogTitle  sx={{
+    fontSize: 20,
+    fontWeight: 600,
+    borderBottom: "1px solid #e0e0e0",
+    color:"#fff",
+    backgroundColor:"#415a77",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  }}>Add Stock
            <IconButton onClick={handleClose}>
         <CloseIcon />
       </IconButton>

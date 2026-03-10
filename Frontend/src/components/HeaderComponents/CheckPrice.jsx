@@ -10,7 +10,7 @@ import {
   Paper,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import HistoryIcon from "@mui/icons-material/History";
 import SearchFilter from "../MainContentComponents/SearchFilter";
 import { searchProduct } from "../../services/productService";
@@ -89,40 +89,78 @@ export default function CheckPriceModal({ open, onClose }) {
      
       <SearchFilter  value={searchValue} onSearchChange={(e) => handleSearch(e.target.value)}/>
       {/* CONTENT */}
-      <DialogContent sx={{ p: 3, mt: 2 }}>
-        {/* {data.map((item) => ( */}
-         { item &&  ( 
-          <Paper
-            key={item.id}
-            sx={{
-              p: 2,
-              mb: 2,
-              border: "1px solid #e2e8f0",
-              borderRadius: 2,
-              background: "#fff",
+      <DialogContent sx={{ p: 3, mt: 1 }}>
+      { item && (
+        <Paper
+          key={item.id}
+          sx={{
+            p: 2,
+            mb: 2,
+        borderRadius: 3,
+        border: "1px solid #e5e7eb",
+        backgroundColor: "#ffffff",
+        transition: "all 0.2s ease",
+        "&:hover": {
+          boxShadow: "0 6px 18px rgba(0,0,0,0.08)"
+        }
+      }}
+    >
+      <Box display="flex" alignItems="center" justifyContent="space-between">
+        
+        {/* Left side: Image + Name */}
+        <Box display="flex" alignItems="center" gap={2}>
+          <img
+            src={item.image}
+            alt="product"
+            style={{
+              width: 60,
+              height: 60,
+              objectFit: "cover",
+              borderRadius: 10,
+              border: "1px solid #e5e7eb"
             }}
-          >
-            {/* Row 1 */}
-            <Box display="flex" justifyContent="space-between">
-              <Typography fontWeight={600}  color="#415a77">
-                 <img
-              src={item.image}
-              alt="product"
-              className="rounded-3"
-              style={{ width: 55, height: 55, objectFit: "cover" }}
-            /> {item.product_name}
-              </Typography>
+          />
 
-            </Box>
-
-            {/* Amount */}
-            <Typography fontSize={20} fontWeight={700} mt={1}>
-              ${item.price}
+          <Box>
+            <Typography
+              fontWeight={600}
+              fontSize={15}
+              sx={{ color: "#1f2937" }}
+            >
+              {item.product_name}
             </Typography>
 
-          </Paper>
-         )}
-      </DialogContent>
+            <Typography
+              fontSize={12}
+              sx={{ color: "#6b7280", mt: 0.3 }}
+            >
+              Product ID: {item.id}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Right side: Price */}
+        <Box textAlign="right">
+          <Typography
+            fontSize={13}
+            sx={{ color: "#6b7280" }}
+          >
+            Price
+          </Typography>
+
+          <Typography
+            fontSize={18}
+            fontWeight={700}
+            sx={{ color: "#111827" }}
+          >
+            ${item.price}
+          </Typography>
+        </Box>
+
+      </Box>
+    </Paper>
+  )}
+</DialogContent>
     </Dialog>
   );
 }

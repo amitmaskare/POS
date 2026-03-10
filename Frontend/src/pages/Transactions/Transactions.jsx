@@ -15,6 +15,8 @@ import AddIcon from "@mui/icons-material/Add";
 import Title from "../../components/MainContentComponents/Title";
 import SearchFilter from "../../components/MainContentComponents/SearchFilter";
 import {transactionList} from "../../services/saleService"
+import TableLayout from "../../components/MainContentComponents/Table";
+import { columns } from "./columns";
 
 export default function Transactions() {
 const [transactions, setTransactions] = useState([]);
@@ -87,48 +89,16 @@ useEffect(() => {
           All Transactions
         </Typography>
       </Paper>
-        <table className="table table-bordered mt-3">
-  <thead className="table-light">
-    <tr>
-      <th>#</th>
-      <th>Invoice</th>
-      <th>Amount</th>
-      <th>Mode</th>
-      <th>Status</th>
-      <th>Payment ID</th>
-      <th>Date</th>
-    </tr>
-  </thead>
-  <tbody>
-    {transactions.length === 0 ? (
-      <tr>
-        <td colSpan="7" className="text-center">
-          No Transactions Found
-        </td>
-      </tr>
-    ) : (
-      transactions.map((t, i) => (
-        <tr key={t.id}>
-          <td>{i + 1}</td>
-          <td>{t.invoice_no}</td>
-          <td>₹{t.total}</td>
-          <td>
-            <span className={`badge bg-${t.payment_mode === "cash" ? "success" : "primary"}`}>
-              {t.payment_mode}
-            </span>
-          </td>
-          <td>
-            <span className={`badge bg-${t.payment_status === "paid" ? "success" : "danger"}`}>
-              {t.payment_status}
-            </span>
-          </td>
-          <td>{t.razorpay_payment_id || "-"}</td>
-          <td>{new Date(t.created_at).toLocaleString()}</td>
-        </tr>
-      ))
-    )}
-  </tbody>
-</table>
+      <TableLayout
+  columns={columns}
+  rows={transactions}
+  searchPlaceholder="Search transactions..."
+  extra={{
+    indexMap: Object.fromEntries(
+      transactions.map((t, i) => [t.id, i + 1])
+    )
+  }}
+/>
 
     </Box>
     </>

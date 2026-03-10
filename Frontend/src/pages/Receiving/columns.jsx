@@ -1,9 +1,31 @@
 import { Button,Box } from "@mui/material";
 export  const columns = [
-    { id: "po_number", label: "PO Number" },
-    { id: "supplier_name", label: "Supplier" },
-    { id: "purchase_date", label: "Date" },
-    { id: "total_items", label: "Items" },
+  {
+    id: "po_number",
+    label: "PO Details",
+    render: (row) => (
+      <div>
+        <div>{row.po_number}</div>
+        <div style={{ fontSize: "12px", color: "#415A77" }}>
+          {row.purchase_date}
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "supplier_name",
+    label: "Supplier Details",
+    render: (row) => (
+      <div>
+        <div>{row.supplier_name}</div>
+        <div style={{ fontSize: "12px", color: "#415A77" }}>
+          Items: {row.total_items}
+        </div>
+      </div>
+    )
+  },
+    // { id: "purchase_date", label: "Date" },
+    // { id: "total_items", label: "Items" },
     { id: "amount", label: "Amount" },
     {
       id: "actions",

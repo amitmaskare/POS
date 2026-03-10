@@ -11,7 +11,11 @@ import {
   MenuItem,
   Button,
 } from "@mui/material";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle
+} from "@mui/material";
 import {addCustomer,updateCustomer } from "../../services/customerService";
 
 const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
@@ -91,28 +95,52 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
   };
 
   return (
-  <Modal open={open} onClose={onClose}>
-    <Paper
-      sx={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: "50%",
-        p: 4,
-        borderRadius: 3,
-        outline: "none",
-      }}
-    >
-      <Typography variant="h6" mb={2} color="#415a77" fontWeight="bold">
+    <Dialog
+    open={open}
+    onClose={onClose}
+    maxWidth="sm"
+    fullWidth
+    sx={{     
+      "& .MuiDialog-container": {
+          mt: 6, 
+         
+      },
+      "& .MuiPaper-root": {
+        borderRadius: "1.2rem",   
+      }
+    }}
+  >
+    
+    <DialogTitle
+  sx={{
+    fontSize: 20,
+    fontWeight: 600,
+    borderBottom: "1px solid #e0e0e0",
+    color:"#fff",
+    backgroundColor:"#415a77",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  }}
+> 
         Add New Customer
-      </Typography>
+        <Button
+    onClick={onClose}
+    sx={{
+      minWidth: "auto",
+      color: "#fff",
+      "&:hover": { background: "transparent", color: "#1e293b" },
+    }}
+  >
+    ✕
+  </Button>
+      </DialogTitle>
 
       {success && <Typography color="green">{success}</Typography>}
       {error && <Typography color="red">{error}</Typography>}
 
-      <Box component="form" onSubmit={handleSubmit}>
-        <Grid container spacing={2}>
+      <DialogContent component="form" onSubmit={handleSubmit}>
+        <Grid container spacing={2} mt={3}>
 
           {/* CUSTOMER NAME col-12 full width */}
           <Grid item xs={12} sm={12} md={12}>
@@ -160,9 +188,9 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
         <Box mt={3} display="flex" justifyContent="flex-end" gap={1}>
           <Button variant="contained" type="submit" sx={{backgroundColor:"#415a77"}}>Submit</Button>
         </Box>
-      </Box>
-    </Paper>
-  </Modal>
+      </DialogContent>
+   <DialogContent/>
+  </Dialog>
 );
 
 };

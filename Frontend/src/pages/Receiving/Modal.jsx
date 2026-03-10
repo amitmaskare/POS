@@ -236,11 +236,34 @@ useEffect(() => {
         marginLeft:25,
         borderRadius: 3,
           maxHeight: "90vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between"
       }}
    
         >
-          <DialogTitle variant="h6" mb={2} sx={{color:"#fff",background:"#415A77"}}>
-          Receiving Items</DialogTitle>
+         <DialogTitle
+        sx={{
+          fontSize: 20,
+          fontWeight: 600,
+          borderBottom: "1px solid #e0e0e0",
+          color:"#fff",
+          backgroundColor: "#415a77",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      > Receiving Items
+        <Button
+          onClick={onClose}
+          sx={{
+            minWidth: "auto",
+            color: "#fff",
+            "&:hover": { background: "transparent", color: "#1e293b" },
+          }}
+        >
+          ✕
+        </Button>  </DialogTitle>
           
           <DialogContent  sx={{ p: 0 }}>
   
@@ -310,21 +333,25 @@ useEffect(() => {
                     </TableCell>
 
                     <TableCell>
-                      {item?.image && (
-                        <img
-                          src={item.image}
-                          alt="product"
-                          className="rounded-3"
-                          style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                        />
-                      )}
-                      <Typography fontWeight={600} color="#415A77">
-                        {item?.product_name || "Unknown"}
-                      </Typography>
-                      <Typography fontSize="12px" color="#415A77">
-                        {item?.category_name || "N/A"}
-                      </Typography>
-                    </TableCell>
+  <Box display="flex" alignItems="center" gap={1.5}>
+    {item?.image && (
+      <img
+        src={item.image}
+        alt="product"
+        
+        style={{ width: "40px", height: "40px", objectFit: "cover",borderRadius:"50%" }}
+      />
+    )}
+    <Box>
+      <Typography fontWeight={600} color="#415A77">
+        {item?.product_name || "Unknown"}
+      </Typography>
+      <Typography fontSize="12px" color="#415A77">
+        {item?.category_name || "N/A"}
+      </Typography>
+    </Box>
+  </Box>
+</TableCell>
 
                     <TableCell sx={{ color: "#415A77" }}>{item?.order_qty || 0}</TableCell>
                     <TableCell sx={{ color: "#415A77" }}>

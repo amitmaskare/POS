@@ -35,7 +35,7 @@ const Stats = ({ stats = [] }) => {
           <Card
   sx={{
     width: {
-      xs: 255,   // fixed width on mobile
+      xs: 200,   // fixed width on mobile
       sm: 255,
       md: 255,
     },

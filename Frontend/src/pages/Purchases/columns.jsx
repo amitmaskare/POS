@@ -1,27 +1,54 @@
 import { Button,Box } from "@mui/material";
-export  const columns = [
-    { id: "po_number", label: "PO Number" },
-    { id: "supplier_name", label: "Supplier" },
-    { id: "purchase_date", label: "Date" },
-    { id: "total_items", label: "Items" },
-    { id: "amount", label: "Amount" },
-    { id: "status", label: "Status" },
-    { id: "type", label: "Type" },
-    // { id: "actions", label: "Actions" },
-    {
-      id: "actions",
-      label: "Actions",
-      render: (row,extra) => (
-        <Box display="flex" gap={1}>
-          <Button size="small" variant="outlined" color="primary" onClick={() => extra?.edit(row?.id)}>
-            Edit
-          </Button>
-    
-          {/* <Button size="small" variant="outlined" color="error">
-            Delete
-          </Button> */}
-        </Box>
-      ),
-    }
 
-  ];
+export  const columns = [
+  {
+    id: "po_number",
+    label: "Purchase Order",
+    render: (row) => (
+      <div>
+        <div>{row.po_number}</div>
+        <div style={{ fontSize: "12px", color: "#415A77" }}>
+          {row.purchase_date}
+        </div>
+        <div style={{ fontSize: "12px", color: "#6c757d" }}>
+          Type: {row.type}
+        </div>
+      </div>
+    )
+  },
+
+  { id: "supplier_name", label: "Supplier" },
+
+  {
+    id: "total_items",
+    label: "Summary",
+    render: (row) => (
+      <div>
+        <div>Items: {row.total_items}</div>
+        <div style={{ fontSize: "12px", color: "#415A77" }}>
+          ₹{row.amount}
+        </div>
+        <div style={{ fontSize: "12px", color: "#2E7D32" }}>
+          {row.status}
+        </div>
+      </div>
+    )
+  },
+
+  {
+    id: "actions",
+    label: "Actions",
+    render: (row, extra) => (
+      <Box display="flex" gap={1}>
+        <Button
+          size="small"
+          variant="outlined"
+          color="primary"
+          onClick={() => extra?.edit(row?.id)}
+        >
+          Edit
+        </Button>
+      </Box>
+    )
+  }
+];

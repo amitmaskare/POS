@@ -8,7 +8,6 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Divider,
   Switch,
   useMediaQuery,
   useTheme,
@@ -16,36 +15,45 @@ import {
 } from "@mui/material";
 
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import InventoryIcon from "@mui/icons-material/Inventory";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import PeopleIcon from "@mui/icons-material/People";
-import PersonIcon from "@mui/icons-material/Person";
-import CategoryIcon from "@mui/icons-material/Category";
-import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
+import GroupIcon from "@mui/icons-material/Group";
+import WarehouseIcon from "@mui/icons-material/Warehouse";
+import AdminPanelSettingsIcon from "@mui/icons-material/Group";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
+import BadgeIcon from "@mui/icons-material/Badge";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import MoveToInboxIcon from "@mui/icons-material/MoveToInbox";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import NightlightIcon from "@mui/icons-material/Nightlight";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
+import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
+import KeyboardReturnIcon from "@mui/icons-material/KeyboardReturn";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import { getUser } from "../utils/Auth.js";
 
 const menuItems = [
-  { title: "POS System", icon: <ShoppingCartIcon />, path: "/dashboard", permission: "view-dashboard" },
-  { title: "Products", icon: <CategoryIcon />, path: "/products", permission: "view-product" },
-  { title: "Purchases", icon: <ShoppingBagIcon />, path: "/purchases", permission: "view-purchase" },
-  { title: "Receiving", icon: <ShoppingBagIcon />, path: "/receiving", permission: "view-receiving" },
-  { title: "Sales", icon: <ShoppingBagIcon />, path: "/sales", permission: "view-sale" },
-  { title: "Return Product", icon: <ShoppingBagIcon />, path: "/return-product", permission: "view-return" },
+  { title: "POS System", icon: <ReceiptLongIcon />, path: "/dashboard", permission: "view-dashboard" },
+  { title: "Products", icon: <Inventory2Icon />, path: "/products", permission: "view-product" },
+  { title: "Purchases", icon: <ShoppingCartIcon />, path: "/purchases", permission: "view-purchase" },
+  { title: "Receiving", icon: <MoveToInboxIcon />, path: "/receiving", permission: "view-receiving" },
+  { title: "Sales", icon: <PointOfSaleIcon />, path: "/sales", permission: "view-sale" },
+  { title: "Return Product", icon: <KeyboardReturnIcon />, path: "/return-product", permission: "view-return" },
   { title: "Transactions", icon: <ReceiptLongIcon />, path: "/transactions", permission: "view-transaction" },
-  { title: "Inventory", icon: <InventoryIcon />, path: "/inventory", permission: "view-inventory" },
+  { title: "Inventory", icon: <WarehouseIcon />, path: "/inventory", permission: "view-inventory" },
   { title: "Reports", icon: <AssessmentIcon />, path: "/reports", permission: "view-reports" },
-  { title: "Customers", icon: <PeopleIcon />, path: "/customers", permission: "view-customer" },
-  { title: "Users", icon: <PersonIcon />, path: "/users", permission: "view-user" },
-  { title: "Ration Cards", icon: <InventoryIcon />, path: "/rationcards", permission: "view-rationcard" },
-  { title: "Offers", icon: <InventoryIcon />, path: "/offers", permission: "view-offer" },
-  { title: "Role", icon: <InventoryIcon />, path: "/role", permission: "view-role" },
-  { title: "Permission", icon: <InventoryIcon />, path: "/permission", permission: "view-permission" },
-  { title: "Role Permission", icon: <InventoryIcon />, path: "/rolepermission", permission: "view-rolepermission" },
+  { title: "Customers", icon: <PersonOutlineIcon />, path: "/customers", permission: "view-customer" },
+  { title: "Users", icon: <SupervisorAccountIcon />, path: "/users", permission: "view-user" },
+  { title: "Ration Cards", icon: <CreditCardIcon />, path: "/rationcards", permission: "view-rationcard" },
+  { title: "Offers", icon: <LocalOfferIcon />, path: "/offers", permission: "view-offer" },
+  { title: "Role", icon: <BadgeIcon />, path: "/role", permission: "view-role" },
+  { title: "Permission", icon: <LockOpenIcon />, path: "/permission", permission: "view-permission" },
+  { title: "Role Permission", icon: <AdminPanelSettingsIcon />, path: "/rolepermission", permission: "view-rolepermission" },
 ];
 
 export default function Sidebar({ sidebarState, setSidebarState }) {
