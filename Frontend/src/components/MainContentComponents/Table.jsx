@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 
 const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." ,actionButtons = null,extra = {}  }) => {
-  const [order, setOrder] = useState("asc");
+  const [order, setOrder] = useState("des");
   const [orderBy, setOrderBy] = useState(columns[0]?.id || "");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -25,7 +25,7 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
   /** Handle Sorting */
   const handleSort = (columnId) => {
     const isAsc = orderBy === columnId && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
+    setOrder(isAsc ? "des" : "asc");
     setOrderBy(columnId);
   };
   /** Filter rows based on search */
@@ -125,6 +125,7 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
               {columns.map((col) => (
                 <TableCell
                   key={col.id}
+                  align={col.align || "left"}
                   sortDirection={orderBy === col.id ? order : false}
                   sx={{
                     color: "white",
@@ -155,7 +156,7 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
               return (
               <TableRow hover key={index}>
                 {columns.map((col) => (
-                  <TableCell key={col.id}>
+                  <TableCell key={col.id} align={col.align || "left"}>
                     {col.render ? col.render(row, extra) : (row[col.id] ?? "-")}
                   </TableCell>
                 ))}

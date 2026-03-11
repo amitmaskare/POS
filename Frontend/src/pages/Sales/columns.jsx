@@ -1,25 +1,265 @@
-import { Button,Box } from "@mui/material";
-export  const columns = [
-    { id: "invoice_no", label: "Invoice Number" },
-    { id: "total_items", label: "Items" },
-    { id: "amount", label: "Total Amount" },
-    { id: "sale_date", label: "Payment Date" },
-    { id: "status", label: "Status" },
-    // { id: "actions", label: "Actions" },
-    {
-      id: "actions",
-      label: "Actions",
-      render: (row,extra) => (
-        <Box display="flex" gap={1}>
-          <Button size="small" variant="outlined" color="primary" onClick={() => extra?.view(row?.id)}>
-            View Detail
-          </Button>
-    
-           {/* <Button size="small" variant="outlined" color="error"  onClick={() => extra?.return(row?.id)}>
+import { Button, Box, Chip, Typography } from "@mui/material";
+import PrintIcon from "@mui/icons-material/Print";
+
+export const columns = [
+  {
+    id: "invoice_no",
+    label: "Invoice Number",
+    align: "left",
+    sortable: true,
+  },
+  {
+    id: "total_items",
+    label: "Items",
+    align: "center",
+    sortable: true,
+    render: (row) => (
+      <Typography variant="body2" sx={{ textAlign: "center" }}>
+        {row.total_items || 0}
+      </Typography>
+    ),
+  },
+  {
+    id: "paymentMethod",
+    label: "Payment Method",
+    align: "center",
+    sortable: true,
+    render: (row) => {
+      if (row.paymentMethod === "SPLIT") {
+        // Get the online method display name
+        const onlineMethodDisplay = {
+          qr_code: "QR/UPI",
+          pos_card: "POS Card",
+          credit: "Credit Card",
+        };
+
+        const onlineMethod = row.online_method?.toLowerCase() || "online";
+        const methodName = onlineMethodDisplay[onlineMethod] || "Online";
+
+        return (
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Chip
+              label="Split Payment"
+              color="warning"
+              size="small"
+              sx={{ fontWeight: 600 }}
+            />
+            <Typography
+              variant="caption"
+              display="block"
+              sx={{ mt: 0.5, color: "text.secondary" }}
+            >
+              Cash + {methodName}
+            </Typography>
+          </Box>
+        );
+      }
+
+      // For non-split payments
+      const paymentLabels = {
+        CASH: { label: "Cash", color: "success", icon: "💵" },
+        QR_CODE: { label: "QR Code/UPI", color: "info", icon: "📱" },
+        POS_CARD: { label: "POS Card", color: "primary", icon: "💳" },
+        CREDIT: { label: "Credit Card", color: "primary", icon: "💳" },
+        CARD: { label: "Card", color: "primary", icon: "💳" },
+        UPI: { label: "UPI", color: "info", icon: "📱" },
+      };
+
+      const paymentInfo = paymentLabels[row.paymentMethod] || {
+        label: row.paymentMethod || "N/A",
+        color: "default",
+        icon: "💰",
+      };
+
+      return (
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
+          <Chip
+            label={`${paymentInfo.icon} ${paymentInfo.label}`}
+            color={paymentInfo.color}
+            size="small"
+          />
+        </Box>
+      );
+    },
+  },
+  {
+    id: "cash_amount",
+    label: "Cash Received",
+    align: "right",
+    sortable: true,
+    render: (row) => {
+      const cashAmount = Number(row.cash_amount || 0);
+
+      // For split payments, show the split cash amount
+      if (row.paymentMethod === "SPLIT") {
+        return (
+          <Box sx={{ textAlign: "right" }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 600, color: "success.main" }}
+            >
+              ₹{cashAmount.toFixed(2)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              (Split)
+            </Typography>
+          </Box>
+        );
+      }
+
+      // For cash-only payments, show total as cash
+      if (row.paymentMethod === "CASH") {
+        return (
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 600, color: "success.main", textAlign: "right" }}
+          >
+            ₹{Number(row.amount || 0).toFixed(2)}
+          </Typography>
+        );
+      }
+
+      // For other payment methods, show dash
+      return (
+        <Typography
+          variant="body2"
+          sx={{ color: "text.secondary", textAlign: "right" }}
+        >
+          -
+        </Typography>
+      );
+    },
+  },
+  {
+    id: "online_amount",
+    label: "Online Received",
+    align: "right",
+    sortable: true,
+    render: (row) => {
+      const onlineAmount = Number(row.online_amount || 0);
+
+      // For split payments, show the split online amount
+      if (row.paymentMethod === "SPLIT") {
+        return (
+          <Box sx={{ textAlign: "right" }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 600, color: "primary.main" }}
+            >
+              ₹{onlineAmount.toFixed(2)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              (Split)
+            </Typography>
+          </Box>
+        );
+      }
+
+      // For online-only payments (QR, POS, Credit), show total as online
+      if (
+        ["QR_CODE", "POS_CARD", "CREDIT", "CARD", "UPI"].includes(
+          row.paymentMethod
+        )
+      ) {
+        return (
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 600, color: "primary.main", textAlign: "right" }}
+          >
+            ₹{Number(row.amount || 0).toFixed(2)}
+          </Typography>
+        );
+      }
+
+      // For cash payments, show dash
+      return (
+        <Typography
+          variant="body2"
+          sx={{ color: "text.secondary", textAlign: "right" }}
+        >
+          -
+        </Typography>
+      );
+    },
+  },
+  {
+    id: "amount",
+    label: "Total Amount",
+    align: "right",
+    sortable: true,
+    render: (row) => (
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: 700, textAlign: "right" }}
+      >
+        ₹{Number(row.amount || 0).toFixed(2)}
+      </Typography>
+    ),
+  },
+  {
+    id: "sale_date",
+    label: "Payment Date",
+    align: "center",
+    sortable: true,
+    render: (row) => (
+      <Typography variant="body2" sx={{ textAlign: "center" }}>
+        {row.sale_date || "-"}
+      </Typography>
+    ),
+  },
+  {
+    id: "status",
+    label: "Status",
+    align: "center",
+    sortable: true,
+    render: (row) => (
+      <Box sx={{ display: "flex", justifyContent: "center" }}>
+        <Chip
+          label={row.status || "N/A"}
+          color={
+            row.status === "COMPLETED"
+              ? "success"
+              : row.status === "CANCELLED"
+              ? "error"
+              : row.status === "RETURNED"
+              ? "warning"
+              : "default"
+          }
+          size="small"
+        />
+      </Box>
+    ),
+  },
+  {
+    id: "actions",
+    label: "Actions",
+    align: "center",
+    sortable: false,
+    render: (row, extra) => (
+      <Box display="flex" gap={1} justifyContent="center">
+        <Button
+          size="small"
+          variant="outlined"
+          color="primary"
+          onClick={() => extra?.view(row?.id)}
+        >
+          View Detail
+        </Button>
+
+        <Button
+          size="small"
+          variant="outlined"
+          color="success"
+          startIcon={<PrintIcon />}
+          onClick={() => extra?.print(row?.id)}
+        >
+          Print
+        </Button>
+
+        {/* <Button size="small" variant="outlined" color="error"  onClick={() => extra?.return(row?.id)}>
             Return
           </Button>  */}
-        </Box>
-      ),
-    }
-
-  ];
+      </Box>
+    ),
+  },
+];

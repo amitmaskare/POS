@@ -27,5 +27,16 @@ route.get("/user/getById/:id",AuthController.getById)
 route.post("/user/update",AuthController.update)
 route.delete("/user/delete/:id",AuthController.deleteData)
 
+// ======================== SUPER ADMIN ROUTES ========================
+route.post("/superadmin/create-store-admin", AuthController.createStoreAdmin);
+route.get("/superadmin/stores", AuthController.getAllStores);
+route.post("/superadmin/update-counter-limit", AuthController.updateCounterLimit);
+
+// ======================== STORE ADMIN ROUTES ========================
+route.post("/admin/create-counter-user", AuthController.createCounterUser);
+route.get("/admin/counter-users", AuthController.getCounterUsers);
+route.get("/admin/store-info", AuthController.getStoreInfo);
+route.post("/admin/unbind-device", AuthController.unbindDevice);
+
 
 export default route;

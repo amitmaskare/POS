@@ -25,6 +25,7 @@ import HoldAndRetrieveRoute from "../src/routes/HoldAndRetrieveRoute.js"
 import SaleRoute from "../src/routes/SaleRoute.js"
 import ReturnRoute from "../src/routes/ReturnRoute.js"
 import POSRoute from "../src/routes/POSRoute.js"
+import SettingsRoute from "../src/routes/SettingsRoute.js"
 import { initializePOS } from "./pos/index.js"
 dotenv.config();
 const app = express();
@@ -58,6 +59,7 @@ app.use("/api",HoldAndRetrieveRoute)
 app.use("/api",SaleRoute)
 app.use("/api",ReturnRoute)
 app.use("/api",POSRoute)
+app.use("/api",SettingsRoute)
 app.use('/public/uploads', express.static('public/uploads'));
 
 export default app;

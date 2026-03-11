@@ -28,6 +28,7 @@ import NightlightIcon from "@mui/icons-material/Nightlight";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
+import SettingsIcon from "@mui/icons-material/Settings";
 import { getUser } from "../utils/Auth.js";
 
 const menuItems = [
@@ -49,6 +50,7 @@ const menuItems = [
   { title: "Role", icon: <InventoryIcon />, path: "/role", permission: "view-role" },
   { title: "Permission", icon: <InventoryIcon />, path: "/permission", permission: "view-permission" },
   { title: "Role Permission", icon: <InventoryIcon />, path: "/rolepermission", permission: "view-rolepermission" },
+  { title: "Manage Settings", icon: <SettingsIcon />, path: "/settings", permission: "view-settings" },
 ];
 
 export default function Sidebar({ sidebarState, setSidebarState }) {

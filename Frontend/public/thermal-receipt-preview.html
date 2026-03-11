@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Thermal Receipt Preview</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .preview-container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      max-width: 400px;
+    }
+
+    .preview-title {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .receipt-wrapper {
+      background: #fff;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    /* THERMAL RECEIPT STYLES */
+    .receipt {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #000;
+      background: #fff;
+      width: 80mm;
+      padding: 5mm;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 10px;
+      border-bottom: 2px dashed #000;
+      padding-bottom: 10px;
+    }
+
+    .shop-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .shop-details {
+      font-size: 10px;
+      margin-bottom: 3px;
+    }
+
+    .invoice-info {
+      margin: 10px 0;
+      font-size: 11px;
+      border-bottom: 1px dashed #000;
+      padding-bottom: 10px;
+    }
+
+    .invoice-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .barcode-container {
+      text-align: center;
+      margin: 10px 0;
+      padding: 10px 0;
+      border-bottom: 1px dashed #000;
+    }
+
+    .barcode-placeholder {
+      height: 50px;
+      background: repeating-linear-gradient(
+        90deg,
+        #000,
+        #000 2px,
+        #fff 2px,
+        #fff 4px
+      );
+      margin: 5px 20px;
+    }
+
+    .items-table {
+      margin: 10px 0;
+      width: 100%;
+      border-bottom: 1px dashed #000;
+      padding-bottom: 10px;
+    }
+
+    .items-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      margin-bottom: 5px;
+      border-bottom: 1px solid #000;
+      padding-bottom: 3px;
+      font-size: 10px;
+    }
+
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 11px;
+    }
+
+    .item-name {
+      flex: 1;
+      max-width: 45%;
+    }
+
+    .item-qty {
+      width: 15%;
+      text-align: center;
+    }
+
+    .item-price {
+      width: 20%;
+      text-align: right;
+    }
+
+    .item-total {
+      width: 20%;
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .totals {
+      margin: 10px 0;
+      border-bottom: 2px dashed #000;
+      padding-bottom: 10px;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 11px;
+    }
+
+    .total-row.grand-total {
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #000;
+    }
+
+    .payment-details {
+      margin: 10px 0;
+      border-bottom: 1px dashed #000;
+      padding-bottom: 10px;
+    }
+
+    .payment-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .payment-method-badge {
+      display: inline-block;
+      padding: 5px 10px;
+      background: #000;
+      color: #fff;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      margin: 5px 0;
+    }
+
+    .split-payment-box {
+      border: 2px solid #000;
+      padding: 10px;
+      margin: 5px 0;
+      background: #f9f9f9;
+    }
+
+    .payment-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+      font-size: 11px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 11px;
+    }
+
+    .thank-you {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .powered-by {
+      font-size: 9px;
+      color: #666;
+      margin-top: 10px;
+    }
+
+    .bold {
+      font-weight: bold;
+    }
+
+    .button-container {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .preview-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .preview-btn:hover {
+      background: #45a049;
+    }
+
+    .preview-btn.secondary {
+      background: #2196F3;
+    }
+
+    .preview-btn.secondary:hover {
+      background: #0b7dda;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <h2 class="preview-title">Thermal Receipt Preview</h2>
+
+    <div class="receipt-wrapper">
+      <div class="receipt">
+
+        <!-- Header -->
+        <div class="header">
+          <div class="shop-name">MY SUPER STORE</div>
+          <div class="shop-details">123 Main Street, City, State - 123456</div>
+          <div class="shop-details">Tel: +91 98765 43210</div>
+          <div class="shop-details">GST: GSTIN1234567890</div>
+        </div>
+
+        <!-- Invoice Info -->
+        <div class="invoice-info">
+          <div class="invoice-row">
+            <span class="bold">Invoice:</span>
+            <span>TXN202603040001</span>
+          </div>
+          <div class="invoice-row">
+            <span class="bold">Date:</span>
+            <span>04/03/2026, 02:30 PM</span>
+          </div>
+          <div class="invoice-row">
+            <span class="bold">Cashier:</span>
+            <span>John Doe</span>
+          </div>
+        </div>
+
+        <!-- Barcode -->
+        <div class="barcode-container">
+          <div class="barcode-placeholder"></div>
+          <div style="font-size: 10px;">TXN202603040001</div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="items-table">
+          <div class="items-header">
+            <div class="item-name">Item</div>
+            <div class="item-qty">Qty</div>
+            <div class="item-price">Price</div>
+            <div class="item-total">Total</div>
+          </div>
+          <div class="item-row">
+            <div class="item-name">Product A</div>
+            <div class="item-qty">2</div>
+            <div class="item-price">₹50.00</div>
+            <div class="item-total">₹100.00</div>
+          </div>
+          <div class="item-row">
+            <div class="item-name">Product B</div>
+            <div class="item-qty">1</div>
+            <div class="item-price">₹30.00</div>
+            <div class="item-total">₹30.00</div>
+          </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="totals">
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>₹130.00</span>
+          </div>
+          <div class="total-row">
+            <span>Tax:</span>
+            <span>₹13.00</span>
+          </div>
+          <div class="total-row grand-total">
+            <span>TOTAL:</span>
+            <span>₹143.00</span>
+          </div>
+        </div>
+
+        <!-- Payment Details - SPLIT PAYMENT -->
+        <div class="payment-details">
+          <div class="payment-title">PAYMENT DETAILS</div>
+
+          <div style="text-align: center;">
+            <div class="payment-method-badge">SPLIT PAYMENT</div>
+          </div>
+
+          <div class="split-payment-box">
+            <div class="payment-row">
+              <span class="bold">💵 Cash Amount:</span>
+              <span class="bold">₹100.00</span>
+            </div>
+            <div class="payment-row">
+              <span class="bold">📱 QR/UPI Amount:</span>
+              <span class="bold">₹43.00</span>
+            </div>
+            <div class="payment-row" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #000;">
+              <span class="bold">Total Received:</span>
+              <span class="bold">₹143.00</span>
+            </div>
+          </div>
+
+          <div class="payment-row" style="margin-top: 8px;">
+            <span class="bold">Payment Status:</span>
+            <span class="bold">✓ PAID</span>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <div class="thank-you">THANK YOU!</div>
+          <div>Visit Again</div>
+          <div class="powered-by">Powered by POS System</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="button-container">
+      <button class="preview-btn" onclick="window.print()">🖨️ Print Preview</button>
+      <button class="preview-btn secondary" onclick="location.reload()">🔄 Refresh</button>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px; font-size: 13px;">
+      <strong>ℹ️ Note:</strong> This is a preview of how your thermal receipt will look.
+      The actual receipt will auto-print directly to your thermal printer when payment is confirmed.
+    </div>
+  </div>
+
+  <style>
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .preview-container {
+        box-shadow: none;
+        padding: 0;
+      }
+      .preview-title,
+      .button-container,
+      .receipt-wrapper {
+        display: none;
+      }
+      .receipt {
+        display: block !important;
+      }
+    }
+  </style>
+</body>
+</html>

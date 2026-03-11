@@ -354,5 +354,177 @@ deleteData:async(req,resp)=>{
     }
 },
 
+// ======================== SUPER ADMIN ENDPOINTS ========================
+
+/**
+ * Create Store Admin with Store
+ * Only Super Admin (role = 0) can access
+ */
+createStoreAdmin: async (req, resp) => {
+  try {
+    // Verify Super Admin
+    if (req.user.role !== 'super_admin') {
+      return sendResponse(resp, false, 403, "Access denied. Super Admin only.");
+    }
+
+    const { name, email, password, counter_limit, store_name, phone, address } = req.body;
+
+    if (!name || !email || !password || !store_name) {
+      return sendResponse(resp, false, 400, "name, email, password, and store_name are required");
+    }
+
+    if (password.length < 6) {
+      return sendResponse(resp, false, 400, "Password must be at least 6 characters long");
+    }
+
+    const result = await AuthService.createStoreAdmin(
+      { name, email, password, counter_limit: counter_limit || 5 },
+      { store_name, phone, address }
+    );
+
+    return sendResponse(resp, true, 201, "Store Admin created successfully", result);
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error: ${error.message}`);
+  }
+},
+
+/**
+ * Get all stores with admin info
+ * Only Super Admin can access
+ */
+getAllStores: async (req, resp) => {
+  try {
+    if (req.user.role !== 'super_admin') {
+      return sendResponse(resp, false, 403, "Access denied. Super Admin only.");
+    }
+
+    const stores = await AuthService.getAllStoresWithAdmins();
+    return sendResponse(resp, true, 200, "Stores fetched successfully", stores);
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error: ${error.message}`);
+  }
+},
+
+/**
+ * Update counter limit for a store
+ * Only Super Admin can access
+ */
+updateCounterLimit: async (req, resp) => {
+  try {
+    if (req.user.role !== 'super_admin') {
+      return sendResponse(resp, false, 403, "Access denied. Super Admin only.");
+    }
+
+    const { store_id, counter_limit } = req.body;
+
+    if (!store_id || !counter_limit) {
+      return sendResponse(resp, false, 400, "store_id and counter_limit are required");
+    }
+
+    if (counter_limit < 1 || counter_limit > 50) {
+      return sendResponse(resp, false, 400, "Counter limit must be between 1 and 50");
+    }
+
+    const result = await AuthService.updateCounterLimit(store_id, counter_limit);
+    return sendResponse(resp, true, 200, "Counter limit updated successfully", result);
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error: ${error.message}`);
+  }
+},
+
+// ======================== STORE ADMIN ENDPOINTS ========================
+
+/**
+ * Create Counter User
+ * Only Store Admin (role = 1 / admin) can access
+ */
+createCounterUser: async (req, resp) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return sendResponse(resp, false, 403, "Access denied. Store Admin only.");
+    }
+
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return sendResponse(resp, false, 400, "name, email, and password are required");
+    }
+
+    if (password.length < 6) {
+      return sendResponse(resp, false, 400, "Password must be at least 6 characters long");
+    }
+
+    // Get current counter count
+    const counterUsers = await AuthService.getCounterUsers(req.user.store_id);
+
+    const result = await AuthService.createCounterUser(
+      { name, email, password },
+      req.user.store_id,
+      counterUsers.length
+    );
+
+    return sendResponse(resp, true, 201, "Counter user created successfully", result);
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error: ${error.message}`);
+  }
+},
+
+/**
+ * Get all counter users for admin's store
+ * Only Store Admin can access
+ */
+getCounterUsers: async (req, resp) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return sendResponse(resp, false, 403, "Access denied. Store Admin only.");
+    }
+
+    const counterUsers = await AuthService.getCounterUsers(req.user.store_id);
+    return sendResponse(resp, true, 200, "Counter users fetched successfully", counterUsers);
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error: ${error.message}`);
+  }
+},
+
+/**
+ * Get store info with counter usage
+ * Only Store Admin can access
+ */
+getStoreInfo: async (req, resp) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return sendResponse(resp, false, 403, "Access denied. Store Admin only.");
+    }
+
+    const storeInfo = await AuthService.getStoreInfo(req.user.store_id);
+    return sendResponse(resp, true, 200, "Store info fetched successfully", storeInfo);
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error: ${error.message}`);
+  }
+},
+
+/**
+ * Unbind device from counter user
+ * Only Store Admin can access
+ */
+unbindDevice: async (req, resp) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return sendResponse(resp, false, 403, "Access denied. Store Admin only.");
+    }
+
+    const { userId } = req.body;
+
+    if (!userId) {
+      return sendResponse(resp, false, 400, "userId is required");
+    }
+
+    const result = await AuthService.unbindDevice(userId, req.user.store_id);
+    return sendResponse(resp, true, 200, result.message);
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error: ${error.message}`);
+  }
+},
+
 
 };

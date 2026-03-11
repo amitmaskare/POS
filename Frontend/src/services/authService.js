@@ -3,13 +3,16 @@ import axios from "axios";
 //const apiUrl= process.env.REACT_APP_API_URL
 const apiUrl= 'http://localhost:4000/api'
 
-export const login = async (loginData) => {
+export const login = async (loginData, deviceId = null) => {
   try {
-    const response = await axios.post(`${apiUrl}/login`, loginData);
+    const payload = {
+      ...loginData,
+      ...(deviceId && { device_id: deviceId })
+    };
+    const response = await axios.post(`${apiUrl}/login`, payload);
     return response.data;
   } catch (error) {
-  
-   throw error; 
+   throw error;
   }
 };
 

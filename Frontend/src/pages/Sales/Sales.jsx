@@ -19,6 +19,7 @@ import { FaRegSquarePlus } from "react-icons/fa6";
 import { rows } from "./rows";
 import { columns } from "./columns";
 import {saleList,getSaleById} from "../../services/saleService"
+import { printThermalReceipt, formatReceiptData } from "../../utils/thermalPrint";
 
 
 export default function Sales() {
@@ -39,6 +40,8 @@ export default function Sales() {
           setError(null)
           try{
             const result=await saleList()
+
+            console.log(result );
             if(result.status===true)
             {
               setSuccess(result.message)
@@ -71,11 +74,11 @@ export default function Sales() {
                                 }
                           };
          const handleReturn=async(id)=>{
-             try{    
+             try{
                                   const result=await getSaleById(id)
                                   if(result.status===true)
                                   {
-                                   
+
                                    setviewData(result.data);
                                    setOpenReturnModal(true);
                                   }else{
@@ -87,6 +90,47 @@ export default function Sales() {
                                    console.log(error.response?.data?.message || error.message)
                                 }
         }
+
+        const handlePrint = async (id) => {
+          try {
+            const result = await getSaleById(id);
+            if (result.status === true) {
+              const { sale, items } = result.data;
+
+              // Format the data for thermal printing
+              const receiptData = formatReceiptData(
+                {
+                  invoice_no: sale.invoice_no,
+                  subtotal: sale.subtotal,
+                  tax: sale.tax,
+                  total: sale.total,
+                  payment_method: sale.payment_method,
+                  cash_amount: sale.cash_amount,
+                  online_amount: sale.online_amount,
+                  online_method: sale.online_method,
+                },
+                items.map(item => ({
+                  product_name: item.product_name,
+                  qty: item.qty,
+                  price: item.price,
+                })),
+                {
+                  payment_method: sale.payment_method,
+                  cash_amount: sale.cash_amount,
+                  online_amount: sale.online_amount,
+                  online_method: sale.online_method,
+                }
+              );
+
+              // Print the receipt
+              printThermalReceipt(receiptData);
+            } else {
+              console.log(result.message);
+            }
+          } catch (error) {
+            console.log(error.response?.data?.message || error.message);
+          }
+        };
      
   return (
     <Box sx={{ minHeight: "100vh" }}>
@@ -109,7 +153,7 @@ export default function Sales() {
             Sales
           </Typography>
         </Box>
-        <TableLayout columns={columns} rows={data} extra={{ view: handleView,return:handleReturn }} actionButtons={[
+        <TableLayout columns={columns} rows={data} extra={{ view: handleView, return: handleReturn, print: handlePrint }} actionButtons={[
           {
             label: "Filter",
             icon: <FilterListIcon />,

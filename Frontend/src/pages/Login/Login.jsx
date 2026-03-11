@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { LuStore } from "react-icons/lu";
 import { login, forgot_password } from "../../services/authService";
+import { getDeviceId } from "../../utils/deviceUtils";
 
 
 export default function Login({ onLogin }) {
@@ -49,7 +50,11 @@ export default function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      const result = await login({ user_id, password });
+      // Get device ID (MAC address or browser fingerprint)
+      const deviceId = await getDeviceId();
+      console.log('Device ID for login:', deviceId);
+
+      const result = await login({ user_id, password }, deviceId);
 
       if (result?.status) {
         localStorage.setItem("token", result.data.token);

@@ -6,29 +6,42 @@ export const SaleService={
 
     list:async(storeId)=>{
       const query = `
-      SELECT 
+      SELECT
       sale.id,
       sale.invoice_no,
+      sale.cash_amount,
+      sale.online_amount,
+      sale.online_method,
       DATE_FORMAT(sale.created_at, '%Y-%m-%d') AS sale_date,
       DATE_FORMAT(sale.created_at, '%h:%i %p') AS sale_time,
       COUNT(
-        DISTINCT CASE 
-          WHEN si.is_returned = 'no' THEN si.id 
-          ELSE NULL 
+        DISTINCT CASE
+          WHEN si.is_returned = 'no' THEN si.id
+          ELSE NULL
         END
       ) AS total_items,
       sale.total AS amount,
       UPPER(sale.status) AS status,
-      UPPER(sale.payment_method) AS paymentMethod
+      UPPER(sale.payment_method) AS paymentMethod,
+      CASE
+        WHEN sale.payment_method = 'split' THEN
+          CONCAT('Split (Cash: ₹', IFNULL(sale.cash_amount, 0), ' + ',
+                 UPPER(IFNULL(sale.online_method, 'Online')), ': ₹', IFNULL(sale.online_amount, 0), ')')
+        WHEN sale.payment_method = 'qr_code' THEN 'QR Code/UPI'
+        WHEN sale.payment_method = 'pos_card' THEN 'POS Card'
+        WHEN sale.payment_method = 'credit' THEN 'Credit Card'
+        WHEN sale.payment_method = 'cash' THEN 'Cash'
+        ELSE UPPER(sale.payment_method)
+      END AS paymentMethodDisplay
     FROM sales AS sale
-    LEFT JOIN sales_items AS si 
+    LEFT JOIN sales_items AS si
       ON si.sale_id = sale.id
     WHERE sale.store_id = ?
-    GROUP BY 
+    GROUP BY
       sale.id
     ORDER BY sale.id DESC
     `;
-    return await CommonModel.rawQuery(query, [storeId]);    
+    return await CommonModel.rawQuery(query, [storeId]);
     },
 
     generateInvoice: async () => {

@@ -30,6 +30,7 @@ import { processPayment, getDeviceStatus } from "../../services/posService";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CircularProgress from "@mui/material/CircularProgress";
 import QRCode from "qrcode";
+import { printThermalReceipt, formatReceiptData } from "../../utils/thermalPrint";
 
 export default function Cart({ cart, setCart }) {
   const [active, setActive] = useState(""); 
@@ -205,170 +206,20 @@ const total = subtotal + tax;
  
 };
 
-const buildExchangeInvoice = (apiResult, paymentDetails = {}) => {
-  return {
-    shop_name: "My Super Store",
-    invoice_no: apiResult.invoice_no,
-    date: new Date().toLocaleString(),
-    items: cart.map(item => ({
-      name: item.product_name,
-      qty: item.qty,
-      price: item.price,
-      type: item.cart_type, // refund / exchange
-      total:
-        item.cart_type === "refund"
-          ? -item.price * item.qty
-          : item.price * item.qty
-    })),
-    subtotal,
-    tax,
-    total,
-    difference: apiResult.difference,
-    payment_method: paymentDetails.payment_method || 'cash',
-    cash_amount: paymentDetails.cash_amount || null,
-    online_amount: paymentDetails.online_amount || null,
-    online_method: paymentDetails.online_method || null
-  };
-};
-let printWindow=null;
-const printInvoice = (invoice) => {
-  printWindow = window.open("", "_blank", "width=350,height=600");
+// Thermal Print Receipt - Auto prints directly to thermal printer
+const printReceipt = (saleData, paymentDetails = {}) => {
+  const receiptData = formatReceiptData(
+    saleData,
+    cart,
+    {
+      ...paymentDetails,
+      received_amount: receivedAmount,
+      change_amount: returnAmount
+    }
+  );
 
-  if (!printWindow) return;
-
-  printWindow.document.open();
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Exchange Invoice</title>
-        <style>
-          body { font-family: monospace; font-size: 12px; }
-          h3, h4 { text-align: center; margin: 4px 0; }
-          table { width: 100%; border-collapse: collapse; }
-          td { padding: 4px 0; }
-          .right { text-align: right; }
-          .line { border-top: 1px dashed #000; margin: 8px 0; }
-        </style>
-
-        <!-- JsBarcode CDN -->
-        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-      </head>
-
-      <body>
-        <h3>${invoice.shop_name}</h3>
-        <h4>Exchange Invoice</h4>
-
-        <p>
-          Invoice: ${invoice.invoice_no}<br/>
-          <svg id="barcode"></svg><br/>
-          Date: ${invoice.date}
-        </p>
-
-        <div class="line"></div>
-
-        <table>
-          ${invoice.items
-            .map(
-              i => `
-                <tr>
-                  <td>${i.name} (${i.qty})</td>
-                  <td class="right">${i.total.toFixed(2)}</td>
-                </tr>
-              `
-            )
-            .join("")}
-        </table>
-
-        <div class="line"></div>
-
-        <table>
-          <tr>
-            <td>Subtotal</td>
-            <td class="right">${invoice.subtotal.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td>Tax</td>
-            <td class="right">${invoice.tax.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td><b>Total</b></td>
-            <td class="right"><b>${invoice.total.toFixed(2)}</b></td>
-          </tr>
-        </table>
-
-        <div class="line"></div>
-
-        <p style="text-align:center;">
-          ${
-            invoice.difference > 0
-              ? `Customer Pays ₹${invoice.difference}`
-              : invoice.difference < 0
-              ? `Refund ₹${Math.abs(invoice.difference)}`
-              : "Even Exchange"
-          }
-        </p>
-
-        <div class="line"></div>
-
-        <table>
-          <tr>
-            <td colspan="2"><b>Payment Details</b></td>
-          </tr>
-          <tr>
-            <td>Payment Mode</td>
-            <td class="right">
-              ${
-                invoice.payment_method === 'cash' ? 'Cash' :
-                invoice.payment_method === 'credit' ? 'Credit Card' :
-                invoice.payment_method === 'qr_code' ? 'QR Code/UPI' :
-                invoice.payment_method === 'pos_card' ? 'POS Machine' :
-                invoice.payment_method === 'split' ? 'Split Payment' :
-                'Cash'
-              }
-            </td>
-          </tr>
-          ${
-            invoice.payment_method === 'split' && invoice.cash_amount && invoice.online_amount
-              ? `
-                <tr>
-                  <td>Cash Amount</td>
-                  <td class="right">₹${parseFloat(invoice.cash_amount).toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td>Online Amount (${
-                    invoice.online_method === 'qr_code' ? 'QR/UPI' :
-                    invoice.online_method === 'pos_card' ? 'POS Card' :
-                    invoice.online_method === 'credit' ? 'Credit Card' : 'Online'
-                  })</td>
-                  <td class="right">₹${parseFloat(invoice.online_amount).toFixed(2)}</td>
-                </tr>
-              `
-              : ''
-          }
-        </table>
-
-        <p style="text-align:center;">Thank You!</p>
-
-        <script>
-          window.onload = function () {
-            JsBarcode("#barcode", "${invoice.invoice_no}", {
-              format: "CODE128",
-              width: 2,
-              height: 40,
-              displayValue: false
-            });
-
-            setTimeout(() => {
-              window.print();
-              window.close();
-            }, 300);
-          };
-        </script>
-      </body>
-    </html>
-  `);
-
-  printWindow.document.close();
+  // Print to thermal printer
+  printThermalReceipt(receiptData);
 };
 
 const checkoutSale = async () => {
@@ -384,7 +235,7 @@ const checkoutSale = async () => {
       qty: item.qty,
       tax: item.tax,
       price: item.price,
-      total:item.price*item.tax,
+      total:item.price*item.qty,
       image: item.image
     }))
   };
@@ -392,13 +243,17 @@ const checkoutSale = async () => {
   const result= await checkout_sale(payload)
   if(result.status===true)
   {
-  //alert("Sale completed");
-  const invoice = buildExchangeInvoice(result.data, { payment_method: 'cash' });
-    printInvoice(invoice);
-     setCashOpen(false);
-      setCart([]);
-      setReceivedAmount("");
-      setReturnAmount(0);
+    // Print thermal receipt
+    printReceipt(result.data, {
+      payment_method: 'cash',
+      received_amount: receivedAmount,
+      change_amount: returnAmount
+    });
+
+    setCashOpen(false);
+    setCart([]);
+    setReceivedAmount("");
+    setReturnAmount(0);
   }
 }catch(error)
 {
@@ -478,9 +333,8 @@ Transaction ID: ${paymentResult.data.transactionId}
 Card: ${paymentResult.data.cardNumber || 'XXXX'}
 Auth Code: ${paymentResult.data.authCode || 'N/A'}`);
 
-      // Print invoice
-      const invoice = buildExchangeInvoice(saleResult.data, { payment_method: 'pos_card' });
-      printInvoice(invoice);
+      // Print thermal receipt
+      printReceipt(saleResult.data, { payment_method: 'pos_card' });
 
       // Clear cart
       setCart([]);
@@ -602,14 +456,13 @@ const handleRazorpay = async () => {
         const verifyRes = await verifyPayment(verifyPayload);
         // ✅ Step 4: Print ONLY if verified
         if (verifyRes.status === true) {
-          const invoice = buildExchangeInvoice(result.data.saleData, { payment_method: 'credit' });
-          printInvoice(invoice);
+          // Print thermal receipt
+          printReceipt(result.data.saleData, { payment_method: 'credit' });
 
           // Reset POS
           setCashOpen(false);
           setCart([]);
         } else {
-           invoiceWindow.close();
           alert("Payment verification failed");
         }
       } catch (err) {
@@ -687,7 +540,7 @@ const handleConfirmPayment = async () => {
     if (confirmResult.status) {
       setPaymentStatus("paid");
 
-      // Print invoice
+      // Print thermal receipt
       setTimeout(() => {
         // Check if it's split payment
         const paymentDetails = qrCodeData.cash_amount && qrCodeData.online_amount
@@ -699,8 +552,7 @@ const handleConfirmPayment = async () => {
             }
           : { payment_method: 'qr_code' };
 
-        const invoice = buildExchangeInvoice(qrCodeData.saleData, paymentDetails);
-        printInvoice(invoice);
+        printReceipt(qrCodeData.saleData, paymentDetails);
 
         // Reset and close
         setQrModalOpen(false);
@@ -744,7 +596,7 @@ const handleSplitQRPayment = async () => {
       online_method: 'qr_code',
       subtotal,
       tax,
-      total,
+      total, // Keep the full total amount (cash + online)
       cart: cart.map(item => ({
         product_id: item.id,
         product_name: item.product_name,
@@ -756,7 +608,8 @@ const handleSplitQRPayment = async () => {
       })),
     };
 
-    const result = await createQRPayment({ ...payload, total: Number(onlineAmount) });
+    // Send the complete payload without overriding the total
+    const result = await createQRPayment(payload);
 
     if (result.status) {
       setQrCodeData({ ...result.data, cash_amount: Number(cashAmount), online_amount: Number(onlineAmount) });
@@ -831,13 +684,13 @@ const handleSplitPOSPayment = async () => {
     if (paymentResult.success && paymentResult.data.success) {
       alert(`Split Payment Approved!\nCash: ₹${cashAmount}\nCard: ₹${onlineAmount}\nTransaction ID: ${paymentResult.data.transactionId}`);
 
-      const invoice = buildExchangeInvoice(saleResult.data, {
+      // Print thermal receipt
+      printReceipt(saleResult.data, {
         payment_method: 'split',
         cash_amount: cashAmount,
         online_amount: onlineAmount,
         online_method: 'pos_card'
       });
-      printInvoice(invoice);
 
       setCart([]);
       setSplitPaymentOpen(false);
@@ -906,13 +759,13 @@ const handleSplitCreditPayment = async () => {
         const verifyRes = await verifyPayment(verifyPayload);
 
         if (verifyRes.status === true) {
-          const invoice = buildExchangeInvoice(result.data.saleData, {
+          // Print thermal receipt
+          printReceipt(result.data.saleData, {
             payment_method: 'split',
             cash_amount: cashAmount,
             online_amount: onlineAmount,
             online_method: 'credit'
           });
-          printInvoice(invoice);
 
           setSplitPaymentOpen(false);
           setCart([]);

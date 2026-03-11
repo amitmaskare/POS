@@ -298,6 +298,7 @@ export const SaleController={
 
     createQRPayment: async (req, resp) => {
         try {
+            const storeId = getStoreIdFromRequest(req);
             const requiredFields = ["subtotal", "tax", "total", "cart"];
 
             for (let field of requiredFields) {
@@ -306,7 +307,16 @@ export const SaleController={
                 }
             }
 
-            const { subtotal, tax, total, cart } = req.body;
+            const {
+                subtotal,
+                tax,
+                total,
+                cart,
+                payment_method,
+                cash_amount,
+                online_amount,
+                online_method
+            } = req.body;
 
             if (!Array.isArray(cart) || cart.length === 0) {
                 return sendResponse(resp, false, 400, "cart cannot be empty");
@@ -315,17 +325,24 @@ export const SaleController={
             const invoice_no = await SaleService.generateInvoice();
             const userId = req.user.userId;
 
+            // Determine if this is a split payment or regular QR payment
+            const isSplitPayment = payment_method === 'split' && cash_amount && online_amount;
+
             const saleData = {
                 invoice_no: invoice_no,
                 user_id: userId,
                 subtotal,
                 tax,
                 total,
-                payment_method: "qr_code",
-                payment_status: "pending"
+                payment_method: isSplitPayment ? 'split' : 'qr_code',
+                payment_status: "pending",
+                store_id: storeId,
+                cash_amount: isSplitPayment ? cash_amount : null,
+                online_amount: isSplitPayment ? online_amount : null,
+                online_method: isSplitPayment ? 'qr_code' : null
             };
 
-            const saleId = await SaleService.createSale(saleData);
+            const saleId = await SaleService.createSale(saleData, storeId);
 
             if (!saleId) {
                 return sendResponse(resp, false, 400, "Something went wrong");
@@ -348,7 +365,9 @@ export const SaleController={
             // Generate UPI Intent String for direct UPI payment
             const upiId = process.env.UPI_ID || "merchant@upi";
             const merchantName = process.env.MERCHANT_NAME || "POS Store";
-            const amount = total.toFixed(2);
+            // For split payment, use online_amount; otherwise use total
+            const paymentAmount = isSplitPayment ? online_amount : total;
+            const amount = Number(paymentAmount).toFixed(2);
             const transactionNote = `Invoice ${invoice_no}`;
 
             // UPI Intent URL - Opens directly in UPI apps
@@ -358,15 +377,19 @@ export const SaleController={
             console.log("UPI ID:", upiId);
             console.log("Merchant Name:", merchantName);
             console.log("Amount:", amount);
+            console.log("Is Split Payment:", isSplitPayment);
 
             return sendResponse(resp, true, 201, "QR Code created successfully", {
                 qrCodeId: saleId.toString(),
                 qrCodeUrl: upiString,
                 saleId,
                 invoice_no,
-                amount: total,
+                amount: Number(amount),
                 saleData,
-                upiId: upiId
+                upiId: upiId,
+                isSplitPayment,
+                cash_amount: isSplitPayment ? cash_amount : null,
+                online_amount: isSplitPayment ? online_amount : null
             });
 
         } catch (error) {
