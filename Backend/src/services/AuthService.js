@@ -326,14 +326,9 @@ export const AuthService = {
   add: async (userData, requestingUser) => {
     const { name, email, role, store_name, phone, address, counter_limit } = userData;
 
-    console.log('=== ADD USER DEBUG ===');
-    console.log('User data:', { name, email, role });
-    console.log('Requesting user:', requestingUser);
-
     // If role is Store Admin (1), use createStoreAdmin method
     // Only super admin can create store admins with new stores
     if (parseInt(role) === 1) {
-      console.log('Creating admin user...');
       if (requestingUser && requestingUser.role === 'super_admin') {
         return await AuthService.createStoreAdmin(
           { name, email, password: '123456', counter_limit: counter_limit || 5 },
@@ -354,11 +349,9 @@ export const AuthService = {
 
     // For cashiers (role = 2)
     if (parseInt(role) === 2) {
-      console.log('Creating cashier...');
       if (requestingUser && requestingUser.role === 'admin') {
         // Get current counter count
         const counterUsers = await AuthService.getCounterUsers(requestingUser.store_id);
-        console.log('Current counter count:', counterUsers.length);
         return await AuthService.createCounterUser(
           { name, email, password: '123456' },
           requestingUser.store_id,
