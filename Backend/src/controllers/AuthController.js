@@ -263,7 +263,8 @@ export const AuthController = {
 
   userList:async(req,resp)=>{
     try{
-      const result=await AuthService.userList()
+      // Pass requesting user info to filter list based on role
+      const result=await AuthService.userList(req.user)
       if(!result || result.length===0)
       {
         return sendResponse(resp,false,400,"No Data Found")
@@ -287,7 +288,9 @@ export const AuthController = {
       if (!role) {
         return sendResponse(resp, false, 400, "role field is required");
       }
-      const result = await AuthService.add(req.body);
+
+      // Pass requesting user info for store_id and created_by
+      const result = await AuthService.add(req.body, req.user);
       if (!result) {
         return sendResponse(resp, false, 400, "Something went wrong");
       }
@@ -379,7 +382,8 @@ createStoreAdmin: async (req, resp) => {
 
     const result = await AuthService.createStoreAdmin(
       { name, email, password, counter_limit: counter_limit || 5 },
-      { store_name, phone, address }
+      { store_name, phone, address },
+      req.user.userId // Track who created this admin
     );
 
     return sendResponse(resp, true, 201, "Store Admin created successfully", result);
@@ -435,6 +439,38 @@ updateCounterLimit: async (req, resp) => {
 // ======================== STORE ADMIN ENDPOINTS ========================
 
 /**
+ * Create Sub-Admin
+ * Store Admin can create additional admins for the same store
+ */
+createSubAdmin: async (req, resp) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return sendResponse(resp, false, 403, "Access denied. Store Admin only.");
+    }
+
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return sendResponse(resp, false, 400, "name, email, and password are required");
+    }
+
+    if (password.length < 6) {
+      return sendResponse(resp, false, 400, "Password must be at least 6 characters long");
+    }
+
+    const result = await AuthService.createSubAdmin(
+      { name, email, password },
+      req.user.store_id,
+      req.user.userId
+    );
+
+    return sendResponse(resp, true, 201, "Sub-admin created successfully", result);
+  } catch (error) {
+    return sendResponse(resp, false, 500, `Error: ${error.message}`);
+  }
+},
+
+/**
  * Create Counter User
  * Only Store Admin (role = 1 / admin) can access
  */
@@ -460,7 +496,8 @@ createCounterUser: async (req, resp) => {
     const result = await AuthService.createCounterUser(
       { name, email, password },
       req.user.store_id,
-      counterUsers.length
+      counterUsers.length,
+      req.user.userId // Track who created this cashier
     );
 
     return sendResponse(resp, true, 201, "Counter user created successfully", result);

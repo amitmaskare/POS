@@ -79,4 +79,16 @@ export const deleteItem=async(id)=>{
   {
     throw error
   }
+}
+
+export const unbindDevice=async(userId)=>{
+  try{
+   const response=await axios.post(`${apiUrl}/admin/unbind-device`, { userId }, {
+     headers: getAuthHeaders(),
+   })
+   return response.data
+  }catch(error)
+  {
+    throw error
   }
+}

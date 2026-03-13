@@ -1,0 +1,229 @@
+================================================================================
+ROLE-BASED ACCESS CONTROL - IMPLEMENTATION SUMMARY
+================================================================================
+
+DATE: 2026-03-13
+PROJECT: POS System - Dual Monitor Task
+
+================================================================================
+REQUIREMENTS IMPLEMENTED
+================================================================================
+
+1. ✓ Only ONE super admin exists in the system
+2. ✓ Admin can create multiple admins (sub-admins) for the same store
+3. ✓ Admin CANNOT see super admin in user list
+4. ✓ Admin can only see users from their own store (admins + cashiers)
+5. ✓ Admin can add cashiers to their store
+6. ✓ Admin can view cashier device IDs
+7. ✓ Admin can unbind device from cashier for new system login
+
+================================================================================
+DATABASE CHANGES
+================================================================================
+
+File: Backend/database_files/development/update_user_filtering.sql
+
+Changes:
+- Added `created_by` column to `users` table (tracks who created each user)
+- Added index on (store_id, role) for faster filtering
+- Added index on created_by for audit queries
+- Updated existing admins to link to super admin
+
+Migration Status: ✓ COMPLETED (verified column and indexes exist)
+
+================================================================================
+BACKEND CHANGES
+================================================================================
+
+1. AuthService.js (Backend/src/services/AuthService.js)
+   ✓ Updated userList() to accept requesting user and filter based on role
+     - Super Admin: Sees ALL users
+     - Store Admin: Sees ONLY users from their store (excludes super admin)
+     - Cashiers: No access to user list
+
+   ✓ Added createSubAdmin() method
+     - Allows admin to create sub-admins for same store
+     - Tracks created_by field
+
+   ✓ Updated createCounterUser() to track created_by
+   ✓ Updated createStoreAdmin() to track created_by
+   ✓ Device info (device_id, device_locked) now returned in userList
+
+2. AuthController.js (Backend/src/controllers/AuthController.js)
+   ✓ Updated userList() to pass req.user to service
+   ✓ Added createSubAdmin() endpoint
+   ✓ Updated createStoreAdmin() to pass created_by
+   ✓ Updated createCounterUser() to pass created_by
+
+3. userRoute.js (Backend/src/routes/userRoute.js)
+   ✓ Added route: POST /admin/create-sub-admin
+
+================================================================================
+FRONTEND CHANGES
+================================================================================
+
+1. columns.jsx (Frontend/src/pages/Users/columns.jsx)
+   ✓ Added "Device Status" column for cashiers
+     - Shows "Device Locked" (green chip) when device_locked = 1
+     - Shows "Not Bound" (gray chip) when device_locked = 0
+     - Tooltip displays device ID when hovering over locked chip
+     - Shows "-" for non-cashier roles
+
+   ✓ Added "Unbind Device" action button
+     - Only visible for cashiers with device_locked = 1
+     - Calls unbindDevice handler on click
+
+2. Users.jsx (Frontend/src/pages/Users/Users.jsx)
+   ✓ Added handleUnbindDevice() function
+     - Shows confirmation dialog
+     - Calls API to unbind device
+     - Refreshes user list on success
+
+   ✓ Passed unbindDevice handler to TableLayout extra props
+
+3. userService.js (Frontend/src/services/userService.js)
+   ✓ Added unbindDevice() API call
+     - POST to /admin/unbind-device
+     - Sends userId in request body
+
+================================================================================
+NEW API ENDPOINTS
+================================================================================
+
+1. POST /admin/create-sub-admin
+   Access: Store Admin only
+   Body: { name, email, password }
+   Response: Creates admin with role=1 for same store_id
+
+2. (Existing) POST /admin/unbind-device
+   Access: Store Admin only
+   Body: { userId }
+   Response: Unbinds device from cashier, logs them out
+
+================================================================================
+USER VISIBILITY MATRIX
+================================================================================
+
+┌──────────────────┬─────────────────┬──────────────────────────────────┐
+│ User Role        │ Can See         │ Cannot See                       │
+├──────────────────┼─────────────────┼──────────────────────────────────┤
+│ Super Admin      │ ALL users       │ Nothing (full visibility)        │
+│                  │ All stores      │                                  │
+├──────────────────┼─────────────────┼──────────────────────────────────┤
+│ Store Admin      │ Own store users │ - Super Admin                    │
+│                  │ Sub-admins      │ - Users from other stores        │
+│                  │ Cashiers        │                                  │
+├──────────────────┼─────────────────┼──────────────────────────────────┤
+│ Cashier          │ Nothing         │ All users (no access to list)    │
+└──────────────────┴─────────────────┴──────────────────────────────────┘
+
+================================================================================
+TESTING INSTRUCTIONS
+================================================================================
+
+1. Run the database migration:
+   cd Backend
+   node database_files/development/run_migration.js
+
+2. Restart backend server:
+   npm run dev
+
+3. Test Super Admin Login:
+   - Login as super admin (user_id: 1000, password: 123456)
+   - Go to Users page
+   - Verify you can see ALL users including yourself
+
+4. Test Store Admin Creation:
+   - As super admin, create a new store admin
+   - Note the store_id assigned (e.g., STORE1001)
+
+5. Test Store Admin Login:
+   - Login as the store admin you just created
+   - Go to Users page
+   - Verify you CANNOT see super admin in the list
+   - Verify you can see only users from your store
+
+6. Test Sub-Admin Creation:
+   - As store admin, create a new sub-admin
+   - Verify sub-admin appears in user list
+   - Verify sub-admin has same store_id
+
+7. Test Cashier Creation & Device Binding:
+   - As store admin, create a cashier
+   - Note the cashier login credentials
+   - Logout and login as cashier from a device
+   - Verify device_locked = 1 in user list (view as admin)
+   - Verify "Device Locked" chip shows with device ID tooltip
+
+8. Test Device Unbind:
+   - As store admin, view user list
+   - Find cashier with "Device Locked" status
+   - Click "Unbind Device" button
+   - Confirm the action
+   - Verify chip changes to "Not Bound"
+   - Verify cashier is logged out (if active)
+
+9. Test Cross-Store Isolation:
+   - Create two store admins (Store A and Store B)
+   - Login as Store A admin, create cashier
+   - Login as Store B admin
+   - Verify you CANNOT see Store A admin or cashier
+
+================================================================================
+FILES MODIFIED
+================================================================================
+
+Backend:
+- src/services/AuthService.js
+- src/controllers/AuthController.js
+- src/routes/userRoute.js
+
+Frontend:
+- src/pages/Users/columns.jsx
+- src/pages/Users/Users.jsx
+- src/services/userService.js
+
+Database:
+- database_files/development/update_user_filtering.sql (NEW)
+- database_files/development/run_migration.js (NEW)
+- database_files/development/run_migration.sh (NEW)
+- database_files/development/ROLE_SYSTEM_IMPLEMENTATION.md (NEW)
+
+================================================================================
+SECURITY FEATURES
+================================================================================
+
+1. Store Isolation: Admins cannot access data from other stores
+2. Super Admin Hidden: Regular admins don't know super admin exists
+3. Device Binding: Cashiers locked to first login device
+4. Immediate Logout: Device unbind invalidates active sessions
+5. Created By Tracking: Audit trail of user creation
+6. JWT Token Security: store_id embedded in token (tamper-proof)
+
+================================================================================
+NEXT STEPS (OPTIONAL ENHANCEMENTS)
+================================================================================
+
+1. Add "created_by" column to user list UI to show who created each user
+2. Add audit log table to track all user actions
+3. Add email notifications when device is unbound
+4. Add bulk device unbind for multiple cashiers
+5. Add device history tracking (show previous devices)
+6. Add permission to restrict sub-admin creation to main admin only
+
+================================================================================
+SUPPORT & DOCUMENTATION
+================================================================================
+
+Full documentation: Backend/database_files/development/ROLE_SYSTEM_IMPLEMENTATION.md
+
+This file includes:
+- Complete API documentation
+- Testing checklist
+- Troubleshooting guide
+- Security considerations
+- Migration instructions
+
+================================================================================
+IMPLEMENTATION COMPLETED SUCCESSFULLY
+================================================================================

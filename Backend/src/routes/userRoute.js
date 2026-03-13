@@ -33,6 +33,7 @@ route.get("/superadmin/stores", AuthController.getAllStores);
 route.post("/superadmin/update-counter-limit", AuthController.updateCounterLimit);
 
 // ======================== STORE ADMIN ROUTES ========================
+route.post("/admin/create-sub-admin", AuthController.createSubAdmin);
 route.post("/admin/create-counter-user", AuthController.createCounterUser);
 route.get("/admin/counter-users", AuthController.getCounterUsers);
 route.get("/admin/store-info", AuthController.getStoreInfo);

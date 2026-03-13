@@ -1,0 +1,157 @@
+================================================================================
+QUICK START GUIDE - Role-Based System
+================================================================================
+
+STEP 1: RUN DATABASE MIGRATION
+================================================================================
+cd Backend
+node database_files/development/run_migration.js
+
+Expected Output: "Migration completed successfully!"
+
+================================================================================
+STEP 2: RESTART BACKEND SERVER
+================================================================================
+cd Backend
+npm run dev
+
+Wait for: "Server running on port 4000"
+
+================================================================================
+STEP 3: TEST THE SYSTEM
+================================================================================
+
+Test 1: Super Admin Login
+--------------------------
+URL: http://localhost:3000/login
+Credentials:
+  - User ID: 1000
+  - Password: 123456
+
+After Login:
+  → Go to Users page
+  → You should see ALL users (including yourself)
+
+Test 2: Create Store Admin
+--------------------------
+As Super Admin:
+  → Click "Add Users"
+  → Fill details, select Role = "Store Admin"
+  → Note the generated store_id (e.g., STORE1001)
+
+Test 3: Store Admin Login
+--------------------------
+Logout and login with new admin credentials
+
+After Login:
+  → Go to Users page
+  → You should NOT see super admin
+  → You should ONLY see users from your store
+
+Test 4: Create Sub-Admin
+--------------------------
+As Store Admin:
+  → Click "Add Users"
+  → Fill details, select Role = "Store Admin"
+  → Sub-admin will have SAME store_id
+  → Sub-admin appears in your user list
+
+Test 5: Create Cashier
+--------------------------
+As Store Admin:
+  → Click "Add Users"
+  → Fill details, select Role = "Cashier"
+  → Cashier appears in list with "Not Bound" device status
+
+Test 6: Cashier Device Binding
+--------------------------
+Logout and login as cashier
+
+After First Login:
+  → Device is automatically bound
+  → Login as admin again
+  → View user list
+  → Cashier shows "Device Locked" (green chip)
+  → Hover to see device ID
+
+Test 7: Unbind Device
+--------------------------
+As Store Admin:
+  → Find cashier with "Device Locked" status
+  → Click "Unbind Device" button
+  → Confirm action
+  → Status changes to "Not Bound"
+  → Cashier is logged out (if active)
+  → Cashier can login from new device
+
+================================================================================
+KEY FEATURES SUMMARY
+================================================================================
+
+✓ Super admin sees ALL users
+✓ Store admin CANNOT see super admin
+✓ Store admin sees ONLY their store users
+✓ Admin can create sub-admins (same store)
+✓ Admin can create cashiers
+✓ Device binding shown in user list
+✓ Admin can unbind cashier devices
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Issue: "No Data Found" on user list
+Fix: Check that you're logged in and have valid token
+
+Issue: Can still see super admin
+Fix: Clear browser cache and re-login to get fresh token
+
+Issue: Device status not showing
+Fix: Restart backend server after migration
+
+Issue: Unbind button not working
+Fix: Verify admin role and cashier has device_locked = 1
+
+================================================================================
+API ENDPOINTS REFERENCE
+================================================================================
+
+User Management:
+  GET  /user/list                      - Get filtered user list
+  POST /user/add                       - Add user (legacy)
+  GET  /user/getById/:id              - Get user details
+  POST /user/update                    - Update user
+  DELETE /user/delete/:id             - Delete user
+
+Super Admin Only:
+  POST /superadmin/create-store-admin  - Create store with admin
+  GET  /superadmin/stores              - Get all stores
+  POST /superadmin/update-counter-limit- Update counter limit
+
+Store Admin Only:
+  POST /admin/create-sub-admin         - Create sub-admin (NEW)
+  POST /admin/create-counter-user      - Create cashier
+  GET  /admin/counter-users            - Get cashiers
+  POST /admin/unbind-device            - Unbind cashier device
+  GET  /admin/store-info               - Get store details
+
+================================================================================
+DEFAULT CREDENTIALS
+================================================================================
+
+Super Admin:
+  User ID: 1000
+  Password: 123456
+
+All New Users (created via system):
+  Password: 123456 (should be changed on first login)
+
+================================================================================
+SUPPORT
+================================================================================
+
+Full Documentation: Backend/database_files/development/ROLE_SYSTEM_IMPLEMENTATION.md
+Migration File: Backend/database_files/development/update_user_filtering.sql
+Summary: IMPLEMENTATION_SUMMARY.txt
+
+================================================================================

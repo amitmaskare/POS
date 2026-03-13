@@ -1,4 +1,6 @@
-import { Button, Box, Chip } from "@mui/material";
+import { Button, Box, Chip, Tooltip } from "@mui/material";
+import LockIcon from "@mui/icons-material/Lock";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
 
 export const columns = [
     { id: "name", label: "Name" },
@@ -46,12 +48,48 @@ export const columns = [
         return <Box sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>-</Box>;
       }
     },
+    {
+      id: "device_status",
+      label: "Device Status",
+      render: (row) => {
+        // Only show for Cashiers (role = 2)
+        if (row.role === 2) {
+          const isLocked = row.device_locked === 1;
+          const deviceId = row.device_id;
+
+          return (
+            <Box display="flex" alignItems="center" gap={1}>
+              {isLocked ? (
+                <Tooltip title={`Device ID: ${deviceId || 'N/A'}`}>
+                  <Chip
+                    icon={<LockIcon />}
+                    label="Device Locked"
+                    color="success"
+                    size="small"
+                  />
+                </Tooltip>
+              ) : (
+                <Chip
+                  icon={<LockOpenIcon />}
+                  label="Not Bound"
+                  color="default"
+                  size="small"
+                />
+              )}
+            </Box>
+          );
+        }
+
+        // Not applicable for non-cashier roles
+        return <Box sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>-</Box>;
+      }
+    },
     { id: "created_at", label: "Created At" },
     {
       id: "actions",
       label: "Actions",
       render: (row,extra) => (
-        <Box display="flex" gap={1}>
+        <Box display="flex" gap={1} flexWrap="wrap">
           <Button size="small" variant="outlined" color="primary"  onClick={() => extra?.edit(row?.userId)}>
             Edit
           </Button>
@@ -59,7 +97,7 @@ export const columns = [
           <Button size="small" variant="outlined" color="error" onClick={() => extra?.deleteItem(row?.userId)}>
             Delete
           </Button>
- 
+
           <Button
             size="small"
             variant="outlined"
@@ -75,6 +113,18 @@ export const columns = [
           >
             Manage Permissions
           </Button>
+
+          {/* Show Unbind Device button only for locked cashiers */}
+          {row.role === 2 && row.device_locked === 1 && (
+            <Button
+              size="small"
+              variant="outlined"
+              color="warning"
+              onClick={() => extra?.unbindDevice(row?.userId)}
+            >
+              Unbind Device
+            </Button>
+          )}
         </Box>
       ),
     }

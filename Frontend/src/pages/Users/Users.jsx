@@ -15,7 +15,7 @@ import Stats from "../../components/MainContentComponents/Stats";
 import TableLayout from "../../components/MainContentComponents/Table";
 import { stats } from "./StatsData";
 import { columns } from "./columns";
-import {userList,getById,deleteItem} from "../../services/userService"
+import {userList,getById,deleteItem,unbindDevice} from "../../services/userService"
 import ModalLayout from "./Modal";
 
 
@@ -115,6 +115,27 @@ export default function Users() {
         const handleManagePermissions = (userId) => {
           navigate(`/user-permissions/${userId}`);
         };
+
+        const handleUnbindDevice = async (userId) => {
+          setSuccess('');
+          setError('');
+          try {
+            const confirmUnbind = window.confirm(
+              'Are you sure you want to unbind this device? The user will be logged out and can login from a new device.'
+            );
+            if (confirmUnbind) {
+              const result = await unbindDevice(userId);
+              if (result.status === true) {
+                setSuccess(result.message);
+                fetchUserList();
+              } else {
+                setError(result.message);
+              }
+            }
+          } catch (error) {
+            setError(error.response?.data?.message || error.message);
+          }
+        };
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Title
@@ -172,7 +193,7 @@ export default function Users() {
               No users found. Please add a user or check if you are logged in.
             </Alert>
           ) : (
-            <TableLayout columns={columns} rows={rows}  extra={{ deleteItem: handleDelete, edit: handleEdit, managePermissions: handleManagePermissions }}  actionButtons={[
+            <TableLayout columns={columns} rows={rows}  extra={{ deleteItem: handleDelete, edit: handleEdit, managePermissions: handleManagePermissions, unbindDevice: handleUnbindDevice }}  actionButtons={[
             {
               label: "Filter",
               icon: <FilterListIcon />,

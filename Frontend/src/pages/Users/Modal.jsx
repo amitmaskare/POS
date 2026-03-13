@@ -99,7 +99,8 @@ const [role, setRole] = useState([]);
         setError(result.message);
       }
     } catch (err) {
-      setError("Failed to save product");
+      console.error('Error saving user:', err);
+      setError(err.response?.data?.message || err.message || "Failed to save user");
     }
   };
 
