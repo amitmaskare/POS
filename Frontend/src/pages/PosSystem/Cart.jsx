@@ -31,8 +31,10 @@ import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CircularProgress from "@mui/material/CircularProgress";
 import QRCode from "qrcode";
 import { printThermalReceipt, formatReceiptData } from "../../utils/thermalPrint";
+import socket from "../../socket";
 
 export default function Cart({ cart, setCart }) {
+  const roomId = "pos_terminal_1"; // Same room as Dashboard
   const [active, setActive] = useState(""); 
   const [editingPriceId, setEditingPriceId] = useState(null);
   const [mobile, setMobile] = useState("");
@@ -250,6 +252,9 @@ const checkoutSale = async () => {
       change_amount: returnAmount
     });
 
+    // Send thank you to customer display
+    socket.emit("show-thankyou", { roomId });
+
     setCashOpen(false);
     setCart([]);
     setReceivedAmount("");
@@ -335,6 +340,9 @@ Auth Code: ${paymentResult.data.authCode || 'N/A'}`);
 
       // Print thermal receipt
       printReceipt(saleResult.data, { payment_method: 'pos_card' });
+
+      // Send thank you to customer display
+      socket.emit("show-thankyou", { roomId });
 
       // Clear cart
       setCart([]);
@@ -459,6 +467,9 @@ const handleRazorpay = async () => {
           // Print thermal receipt
           printReceipt(result.data.saleData, { payment_method: 'credit' });
 
+          // Send thank you to customer display
+          socket.emit("show-thankyou", { roomId });
+
           // Reset POS
           setCashOpen(false);
           setCart([]);
@@ -553,6 +564,9 @@ const handleConfirmPayment = async () => {
           : { payment_method: 'qr_code' };
 
         printReceipt(qrCodeData.saleData, paymentDetails);
+
+        // Send thank you to customer display
+        socket.emit("show-thankyou", { roomId });
 
         // Reset and close
         setQrModalOpen(false);
@@ -692,6 +706,9 @@ const handleSplitPOSPayment = async () => {
         online_method: 'pos_card'
       });
 
+      // Send thank you to customer display
+      socket.emit("show-thankyou", { roomId });
+
       setCart([]);
       setSplitPaymentOpen(false);
       setCashAmount("");
@@ -766,6 +783,9 @@ const handleSplitCreditPayment = async () => {
             online_amount: onlineAmount,
             online_method: 'credit'
           });
+
+          // Send thank you to customer display
+          socket.emit("show-thankyou", { roomId });
 
           setSplitPaymentOpen(false);
           setCart([]);

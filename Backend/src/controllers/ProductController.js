@@ -205,7 +205,8 @@ export const ProductController = {
       {
         return sendResponse(resp,false,400,"search field is required")
       }
-      const result=await ProductService.searchProduct(search)
+        const storeId = getStoreIdFromRequest(req);
+      const result=await ProductService.searchProduct(search, storeId)
      
       if(!result || result.length===0)
       {
@@ -300,10 +301,13 @@ export const ProductController = {
    favouriteList: async (req, resp) => {
     try {
       const storeId = getStoreIdFromRequest(req);
+      console.log('backend-log favouriteList - storeId:', storeId);
+      console.log('backend-log favouriteList - req.user:', req.user);
       const result = await ProductService.favouriteList(storeId);
-    
+      console.log('backend-log favouriteList - result:', result);
+
       if (!result || result.length === 0) {
-        return sendResponse(resp, false, 400, "No Data Found");
+        return sendResponse(resp, true, 200, "No favourite products found", []);
       }
      const data = result.map(item => ({
       ...item,
@@ -326,10 +330,13 @@ export const ProductController = {
   looseItemList: async (req, resp) => {
     try {
       const storeId = getStoreIdFromRequest(req);
+      console.log('backend-log looseItemList - storeId:', storeId);
+      console.log('backend-log looseItemList - req.user:', req.user);
       const result = await ProductService.looseItemList(storeId);
-    
+      console.log('backend-log looseItemList - result:', result);
+
       if (!result || result.length === 0) {
-        return sendResponse(resp, false, 400, "No Data Found");
+        return sendResponse(resp, true, 200, "No loose items found", []);
       }
      const data = result.map(item => ({
       ...item,
