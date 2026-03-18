@@ -28,6 +28,8 @@ import UserPermissions from "../pages/Users/UserPermissions";
 import POSSettings from "../pages/Settings/POSSettings";
 import Settings from "../pages/Settings/Settings";
 import Store from "../pages/Store/Stores";
+import CustomerDisplay from "../pages/PosSystem/CustomerDisplay";
+
 const AppRoutes = () => {
  const [auth, setAuth] = useState(localStorage.getItem('token'));
 
@@ -78,6 +80,7 @@ const AppRoutes = () => {
       {/* PUBLIC ROUTES (WITHOUT SIDEBAR) */}
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/customer-display" element={<CustomerDisplay />} />
     </Routes>
   );
 };

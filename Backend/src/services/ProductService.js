@@ -103,8 +103,11 @@ export const ProductService = {
   },
 
   favouriteList: async (storeId) => {
-    const query = `
-    SELECT 
+    console.log('ProductService.favouriteList called with storeId:', storeId, 'type:', typeof storeId);
+
+    // If no storeId (super admin), show all products
+    const query = storeId ? `
+    SELECT
     p.id,
         p.product_name,
         cat.category_name,
@@ -118,15 +121,40 @@ export const ProductService = {
   LEFT JOIN categories cat ON p.category_id = cat.id
   LEFT JOIN offers o ON o.product_id = p.id
     AND o.status = 'active'
-    AND CURDATE() BETWEEN o.start_date AND o.end_date 
+    AND CURDATE() BETWEEN o.start_date AND o.end_date
     WHERE p.favourite='yes' AND p.store_id = ?
+    ORDER BY p.id DESC` : `
+    SELECT
+    p.id,
+        p.product_name,
+        cat.category_name,
+        p.selling_price,
+        p.image,
+        p.tax_rate,
+    o.min_qty,
+    o.offer_price,
+    o.offer_qty_price
+  FROM products p
+  LEFT JOIN categories cat ON p.category_id = cat.id
+  LEFT JOIN offers o ON o.product_id = p.id
+    AND o.status = 'active'
+    AND CURDATE() BETWEEN o.start_date AND o.end_date
+    WHERE p.favourite='yes'
     ORDER BY p.id DESC`;
-    return await CommonModel.rawQuery(query, [storeId]);
+
+    const result = storeId
+      ? await CommonModel.rawQuery(query, [storeId])
+      : await CommonModel.rawQuery(query, []);
+    console.log('ProductService.favouriteList result count:', result?.length || 0);
+    return result;
   },
 
   looseItemList: async (storeId) => {
-    const query = `
-    SELECT 
+    console.log('ProductService.looseItemList called with storeId:', storeId, 'type:', typeof storeId);
+
+    // If no storeId (super admin), show all products
+    const query = storeId ? `
+    SELECT
     p.id,
         p.product_name,
         cat.category_name,
@@ -139,10 +167,31 @@ export const ProductService = {
   LEFT JOIN categories cat ON p.category_id = cat.id
   LEFT JOIN offers o ON o.product_id = p.id
     AND o.status = 'active'
-    AND CURDATE() BETWEEN o.start_date AND o.end_date 
+    AND CURDATE() BETWEEN o.start_date AND o.end_date
     WHERE p.favourite='loose' AND p.store_id = ?
+    ORDER BY p.id DESC` : `
+    SELECT
+    p.id,
+        p.product_name,
+        cat.category_name,
+        p.selling_price,
+        p.image,
+        p.tax_rate,
+    o.min_qty,
+    o.offer_price
+  FROM products p
+  LEFT JOIN categories cat ON p.category_id = cat.id
+  LEFT JOIN offers o ON o.product_id = p.id
+    AND o.status = 'active'
+    AND CURDATE() BETWEEN o.start_date AND o.end_date
+    WHERE p.favourite='loose'
     ORDER BY p.id DESC`;
-    return await CommonModel.rawQuery(query, [storeId]);
+
+    const result = storeId
+      ? await CommonModel.rawQuery(query, [storeId])
+      : await CommonModel.rawQuery(query, []);
+    console.log('ProductService.looseItemList result count:', result?.length || 0);
+    return result;
   },
 
   inventoryList: async (storeId) => {
