@@ -39,8 +39,6 @@ import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import Header from "../../components/MainContentComponents/Title";
 import Stats from "../../components/MainContentComponents/Stats";
 import {
-  getSalesReport,
-  getTransactionList,
   getSalesList,
   getProductList,
   calculateStats,
@@ -51,7 +49,7 @@ import {
 } from "../../services/reportService";
 import { useToast } from "../../hooks/useToast";
 import Toast from "../../components/Toast/Toast";
-
+import { useTheme } from "@mui/material/styles";
 const Reports = () => {
   const [statsData, setStatsData] = useState([]);
   const [salesChartData, setSalesChartData] = useState([]);
@@ -249,7 +247,8 @@ const Reports = () => {
       showToastNotification(error?.message || "Failed to download report", "error");
     }
   };
-
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Header
@@ -306,7 +305,7 @@ const Reports = () => {
         fontWeight={600}
         fontSize="16px"
         mb={2}
-        color="#415A77"
+        sx={{color: isDark ? "#fff" : "#415a77"}}
       >
                     Sales Overview
                   </Typography>
@@ -357,7 +356,7 @@ const Reports = () => {
         fontWeight={600}
         fontSize="16px"
         mb={2}
-        color="#415A77"
+        sx={{color: isDark ? "#fff" : "#415a77"}}
       >
                     Product Performance
                   </Typography>
@@ -380,7 +379,7 @@ const Reports = () => {
                   ) : (
                     <Box textAlign="center" mt={6}>
                       <TrendingUpIcon sx={{ fontSize: 50, color: "#415A77" }} />
-                      <Typography mt={1} color="#415A77" fontWeight={600}>
+                      <Typography mt={1} sx={{color: isDark ? "#fff" : "#415a77"}} fontWeight={600}>
                         No product data available
                       </Typography>
                     </Box>
@@ -393,7 +392,7 @@ const Reports = () => {
           {/* Recent Reports Section */}
           <Card sx={{ borderRadius: 2, mb: 4 }}>
             <CardContent>
-              <Typography fontWeight={600} mb={2} color="#415A77">
+              <Typography fontWeight={600} mb={2} sx={{color: isDark ? "#fff" : "#415a77"}}>
                 Recent Reports
               </Typography>
 
@@ -406,12 +405,13 @@ const Reports = () => {
                   p={2}
                   border="1px solid grey"
                   mb={1}
+                  
                   borderRadius={1}
                 >
-                  <Box display="flex" alignItems="center" gap={2} color="#415A77">
+                  <Box display="flex" alignItems="center" gap={2} sx={{color: isDark ? "#fff" : "#415a77"}}>
                     <DescriptionIcon />
                     <Box>
-                      <Typography fontWeight={600} color="#415A77">
+                      <Typography fontWeight={600} sx={{color: isDark ? "#fff" : "#415a77"}}>
                         {report.title}
                       </Typography>
                       <Typography variant="body2">{report.desc}</Typography>
@@ -423,7 +423,7 @@ const Reports = () => {
                       variant="outlined"
                       size="small"
                       startIcon={<VisibilityIcon />}
-                      sx={{ borderColor: "#5A8DEE", color: "#5A8DEE" }}
+                      sx={{color: isDark ? "#fff" : "#415a77"}}
                       onClick={() => handleViewReport(report)}
                     >
                       View
@@ -432,7 +432,7 @@ const Reports = () => {
                       variant="outlined"
                       size="small"
                       startIcon={<DownloadIcon />}
-                      sx={{ borderColor: "#5A8DEE", color: "#5A8DEE" }}
+                      sx={{color: isDark ? "#fff" : "#415a77"}}
                       onClick={() => handleDownloadReport(report)}
                     >
                       Download

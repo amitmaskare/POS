@@ -18,8 +18,6 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import AssessmentIcon from "@mui/icons-material/Assessment";
-import PeopleIcon from "@mui/icons-material/People";
-import GroupIcon from "@mui/icons-material/Group";
 import WarehouseIcon from "@mui/icons-material/Warehouse";
 import AdminPanelSettingsIcon from "@mui/icons-material/Group";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
@@ -56,12 +54,17 @@ const menuItems = [
   { title: "Role Permission", icon: <AdminPanelSettingsIcon />, path: "/rolepermission", permission: "view-rolepermission" },
 ];
 
-export default function Sidebar({ sidebarState, setSidebarState }) {
+export default function Sidebar({
+  sidebarState,
+  setSidebarState,
+  darkMode,
+  toggleDarkMode
+}) {
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const isMobile = useMediaQuery(theme.breakpoints.down('md')); // < 900px
-  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg')); // 900px - 1200px
 
   const toggleSidebar = () => {
     if (isMobile) {
@@ -97,7 +100,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
       sx={{
         width: "100%",
         height: "100%",
-        backgroundColor: "#edf2fb",
+        backgroundColor:isDark ? "#1b263b" : "#E6EDF7",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -108,7 +111,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
         sx={{
           p: sidebarState === "collapsed" && !isMobile ? 1.5 : 2,
           pb: 1,
-          borderBottom: "1px solid #eef1f7",
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
           flexShrink: 0,
         }}
       >
@@ -122,7 +125,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
           {/* Menu Icon - Left side on mobile */}
           {(sidebarState === "collapsed" || isMobile) && (
             <Box
-              sx={{ cursor: "pointer", color: "#1b263b", display: "flex", alignItems: "center" }}
+              sx={{ cursor: "pointer", display: "flex", alignItems: "center" }}
               onClick={toggleSidebar}
             >
               {isMobile && sidebarState === "expanded" ? <CloseIcon /> : <MenuIcon />}
@@ -131,13 +134,13 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
 
           {/* Store Logo */}
           <Box display="flex" alignItems="center" gap={2}>
-            <LuStore size={32} color="#415a77" />
+            <LuStore size={32} style={{color: isDark ? "#fff" : "#415a77"}}/>
             {(sidebarState === "expanded" || isMobile) && (
               <Box>
-                <Typography variant="h6" fontWeight="bold" color="#415a77" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                <Typography variant="h6" fontWeight="bold" sx={{color: isDark ? "#fff" : "#415a77", fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   My Store
                 </Typography>
-                <Typography fontSize="14px" color="#415a77" sx={{ fontSize: { xs: '12px', sm: '14px' } }}>
+                <Typography fontSize="14px" color="#415a77" sx={{color: isDark ? "#fff" : "#415a77",fontSize: { xs: '12px', sm: '14px' } }}>
                   Admin • Admin User
                 </Typography>
               </Box>
@@ -147,7 +150,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
           {/* Toggle icon on expanded desktop */}
           {sidebarState === "expanded" && !isMobile && (
             <MenuIcon
-              sx={{ cursor: "pointer", color: "#415a77" }}
+              sx={{ cursor: "pointer",color: isDark ? "#fff" : "#415a77"}} 
               onClick={toggleSidebar}
             />
           )}
@@ -184,6 +187,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
         <List sx={{ padding: 0 }}>
           {visibleMenus.map((item, index) => {
             const isActive = location.pathname === item.path;
+            
             return (
               <ListItemButton
                 key={index}
@@ -193,14 +197,20 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
                 sx={{
                   mb: 1,
                   borderRadius: "10px",
-                  backgroundColor: isActive ? "#415A77" : "transparent",
-                  color: isActive ? "#fff" : "black",
+                  backgroundColor: isActive
+                    ? (theme) => theme.palette.primary.main
+                    : "transparent",
+
+                  color: isActive
+                    ? "#fff"
+                    : (theme) => theme.palette.text.primary,
                   justifyContent: sidebarState === "collapsed" && !isMobile ? "center" : "flex-start",
                   px: sidebarState === "collapsed" && !isMobile ? 1.5 : 2,
                   py: isMobile ? 1.5 : 1, // Larger tap targets on mobile
                   minHeight: isMobile ? "48px" : "auto", // Touch-friendly height
                   "&:hover": {
-                    backgroundColor: isActive ? "#415A77" : "#e9efff",
+                    backgroundColor: isActive ? "#415A77" : "",
+                    
                   },
                 }}
               >
@@ -219,6 +229,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
                     sx={{
                       '& .MuiListItemText-primary': {
                         fontSize: isMobile ? '15px' : '14px',
+                        fontWeight: 500, 
                       }
                     }}
                   />
@@ -251,7 +262,11 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
           {(sidebarState === "expanded" || isMobile) && (
             <>
               <ListItemText primary="Dark Mode" />
-              <Switch size="small" />
+              <Switch
+                size="small"
+                checked={darkMode}
+                onChange={toggleDarkMode}
+              />
             </>
           )}
         </ListItemButton>
@@ -345,7 +360,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
         sx={{
           width:
             sidebarState === "expanded" ? 265 :
-            sidebarState === "collapsed" ? 80 : 0,
+              sidebarState === "collapsed" ? 80 : 0,
           height: "100vh",
           backgroundColor: "#fff",
           borderRight: sidebarState === "hidden" ? "none" : "1px solid #e6e8ef",

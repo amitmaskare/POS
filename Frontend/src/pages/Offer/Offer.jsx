@@ -14,7 +14,7 @@ import { stats } from "./StatsData";
 import { columns } from "./columns";
 import {offerList,getById,deleteItem} from "../../services/offerService"
 import ModalLayout from "./Modal";
-
+import { useTheme } from "@mui/material/styles";
 
 export default function Users() {
     const [open, setOpen] = useState(false);
@@ -44,6 +44,8 @@ export default function Users() {
             setError(error.response?.data?.message || error.message);
         }
       }
+      const theme = useTheme();
+      const isDark = theme.palette.mode === "dark";
     
       const handleDelete = async(id) => {
                 setSuccess('')
@@ -119,7 +121,7 @@ export default function Users() {
       
       {/* USERS TABLE */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3} mt={3}>
-        <Typography variant="h6" sx={{color:"#415A77"}} fontWeight={700}>
+        <Typography variant="h6" sx={{color: isDark ? "#fff" : "#415a77"}} fontWeight={700}>
           System Offer
         </Typography>
       </Box>

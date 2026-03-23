@@ -230,16 +230,15 @@ useEffect(() => {
        <Dialog open={open} onClose={onClose}
     fullWidth
     maxWidth="md"
-        sx={{
-        bgcolor: "#fff",
-        marginTop:6,
-        marginLeft:25,
-        borderRadius: 3,
-          maxHeight: "90vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between"
-      }}
+    sx={{     
+      "& .MuiDialog-container": {
+          mt: 6, 
+         
+      },
+      "& .MuiPaper-root": {
+        borderRadius: "1.2rem",   
+      }
+    }}
    
         >
          <DialogTitle

@@ -9,21 +9,17 @@ import {
   Chip,
   IconButton
 } from '@mui/material';
-
+import { useTheme } from "@mui/material/styles";
 
 import Title from '../../components/MainContentComponents/Title';
 import Stats from '../../components/MainContentComponents/Stats';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import AddIcon from '@mui/icons-material/Add';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import DownloadIcon from '@mui/icons-material/Download';
 import SearchFilter from '../../components/MainContentComponents/SearchFilter';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { statsData } from './StatsData';
-import { inventory } from './Inventoryitems';
 import {inventoryList} from "../../services/productService"
 import {saleList} from "../../services/saleService"
 import {purchaseList} from "../../services/purchaseService"
@@ -98,6 +94,8 @@ const outOfStock = data.filter(
     totalSaleCount: totalSale.length,
     totalPurchaseCount: totalPurchase.length,
   });
+  const theme = useTheme();
+        const isDark = theme.palette.mode === "dark";
   return (
     <Box sx={{ minHeight: "100vh" }}>
 
@@ -131,14 +129,14 @@ const outOfStock = data.filter(
               label: "Filter",
               icon: <FilterListIcon />,
               variant: "outlined",
-              sx: { borderColor: "#415a77", px: 2 ,color:"#415a77"},
+              sx: { borderColor: "#415a77" ,color:"#415a77"},
               onClick: () => console.log("Filter clicked"),
             },
             {
               label: "Export",
               icon: <DownloadIcon />,
               variant: "outlined",
-              sx: { borderColor: "#415a77", px: 2,color:"#415a77" },
+              sx: { borderColor: "#415a77", color:"#415a77" },
               onClick: () => console.log("Export clicked"),
             },
           ]}
@@ -146,7 +144,7 @@ const outOfStock = data.filter(
       </Box>
       
       {/* Inventory Items */}
-      <Typography variant="h6" color="#415a77" mt={3}>Inventory Items</Typography>
+      <Typography variant="h6"  mt={3} sx={{color: isDark ? "#fff" : "#415a77"}}>Inventory Items</Typography>
       <Divider sx={{ mb: 2, bgcolor: '#333' }} />
 
       <Grid container spacing={1}>
@@ -282,7 +280,7 @@ const outOfStock = data.filter(
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#415A77",
+            color: isDark ? "#fff" : "#415a77",
             mb: 2,
           }}
         >
@@ -322,7 +320,7 @@ const outOfStock = data.filter(
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#415A77",
+            color: isDark ? "#fff" : "#415a77",
             mb: 2,
           }}
         >
@@ -362,7 +360,7 @@ const outOfStock = data.filter(
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: "#415A77",
+            color: isDark ? "#fff" : "#415a77",
             mb: 2,
           }}
         >

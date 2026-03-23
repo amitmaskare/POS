@@ -4,9 +4,6 @@ import { useTheme, useMediaQuery, Tooltip } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import CloseIcon from "@mui/icons-material/Close";
-import PriceCheckIcon from "@mui/icons-material/PriceCheck";
-import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import { Divider } from "@mui/material";
 import {
   ShoppingCart,
@@ -30,8 +27,6 @@ import {
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ShoppingCartCheckoutIcon from "@mui/icons-material/ShoppingCartCheckout";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
-import CreditCardIcon from "@mui/icons-material/CreditCard";
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import HistoryIcon from "@mui/icons-material/History";
 
 import Aadhaar from "../components/HeaderComponents/Aadhaar";
@@ -62,23 +57,24 @@ export default function Header({ sidebarState, setCartOpen }) {
   const handleActionsOpen = (event) => { setActionsAnchorEl(event.currentTarget); };
   const handleActionsClose = () => { setActionsAnchorEl(null); };
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isDark = theme.palette.mode === "dark";
+  const isMobile = useMediaQuery("(max-width:1300px)");
 
   return (
     <Box
-  sx={{
-    height: "70px",
-    width: "100%",
-    backgroundColor: "#fff",
-    borderBottom: "1px solid #eee",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    px: 2,
-    pl: sidebarState === "hidden" ? "70px" : "16px", 
-    transition: "0.25s ease",
-  }}
->
+      sx={{
+        height: "70px",
+        width: "100%",
+        backgroundColor: (theme) => theme.palette.background.paper,
+        borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        px: 2,
+        pl: sidebarState === "hidden" ? "70px" : "16px",
+        transition: "0.25s ease",
+      }}
+    >
 
 
       {/* LEFT SIDE - Admin Dropdown */}
@@ -90,11 +86,32 @@ export default function Header({ sidebarState, setCartOpen }) {
           sx={{
             textTransform: "none",
             fontWeight: "600",
-            backgroundColor: "#415a77",
-            color:"#fff"
+            backgroundColor: (theme) => theme.palette.primary.main,
+            color: "#fff",
+            minWidth: "auto",
+            px: { xs: 1.5, sm: 2 }
           }}
         >
-          Admin User{" "}
+          {/* Desktop Text */}
+          <Box
+            sx={{
+              display: { xs: "none", sm: "inline" }
+            }}
+          >
+            Admin User
+          </Box>
+
+          {/* Mobile Icon */}
+          <Box
+            sx={{
+              display: { xs: "flex", sm: "none" },
+              alignItems: "center"
+            }}
+          >
+            <AccountCircleIcon />
+          </Box>
+
+          {/* Badge */}
           <Box
             component="span"
             sx={{
@@ -104,6 +121,7 @@ export default function Header({ sidebarState, setCartOpen }) {
               color: "#fff",
               borderRadius: "5px",
               fontSize: "12px",
+              lineHeight: 1.5
             }}
           >
             admin
@@ -223,10 +241,10 @@ export default function Header({ sidebarState, setCartOpen }) {
               size="small"
               onClick={handleActionsOpen}
               sx={{
-                color:"#415a77",
-                 border: "1px solid #415A77",
-                
-               }}
+                color: isDark ? "#fff" : "#415a77",
+                borderColor: isDark ? "#fff" : "#415a77"
+
+              }}
             >
               Actions
             </Button>
@@ -235,76 +253,77 @@ export default function Header({ sidebarState, setCartOpen }) {
               anchorEl={actionsAnchorEl}
               open={actionsOpen}
               onClose={handleActionsClose}
-  PaperProps={{
-    elevation: 0,
-    sx: {
-      mt: 1.5,
-      borderRadius: 3,
-      minWidth: 230,
-      backgroundColor: "#ffffff",
-      border: "1px solid #e3eaf2",
-      boxShadow: "0 12px 30px rgba(65, 90, 119, 0.12)",
-      overflow: "hidden",
-    },
-  }}
->
-  <Divider />
+              PaperProps={{
+                elevation: 0,
+                sx: {
+                  mt: 1.5,
+                  borderRadius: 3,
+                  minWidth: 230,
+                  backgroundColor: (theme) => theme.palette.background.paper,
+                  borderColor: isDark ? "#fff" : "#415a77",
+                  boxShadow: "0 12px 30px rgba(65, 90, 119, 0.12)",
+                  overflow: "hidden",
+                },
+              }}
+            >
+              <Divider />
 
-  {[
-    { label: "Check Out", icon: <ShoppingCart fontSize="small" />, action: () => setopenCheckout(true) },
-    { label: "Check Price", icon: <PriceCheck fontSize="small" />, action: () => setopenCheckPrice(true) },
-    { label: "Enter Aadhaar", icon: <Badge fontSize="small" />, action: handleOpenAadhaar },
-    { label: "Sale Return", icon: <Replay fontSize="small" />, action: () => navigate("/salereturn") },
-    { label: "Sales History", icon: <History fontSize="small" />, action: () => setopenSalesHistory(true) },
-  ].map((item, index) => (
-    <MenuItem
-      key={index}
-      onClick={() => {
-        item.action();
-        handleActionsClose();
-      }}
-      sx={{
-        mx: 1.5,
-        my: 0.5,
-        borderRadius: 2,
-        px: 2,
-        py: 1.2,
-        fontSize: "14px",
-        fontWeight: 500,
-        color: "#415A77",
-        display: "flex",
-        gap: 1.5,
-        alignItems: "center",
-        position: "relative",
-        transition: "all 0.2s ease",
+              {[
+                { label: "Check Out", icon: <ShoppingCart fontSize="small" />, action: () => setopenCheckout(true) },
+                { label: "Check Price", icon: <PriceCheck fontSize="small" />, action: () => setopenCheckPrice(true) },
+                { label: "Enter Aadhaar", icon: <Badge fontSize="small" />, action: handleOpenAadhaar },
+                { label: "Sale Return", icon: <Replay fontSize="small" />, action: () => navigate("/salereturn") },
+                { label: "Sales History", icon: <History fontSize="small" />, action: () => setopenSalesHistory(true) },
+              ].map((item, index) => (
+                <MenuItem
+                  key={index}
+                  onClick={() => {
+                    item.action();
+                    handleActionsClose();
+                  }}
+                  sx={{
+                    mx: 1.5,
+                    my: 1.5,
+                    borderRadius: 2,
+                    px: 2,
+                    py: 1.2,
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: isDark ? "#fff" : "#415a77",
+                    border: isDark ? " 1px solid #fff" : "1px solid #415a77",
+                    display: "flex",
+                    gap: 2,
+                    alignItems: "center",
+                    position: "relative",
+                    transition: "all 0.2s ease",
 
-        "&:hover": {
-          backgroundColor: "#f4f7fb",
-        },
+                    "&:hover": {
+                      backgroundColor: "#f4f7fb",
+                    },
 
-        "&:hover::before": {
-          content: '""',
-          position: "absolute",
-          left: 0,
-          top: 6,
-          bottom: 6,
-          width: "3px",
-          borderRadius: "4px",
-          backgroundColor: "#415A77",
-        },
-      }}
-    >
-      {item.icon}
-      {item.label}
-    </MenuItem>
-  ))}
-</Menu>
+                    "&:hover::before": {
+                      content: '""',
+                      position: "absolute",
+                      left: 0,
+                      top: 6,
+                      bottom: 6,
+                      width: "3px",
+                      borderRadius: "4px",
+                      backgroundColor: "#415A77",
+                    },
+                  }}
+                >
+                  {item.icon}
+                  {item.label}
+                </MenuItem>
+              ))}
+            </Menu>
             {isMobile && (
               <IconButton onClick={() => setCartOpen(prev => !prev)}>
                 <ShoppingCartIcon sx={{
-            color:"#415a77"
-       
-      }} />
+                  color: isDark ? "#fff" : "#415a77",
+
+                }} />
               </IconButton>
 
             )}
@@ -326,7 +345,7 @@ export default function Header({ sidebarState, setCartOpen }) {
                 "&:hover": {
                   backgroundColor: "#415a77",
                   color: "#fff",
-                  
+
                 }
               }}
             >
@@ -346,37 +365,37 @@ export default function Header({ sidebarState, setCartOpen }) {
                 "&:hover": {
                   backgroundColor: "#415a77",
                   color: "#fff",
-                  
+
                 }
               }}
             >
-          Check Price
-        </Button>
+              Check Price
+            </Button>
 
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<FingerprintIcon />}
-          onClick={handleOpenAadhaar}
-          sx={{
-            color: "#fff",
-            backgroundColor: "#415a77",
-            textTransform: "none",
-            fontWeight: 500,
-            "&:hover": {
-              backgroundColor: "#415a77",
-              color: "#fff",
-             
-            }
-          }}
-        >
-          Enter Aadhaar
-        </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<FingerprintIcon />}
+              onClick={handleOpenAadhaar}
+              sx={{
+                color: "#fff",
+                backgroundColor: "#415a77",
+                textTransform: "none",
+                fontWeight: 500,
+                "&:hover": {
+                  backgroundColor: "#415a77",
+                  color: "#fff",
 
-        <Button
-        variant="outlined"
-        size="small"
-        startIcon={<HistoryIcon />}
+                }
+              }}
+            >
+              Enter Aadhaar
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<HistoryIcon />}
               onClick={() => navigate("/salereturn")}
               sx={{
                 color: "#fff",
@@ -386,7 +405,7 @@ export default function Header({ sidebarState, setCartOpen }) {
                 "&:hover": {
                   backgroundColor: "#415a77",
                   color: "#fff",
-                  
+
                 }
               }}
             >
@@ -406,10 +425,10 @@ export default function Header({ sidebarState, setCartOpen }) {
                 "&:hover": {
                   backgroundColor: "#415a77",
                   color: "#fff",
-                 
+
                 }
               }}
-              
+
             >
               Sales History
             </Button>
@@ -428,18 +447,18 @@ export default function Header({ sidebarState, setCartOpen }) {
         onClose={() => setopenCheckout(false)}
       />
 
-<SalesHistoryModal 
-  open={openSalesHistory} 
-  onClose={() => setopenSalesHistory(false)} 
-/>
-<CheckPriceModal 
-  open={openCheckPrice} 
-  onClose={() => setopenCheckPrice(false)} 
-/>
-<SaleReturnModal 
-  open={openSaleReturn} 
-  onClose={() => setopenSaleReturn(false)} 
-/>
+      <SalesHistoryModal
+        open={openSalesHistory}
+        onClose={() => setopenSalesHistory(false)}
+      />
+      <CheckPriceModal
+        open={openCheckPrice}
+        onClose={() => setopenCheckPrice(false)}
+      />
+      <SaleReturnModal
+        open={openSaleReturn}
+        onClose={() => setopenSaleReturn(false)}
+      />
 
     </Box>
   );

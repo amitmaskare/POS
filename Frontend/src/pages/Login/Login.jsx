@@ -14,7 +14,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  useTheme
 } from "@mui/material";
 import { LuStore } from "react-icons/lu";
 import { login, forgot_password } from "../../services/authService";
@@ -30,7 +31,8 @@ export default function Login({ onLogin }) {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [openForgot, setOpenForgot] = useState(false);
- 
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   useEffect(() => {
   if (error || success) {
     const timer = setTimeout(() => {
@@ -106,7 +108,7 @@ export default function Login({ onLogin }) {
                   justifyContent: "center",
                 }}
               >
-                <LuStore size={30} color="#415a77" />
+                <LuStore size={32} color="#415a77"/>
               </Box>
               <Typography variant="h5" fontWeight="bold" color="#415a77">
                 POS System

@@ -9,11 +9,12 @@ import {
 } from "@mui/material"; 
 import SearchFilter from "../../components/MainContentComponents/SearchFilter";
 import TableLayout from "../../components/MainContentComponents/Table";
-import { columns } from "./columns";
+import { getColumns } from "./columns";
 import { searchProduct,add_product,favouriteList,looseItemList } from "../../services/productService";
 import { useOutletContext } from "react-router-dom";
 import { useToast } from "../../hooks/useToast";
 import Toast from "../../components/Toast/Toast";
+import { useTheme } from "@mui/material/styles";
 
 export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -136,6 +137,10 @@ const getFavouriteList=async()=>{
     if (activeFilter === "Loose Items") return looseItems;
     return [];
   };
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
+  const columnsConfig = getColumns(isDark);
   return (
     <>
       <main
@@ -147,7 +152,7 @@ const getFavouriteList=async()=>{
         }}
       >
         <div className="row">
-          <div className="col-12 col-md-12 col-lg-8">
+          <div className="col-12 col-md-12 col-lg-8" >
             <SearchFilter value={barcode} onSearchChange={(e) => handleBarcodeChange(e.target.value)}
               autoFocus />
           </div>
@@ -160,11 +165,13 @@ const getFavouriteList=async()=>{
               onClick={() => setActiveFilter(item)}
               className="btn rounded-pill"
               style={{
-                backgroundColor:
-                  activeFilter === item ? "#415a77" : "transparent",
-                border:
-                  activeFilter === item ? "1px solid #415a77" : "1px solid #ccc",
-                color: activeFilter === item ? "#fff" : "#444",
+                backgroundColor: activeFilter === item ? "#415a77" : "transparent",
+                border: activeFilter === item ? "1px solid #415a77" : "1px solid #415a77",
+                color: activeFilter === item
+                  ? "#fff" 
+                  : isDark 
+                    ? "#fff"  // text white in dark mode
+                    : "#415a77", // text dark in light mode
               }}
             >
               {item}
@@ -180,7 +187,7 @@ const getFavouriteList=async()=>{
         {getFilteredProducts().length > 0 ? (
           <div className="row">
             <div className="col-12 col-md-12 col-lg-8">
-              <TableLayout columns={columns} rows={getFilteredProducts()} extra={{ selectItem: handleSelectItem }} actionButtons={
+              <TableLayout columns={columnsConfig} rows={getFilteredProducts()} extra={{ selectItem: handleSelectItem }} actionButtons={
                 [
                   {
                     label: "Filter",

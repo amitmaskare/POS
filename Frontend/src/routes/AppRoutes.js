@@ -41,7 +41,7 @@ import Permission from "../pages/Permission/Permission";
 import RolePermission from "../pages/RolePermission/RolePermission";
 import UserPermissions from "../pages/Users/UserPermissions";
 
-const AppRoutes = () => {
+const AppRoutes = ({ darkMode, toggleDarkMode }) => {
  const [auth, setAuth] = useState(localStorage.getItem('token'));
 
   return (
@@ -55,13 +55,13 @@ const AppRoutes = () => {
      
            {/* PROTECTED PAGES */}
            <Route
-             path="/"
-             element={
-               <ProtectedRoute>
-                 <Manage />
-               </ProtectedRoute>
-             }
-           >
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Manage darkMode={darkMode} toggleDarkMode={toggleDarkMode}/>
+          </ProtectedRoute>
+        }
+      >
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="products" element={<PermissionRoute permission="view-product">
       <Products />

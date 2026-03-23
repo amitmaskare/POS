@@ -7,7 +7,7 @@ import SaleReturnCart from "../pages/SaleReturn/Cart";
 import { Box, useMediaQuery, useTheme } from "@mui/material";
 import { Drawer } from "@mui/material";
 
-const Manage = () => {
+const Manage = ({ darkMode, toggleDarkMode }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md')); // < 900px
   const location = useLocation();
@@ -80,17 +80,18 @@ const Manage = () => {
   const HEADER_HEIGHT = isMobile ? 60 : 70;
   useEffect(() => {
     if (isMobile) {
-      setSidebarState("hidden");   
+      setSidebarState("hidden");
     } else {
-      setSidebarState("expanded"); 
+      setSidebarState("expanded");
     }
   }, [isMobile]);
-  
+
   return (
     <Box sx={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden" }}>
 
       {/* Sidebar */}
-      <Sidebar sidebarState={sidebarState} setSidebarState={setSidebarState} />
+      <Sidebar sidebarState={sidebarState} setSidebarState={setSidebarState} darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode} />
 
       {/* Right Content */}
       <Box
@@ -112,13 +113,13 @@ const Manage = () => {
             left: isMobile ? 0 : `${SIDEBAR_WIDTH}px`,
             top: 0,
             width: isMobile ? "100%" : `calc(100% - ${SIDEBAR_WIDTH}px)`,
-            bgcolor: "#fff",
+            bgcolor: darkMode ? "#0d1b2a" : "#fff",
             zIndex: 1500,
-            borderBottom: "1px solid #eee",
+            borderBottom: darkMode ? "1px solid #415a77" : "1px solid #eee",
             transition: "0.3s ease",
           }}
         >
-          <Header sidebarState={sidebarState} setCartOpen={setCartOpen}/>
+          <Header sidebarState={sidebarState} setCartOpen={setCartOpen} />
         </Box>
 
         {/* Page Content */}
@@ -133,42 +134,40 @@ const Manage = () => {
               width: "6px",
             },
             "&::-webkit-scrollbar-track": {
-              background: "#f1f1f1",
-              borderRadius: "10px",
+              background: darkMode ? "#1b263b" : "#f1f1f1",
             },
             "&::-webkit-scrollbar-thumb": {
-              background: "#5A8DEE",
-              borderRadius: "10px",
+              background: darkMode ? "#415A77" : "#5A8DEE",
               "&:hover": {
-                background: "#4a7dd9",
+                background: darkMode ? "#2e416d" : "#4a7dd9",
               },
             },
-            // Firefox Scrollbar
-            scrollbarWidth: "thin",
-            scrollbarColor: "#5A8DEE #f1f1f1",
+            scrollbarColor: darkMode ? "#415A77 #1b263b" : "#5A8DEE #f1f1f1",
           }}
         >
-         <Outlet context={{ addToCart }} />
+          <Outlet context={{ addToCart }} />
         </Box>
 
         {/* Desktop cart */}
-{!isMobile && isDashboard && (<Cart cart={posSystemCart} setCart={setPosSystemCart} />)}
+        {!isMobile && isDashboard && (<Cart cart={posSystemCart} setCart={setPosSystemCart} />)}
 
-{/* Mobile cart drawer */}
-{isMobile && isDashboard && (
-  <Drawer
-    anchor="right"
-    open={cartOpen}
-    onClose={() => setCartOpen(false)}
-  >
-    <Cart
-      cart={posSystemCart}
-      setCart={setPosSystemCart}
-      cartOpen={cartOpen}
-      setCartOpen={setCartOpen}
-    />
-  </Drawer>
-)}
+        {/* Mobile cart drawer */}
+        {isMobile && isDashboard && (
+          <Drawer
+            anchor="right"
+            open={cartOpen}
+            onClose={() => setCartOpen(false)}
+          >
+            <Cart
+              cart={posSystemCart}
+              setCart={setPosSystemCart}
+              cartOpen={cartOpen}
+              setCartOpen={setCartOpen}
+              darkMode={darkMode}
+              toggleDarkMode={toggleDarkMode}
+            />
+          </Drawer>
+        )}
         {isSaleReturnDashboard && <SaleReturnCart cart={saleReturnCart} setCart={setSaleReturnCart} />}
       </Box>
     </Box>

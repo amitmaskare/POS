@@ -2,20 +2,20 @@ import { Button,Box } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SecurityIcon from "@mui/icons-material/Security";
-export const columns = [
+export const getColumns = (isDark) => [
   {
     id: "name",
     label: "User Info",
     render: (row) => (
-      <div style={{ display: "flex", flexDirection: "column", fontSize: "13px", color: "#415a77", gap: "2px" }}>
+      <div style={{ display: "flex", flexDirection: "column", fontSize: "12.9px", gap: "2px" }}>
         {/* Name */}
-        <span style={{ fontWeight: 600 }}>{row?.name}</span>
+        <span style={{ fontWeight: 600,textTransform:"capitalize" , color: isDark ? "#fff" : "#415A77"}}>{row?.name}</span>
   
         {/* Email */}
-        <span style={{ fontSize: "14px", color: "#000" }}>{row?.email}</span>
+        <span style={{ fontSize: "12px",fontWeight:600}}>{row?.email}</span>
   
         {/* Role */}
-        <span style={{ fontSize: "14px", color: "#2E7D32", fontWeight: 500 }}>{row?.roleName}</span>
+        <span style={{ fontSize: "12px",fontWeight:600 }}>{row?.roleName}</span>
       </div>
     ),
   },
@@ -24,12 +24,24 @@ export const columns = [
     label: "Created At",
     render: (row) => {
       if (!row?.created_at) return "";
-      // Split date and time
-      const [date, time] = row.created_at.split("T");
-      const formattedTime = time.split(".")[0]; // remove .000Z
+  
+      const dateObj = new Date(row.created_at);
+  
+      const formattedDate = dateObj.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+  
+      const formattedTime = dateObj.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+  
       return (
-        <span style={{ fontSize: "14px", color: "#415a77", lineHeight: 1.4 }}>
-          {date} <br />
+        <span style={{ fontSize: "12px",fontWeight:600}}>
+          {formattedDate} <br />
           {formattedTime}
         </span>
       );

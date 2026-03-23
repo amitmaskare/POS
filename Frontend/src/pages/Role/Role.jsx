@@ -11,10 +11,10 @@ import Title from "../../components/MainContentComponents/Title";
 import Stats from "../../components/MainContentComponents/Stats";
 import TableLayout from "../../components/MainContentComponents/Table";
 import { stats } from "./StatsData";
-import { Column } from "./Column";
+import { getColumns } from "./Column";
 import {roleList,getById,deleteItem} from "../../services/RoleService"
 import ModalLayout from "./Modal";
-
+import { useTheme } from "@mui/material/styles";
 export default function Role() {
     const [open, setOpen] = useState(false);
     const[data,setData]=useState([])
@@ -89,6 +89,9 @@ export default function Role() {
               }
 
         };
+        const theme = useTheme();
+        const isDark = theme.palette.mode === "dark";
+        const columnsConfig = getColumns(isDark);
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Title
@@ -118,11 +121,11 @@ export default function Role() {
       
       {/* USERS TABLE */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3} mt={3}>
-        <Typography variant="h6" fontWeight={700} sx={{color:"#415a77"}}>
+        <Typography variant="h6" fontWeight={700} sx={{color: isDark ? "#fff" : "#415a77"}}>
           Role
         </Typography>
       </Box>
-      <TableLayout columns={Column} rows={data}  extra={{ deleteItem: handleDelete, edit: handleEdit }}  actionButtons={[
+      <TableLayout columns={columnsConfig} rows={data}  extra={{ deleteItem: handleDelete, edit: handleEdit }}  actionButtons={[
             {
               label: "Filter",
               icon: <FilterListIcon />,

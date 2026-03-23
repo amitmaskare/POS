@@ -1,6 +1,6 @@
 import React from "react";
-import { Box, Stack, Button, TextField, InputAdornment } from "@mui/material";
-import { IoSearch } from "react-icons/io5";
+import { Box, Stack, Button, TextField } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 const SearchFilter = ({
   placeholder = "Search Barcode...",
@@ -9,28 +9,36 @@ const SearchFilter = ({
   buttons = [],
   extraFields = [],
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   return (
-    <Box sx={{ p: 1, borderRadius: 2, width: "90%",ml:2,mt:2 }}>
+    <Box sx={{ borderRadius: 2, width: "90%",mt:2 }}>
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={2}
         alignItems={{ xs: "stretch", sm: "center" }}
+        sx={{ width: "100%" }}
       >
-        {/* Search Field */}
+        <Box sx={{ flex: 1, minWidth: 200 }}>
         <TextField
+          fullWidth
           variant="outlined"
           size="small"
           placeholder={placeholder}
           onChange={onSearchChange}
           value={value}
-          sx={{ flex: 1, bgcolor: "#fff",color:"#415a77" }}
-        />
-
-        {/* Extra Fields (e.g., Select Dropdown) */}
-        {extraFields.length > 0 &&
-          extraFields.map((field, index) => <Box key={index}>{field}</Box>)}
-
-        {/* Dynamic Buttons */}
+            sx={{
+              bgcolor: isDark ? "#1b263b" : "#fff",
+              input: {
+                color: isDark ? "#fff" : "#415a77",
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: isDark ? "#fff" : "#415a77",
+              },
+            }}
+          />
+        </Box>
+        
         {buttons.length > 0 && (
           <Stack direction="row" spacing={1}>
             {buttons.map((btn, index) => (
@@ -39,13 +47,21 @@ const SearchFilter = ({
                 variant={btn.variant || "outlined"}
                 startIcon={btn.icon || null}
                 onClick={btn.onClick || (() => {})}
-                sx={btn.sx || {}}
+                sx={{
+                  borderColor: isDark ? "#fff" : "#415a77",
+                  color: isDark ? "#fff" : "#415a77",
+                  height: 40,
+                  ...btn.sx,
+                }}
               >
                 {btn.label}
               </Button>
             ))}
           </Stack>
         )}
+        {/* EXTRA FIELDS */}
+        {extraFields.length > 0 &&
+          extraFields.map((field, index) => <Box key={index}>{field}</Box>)}
       </Stack>
     </Box>
   );

@@ -1,37 +1,87 @@
-import { Button,Box } from "@mui/material";
+import { Button, Box } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong"; // ✅ PO icon
 
-export  const columns = [
+export const getColumns = (isDark) => [
   {
-    id: "po_number",
+    id: "po_info",
     label: "Purchase Order",
     render: (row) => (
-      <div>
-        <div>{row.po_number}</div>
-        <div style={{ fontSize: "12px", color: "#415A77" }}>
-          {row.purchase_date}
-        </div>
-        <div style={{ fontSize: "12px", color: "#6c757d" }}>
-          Type: {row.type}
-        </div>
-      </div>
+      <Box display="flex" gap={1.5} alignItems="flex-start">
+
+        {/* ✅ Icon */}
+        <ReceiptLongIcon
+          sx={{
+            fontSize: 20,
+            color: isDark ? "#fff" : "#415A77",
+            mt: "1rem"
+          }}
+        />
+
+        {/* ✅ Text */}
+        <Box>
+          <Box sx={{ fontWeight: 600, color: isDark ? "#fff" : "#415A77", }}>
+            {row.po_number}
+          </Box>
+
+          <Box sx={{ fontSize: "12px", fontWeight: 600 }}>
+            {row.supplier_name}
+          </Box>
+
+          <Box
+            component="span"
+            sx={{
+              ml: 0.5,
+              px: 1,
+              py: 0.2,
+              borderRadius: 1,
+              bgcolor:
+                row.type?.toLowerCase() === "send"
+                  ? "#E6F4EA"
+                  : row.type?.toLowerCase() === "draft"
+                    ? "#FFF4E6"
+                    : "#F3F4F6",
+              color:
+                row.type?.toLowerCase() === "send"
+                  ? "#2E7D32"
+                  : row.type?.toLowerCase() === "draft"
+                    ? "#D97706"
+                    : "#6B7280",
+              fontWeight: 700,
+              fontSize: "11px",
+              display: "inline-block",
+            }}
+          >
+            {row.type}
+          </Box>
+        </Box>
+      </Box>
     )
   },
 
-  { id: "supplier_name", label: "Supplier" },
-
   {
-    id: "total_items",
+    id: "summary",
     label: "Summary",
     render: (row) => (
-      <div>
-        <div>Items: {row.total_items}</div>
-        <div style={{ fontSize: "12px", color: "#415A77" }}>
-          ₹{row.amount}
-        </div>
-        <div style={{ fontSize: "12px", color: "#2E7D32" }}>
+      <Box>
+        <Box sx={{ fontSize: "12px", fontWeight: 600 }} >Items: {row.total_items}</Box>
+
+
+        <Box sx={{ fontSize: "12px", fontWeight: 600 }}>
+          Cost: ₹{row.amount}
+        </Box>
+
+        <Box
+          sx={{
+            fontSize: "12px",
+            color: row.status === "received" ? "#2E7D32" : "#D97706",
+            fontWeight: 600,
+            textTransform: "capitalize"
+          }}
+        >
           {row.status}
-        </div>
-      </div>
+        </Box>
+      </Box>
     )
   },
 
@@ -41,12 +91,24 @@ export  const columns = [
     render: (row, extra) => (
       <Box display="flex" gap={1}>
         <Button
+          variant="contained"
           size="small"
-          variant="outlined"
-          color="primary"
           onClick={() => extra?.edit(row?.id)}
+          sx={{
+            minWidth: "30px",
+            width: "30px",
+            height: "30px",
+            padding: "0",
+            borderRadius: "50%",
+            border: "1px solid #2196F3",
+            backgroundColor: "#D6EAF8",
+            color: "#1565C0",
+            "&:hover": {
+              backgroundColor: "#BBDEFB",
+            }
+          }}
         >
-          Edit
+          <EditIcon sx={{ fontSize: 16 }} />
         </Button>
       </Box>
     )

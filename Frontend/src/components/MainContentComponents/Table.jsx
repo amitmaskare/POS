@@ -14,8 +14,9 @@ import {
   Typography,
   Button
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
-const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." ,actionButtons = null,extra = {}  }) => {
+const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search...", actionButtons = null, extra = {} }) => {
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState(columns[0]?.id || "");
   const [page, setPage] = useState(0);
@@ -31,7 +32,7 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
   /** Filter rows based on search */
   const filteredRows = rows.filter((row) => {
     if (!row || typeof row !== 'object') return false;
-    
+
     return Object.values(row).some((value) =>
       String(
         typeof value === "object" ? JSON.stringify(value) : value
@@ -44,7 +45,7 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
   /** Sort Rows */
   const sortedRows = [...filteredRows].sort((a, b) => {
     if (!a || !b) return 0;
-    
+
     const A = a[orderBy];
     const B = b[orderBy];
 
@@ -61,17 +62,20 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
-
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   return (
     <Paper sx={{ borderRadius: 3, boxShadow: 3, mt: 4, p: 2 }}>
-      
 
-     {/* 🔍 SEARCH + ACTION BUTTONS */}
-<Box
+
+      {/* 🔍 SEARCH + ACTION BUTTONS */}
+      <Box
   display="flex"
+  flexDirection={{ xs: "column", sm: "row" }}
   justifyContent="space-between"
-  alignItems="center"
+  alignItems={{ xs: "stretch", sm: "center" }} 
   mb={2}
+  gap={1} 
 >
   {/* Search Bar */}
   <TextField
@@ -81,38 +85,62 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
     value={search}
     onChange={(e) => setSearch(e.target.value)}
     sx={{
-      width: {
-        xs: "100%",   // mobile
-        sm: "100%",
-        md: "70%",
-        lg: "60%"
-      }
+      width: { xs: "100%", sm: "auto", md: "70%", lg: "60%" },
+      color: "#fff",
+      "& .MuiOutlinedInput-root": {
+        color: isDark ? "#fff" : "#415a77",
+
+        "& fieldset": {
+          borderColor: isDark ? "#fff" : "#415a77",
+        },
+
+        "&:hover fieldset": {
+          borderColor: isDark ? "#fff" : "#415a77",
+        },
+
+        "&.Mui-focused fieldset": {
+          borderColor: isDark ? "#fff" : "#415a77",
+        },
+      },
+
+      "& .MuiInputBase-input::placeholder": {
+        color: isDark ? "#ccc" : "#415a77",
+        opacity: 1,
+      },
     }}
   />
 
-  {/* ⭐ Reusable Buttons */}
-  <Box display="flex" gap={1}>
-  {actionButtons?.map((btn, index) => (
-    <Button
-      key={index}
-      variant={btn.variant || "contained"}
-      startIcon={btn.icon || null}
-      color={btn.color || "primary"}
-      onClick={btn.onClick}
-      sx={{
-       color:"#415a77",
-        border: "1px solid #415a77",
-       
-      }}
-    >
-      {btn.label}
-    </Button>
-  ))}
-</Box>
+  <Box
+    display="flex"
+    justifyContent={"center"}
+    gap={1}
+    mt={{ xs: 1, sm: 0 }} 
+  
+  >
+    {actionButtons?.map((btn, index) => (
+      <Button
+        key={index}
+        variant={btn.variant || "outlined"}
+        startIcon={btn.icon || null}
+        onClick={btn.onClick}
+        sx={{
+          bgcolor: isDark ? "#1b263b" : "#fff",
+          color: isDark ? "#fff" : "#415a77",
+          borderColor: isDark ? "#fff" : "#415a77",
+          "&:hover": {
+            borderColor: isDark ? "#fff" : "#415a77",
+            bgcolor: isDark ? "#243447" : "#f5f5f5",
+          },
+        }}
+      >
+        {btn.label}
+      </Button>
+    ))}
+  </Box>
 </Box>
 
-<TableContainer 
->
+      <TableContainer
+      >
         <Table stickyHeader>
           <TableHead
             sx={{
@@ -151,16 +179,16 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
           <TableBody>
             {paginatedData && paginatedData.length > 0 ? paginatedData.map((row, index) => {
               if (!row || typeof row !== 'object') return null; // Skip invalid rows
-              
+
               return (
-              <TableRow hover key={index}>
-                {columns.map((col) => (
-                  <TableCell key={col.id}>
-                    {col.render ? col.render(row, extra) : (row[col.id] ?? "-")}
-                  </TableCell>
-                ))}
-              </TableRow>
-            );
+                <TableRow hover key={index}>
+                  {columns.map((col) => (
+                    <TableCell key={col.id}>
+                      {col.render ? col.render(row, extra) : (row[col.id] ?? "-")}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
             }) : (
               <TableRow>
                 <TableCell colSpan={columns.length} align="center">
@@ -182,6 +210,23 @@ const TableLayout = ({ columns = [], rows = [], searchPlaceholder = "Search..." 
         onRowsPerPageChange={(e) => {
           setRowsPerPage(parseInt(e.target.value, 10));
           setPage(0);
+        }}
+        sx={{
+          width: "100%",
+          "@media (max-width:450px)": {
+            width: "95%",
+            margin: "0 auto",
+            "& .MuiTablePagination-toolbar": {
+              minHeight: "40px",
+              padding: "0 6px"
+            },
+            "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+              fontSize: "12px"
+            },
+            "& .MuiIconButton-root": {
+              padding: "4px"
+            }
+          }
         }}
       />
     </Paper>

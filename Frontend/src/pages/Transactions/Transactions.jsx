@@ -89,6 +89,18 @@ useEffect(() => {
           All Transactions
         </Typography>
       </Paper>
+      <Box
+  sx={{
+    width: "100%",
+    "@media (max-width:500px)": {
+      width: "100%",
+      margin: "0 auto",
+      "& .MuiTableCell-root": {
+        padding: "6px",
+        fontSize: "12px"
+      }
+    }
+  }}>
       <TableLayout
   columns={columns}
   rows={transactions}
@@ -99,7 +111,7 @@ useEffect(() => {
     )
   }}
 />
-
+</Box>
     </Box>
     </>
   );

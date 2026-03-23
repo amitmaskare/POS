@@ -1,8 +1,9 @@
 import React from "react";
+import { Box, IconButton, Typography, Button } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import PrintIcon from "@mui/icons-material/Print";
-
+import { useTheme } from "@mui/material/styles";
 const PosCart = ({
   title,
   cart,
@@ -20,6 +21,8 @@ const PosCart = ({
   checkoutSale,
   isReturn = false,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   return (
     <aside
       className="cart p-3"
@@ -27,126 +30,218 @@ const PosCart = ({
         flex: 1,
         display: "flex",
         flexDirection: "column",
+        backgroundColor: isDark ? "#1b263b" : "#fff"
       }}
     >
-      <h4 className="fw-bold mb-4" style={{ color: "#415a77" }}>
+      <h4 className="fw-bold mb-4" style={{ color: isDark ? "#fff" : "#415a77" }}>
         {title}
       </h4>
 
       {/* Product List */}
       <div
-        className="mt-1"
-        style={{ flex: 1, overflowY: "auto", paddingRight: "6px" }}
-      >
-        {cart.map((item) => (
-          <div
-            key={item.id}
-            className="d-flex p-3 rounded-3 mb-3"
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e6e6e6",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-              alignItems: "center",
+  style={{
+    flex: 1,
+    overflowY: "auto",
+    paddingRight: 8,
+    paddingTop: 4,
+  }}
+>
+  {cart.map((item) => (
+    <Box
+      key={item.id}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2.5,
+        p: 1.5,
+        mb: 1.5,
+        borderRadius: "16px",
+        bgcolor: "#fff",
+        border: "1px solid #f0f2f5",
+        boxShadow: "0 10px 20px rgba(0,0,0,0.03)",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        position: "relative",
+        overflow: "hidden",
+        border:"1px solid #c5cee0",
+
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow: "0 15px 30px rgba(65, 90, 119, 0.08)",
+          borderColor: "#e0e7ff",
+        },
+      }}
+    >
+      {/* Visual Accent - A subtle stripe on the left */}
+      <Box
+        sx={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 4,
+          bgcolor:  "#415a77"
+          
+        }}
+      />
+
+      {/* Product Image with soft shadow */}
+      <Box
+        component="img"
+        src={item?.image || ""}
+        alt="product"
+        sx={{
+          width: 60,
+          height: 60,
+          borderRadius: "50%",
+         
+          objectFit: "cover",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+        }}
+      />
+
+      {/* Product Info */}
+      <Box flex={1}>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+          <Box>
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontSize: "1rem",
+                color: "#415a77",
+                textTransform: "capitalize"
+              }}
+            >
+              {item.product_name}
+            </Typography>
+            <Box
+    sx={{
+      mt: 0.5,
+      px: 1,
+      py: "2px",
+      borderRadius: 1,
+      fontSize: 11,
+      fontWeight: 600,
+      display: "inline-block",
+      bgcolor: "#647D9A",
+      color:  "#fff"
+    }}
+  >
+    QTY: {item.qty}
+  </Box>
+          </Box>
+
+          <IconButton
+            size="small"
+            onClick={() => deleteItem(item.id)}
+            sx={{
+              color: "#E63946",
+              bgcolor: "rgba(230, 57, 70, 0.05)",
+              "&:hover": { bgcolor: "rgba(230, 57, 70, 0.12)" },
             }}
           >
-            <img
-              src={item?.image || ""}
-              alt="product"
-              className="rounded-3"
-              style={{ width: 55, height: 55, objectFit: "cover" }}
-            />
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
 
-            <div className="ms-3 flex-grow-1">
-              <div className="d-flex justify-content-between align-items-start">
-                <h6 className="fw-semibold mb-1" style={{ fontSize: "15px" }}>
-                  {item.product_name}
-                </h6>
-
-                <button
-                  className="btn p-1 text-danger"
-                  onClick={() => deleteItem(item.id)}
+        {/* Controls Row */}
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mt={2}
+        >
+          {/* Quantity Stepper */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              bgcolor: "#F8FAFC",
+              borderRadius: "10px",
+              border: "1px solid #EDF2F7",
+            }}
+          >
+            {isReturn && item.return_qty ? (
+              <Typography sx={{ px: 2, fontWeight: 700, color: "#415A77" }}>
+                {item.return_qty}
+              </Typography>
+            ) : (
+              <>
+                <IconButton 
+                  size="small" 
+                  onClick={() => updateQty(item.id, "dec")}
+                  sx={{ color: "#415A77", p: 0.5 }}
                 >
-                  <DeleteIcon fontSize="small" />
-                </button>
-              </div>
+                  <span style={{ fontSize: 18 }}>−</span>
+                </IconButton>
+                <Typography 
+                  sx={{ width: 30, textAlign: "center", fontWeight: 700, fontSize: 14 ,color: "#415a77"}}
+                >
+                  {item.qty}
+                </Typography>
+                <IconButton 
+                  size="small" 
+                  onClick={() => updateQty(item.id, "inc")}
+                  sx={{ color: "#415A77", p: 0.5 }}
+                >
+                  <span style={{ fontSize: 18 }}>+</span>
+                </IconButton>
+              </>
+            )}
+          </Box>
 
-              <div className="d-flex justify-content-between align-items-center mt-2">
-                {/* Quantity */}
-                <div
-                  className="d-flex align-items-center rounded-pill px-2 py-1"
-                  style={{
-                    border: "1px solid #dcdcdc",
-                    width: "90px",
-                    justifyContent: "space-between",
-                    height: "32px",
+          {/* Price Section */}
+          <Box display="flex" alignItems="center">
+            {editingPriceId === item.id ? (
+              <input
+                type="number"
+                value={item.price}
+                autoFocus
+                style={{
+                  width: 70,
+                  textAlign: "right",
+                  padding: "6px 10px",
+                  borderRadius: "8px",
+                  border: "2px solid #415A77",
+                  outline: "none",
+                  fontWeight: 600,
+                }}
+                onChange={(e) => updatePrice(item.id, e.target.value)}
+                onBlur={() => setEditingPriceId(null)}
+                onKeyDown={(e) => e.key === "Enter" && setEditingPriceId(null)}
+              />
+            ) : (
+              <Box 
+                onClick={() => setEditingPriceId(item.id)}
+                sx={{ 
+                  cursor: "pointer", 
+                  textAlign: "right",
+                  "&:hover .edit-icon": { opacity: 1 } 
+                }}
+              >
+                <Typography 
+                  sx={{ 
+                    fontWeight: 800, 
+                    fontSize: "15px", 
+                    color: "#415a77",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5
                   }}
                 >
-                  {isReturn && item.return_qty ? (
-                    <span className="fw-bold" style={{ fontSize: "14px" }}>
-                      {item.return_qty}
-                    </span>
-                  ) : (
-                    <>
-                      <button
-                        className="btn btn-sm p-0 px-2"
-                        onClick={() => updateQty(item.id, "dec")}
-                      >
-                        −
-                      </button>
-                      <span
-                        className="fw-bold"
-                        style={{ fontSize: "14px" }}
-                      >
-                        {item.qty}
-                      </span>
-                      <button
-                        className="btn btn-sm p-0 px-2"
-                        onClick={() => updateQty(item.id, "inc")}
-                      >
-                        +
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {/* Price */}
-                <div className="d-flex align-items-center gap-2">
-                  {editingPriceId === item.id ? (
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      style={{ width: "80px" }}
-                      value={item.price}
-                      autoFocus
-                      onChange={(e) =>
-                        updatePrice(item.id, e.target.value)
-                      }
-                      onBlur={() => setEditingPriceId(null)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && setEditingPriceId(null)
-                      }
-                    />
-                  ) : (
-                    <h6
-                      className="fw-bold mb-0"
-                      style={{ fontSize: "15px" }}
-                    >
-                      ₹{item.price}
-                    </h6>
-                  )}
-
-                  <button
-                    className="btn btn-sm p-0 text-primary"
-                    onClick={() => setEditingPriceId(item.id)}
-                  >
-                    <EditIcon fontSize="small" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+                  ₹{item.price}
+                  <EditIcon 
+                    className="edit-icon"
+                    sx={{ fontSize: 14, transition: "0.2s" }} 
+                  />
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  ))}
+</div>
 
       {/* Totals */}
       <div className="border-top pt-3 mt-4">
@@ -171,10 +266,10 @@ const PosCart = ({
         </div>
 
         <div className="d-flex justify-content-between fw-bold border-top pt-3 mt-4">
-          <span style={{ color: "#415a77" }}>
+          <span style={{ color: isDark ? "#fff" : "#415a77" }}>
             {isReturn && total < 0 ? "Total Refund" : "Total"}
           </span>
-          <span style={{ color: "#415a77" }}>
+          <span style={{ color: isDark ? "#fff" : "#415a77" }}>
             ₹{isReturn
               ? Math.abs(Number(total)).toFixed(2)
               : Number(total).toFixed(2)}
@@ -182,14 +277,14 @@ const PosCart = ({
         </div>
 
         {/* Payment Buttons */}
-        <div className="mt-3">
-        {renderPaymentButtons}
+        <div className="mt-3" style={{ color: isDark ? "#fff" : "#415a77" }}>
+          {renderPaymentButtons}
 
         </div>
 
         {/* Cart Options */}
-        <div className="mt-3">
-        {renderCartOptions}
+        <div className="mt-3" style={{ color: isDark ? "#fff" : "#415a77" }} >
+          {renderCartOptions}
 
         </div>
 

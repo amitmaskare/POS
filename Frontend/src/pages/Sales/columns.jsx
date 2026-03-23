@@ -1,21 +1,43 @@
 import { Button, Box } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-export const columns = [
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
+import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
+
+export const getColumns = (isDark) => [
   {
     id: "invoice_no",
     label: "Invoice Details",
     render: (row) => (
-      <div>
-        <div>{row.invoice_no}</div>
+      <Box display="flex" gap={1.5} alignItems="flex-start">
 
-        <div style={{ fontSize: "12px", color: "#415A77" }}>
-          {row.sale_date}
-        </div>
+        <ReceiptLongIcon sx={{ fontSize: 20, mt: "2px", color: isDark ? "#fff" : "#415A77" }} />
 
-        <div style={{ fontSize: "12px", color: "#2E7D32", fontWeight: 500 }}>
-          {row.status}
+        <div>
+          <div style={{ fontWeight: 600, color: isDark ? "#fff" : "#415A77" }}>{row.invoice_no}</div>
+
+          <div
+            style={{
+              fontSize: "12px",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "4px"
+            }}
+          >
+
+            {new Date(row.sale_date).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })} 
+            {/* <span>{row.status}</span> */}
+          </div>
+
+
         </div>
-      </div>
+      </Box>
     )
   },
 
@@ -24,9 +46,30 @@ export const columns = [
     label: "Summary",
     render: (row) => (
       <div>
-        <div>Items: {row.total_items}</div>
-        <div style={{ fontSize: "12px", color: "#415A77" }}>
-          ₹{row.amount}
+        <div
+          style={{
+            fontSize: "12.9px",
+            display: "flex",
+            fontWeight:600,
+            alignItems: "center",
+            gap: "4px"
+          }}
+        >
+          <Inventory2Icon sx={{ fontSize: 15 ,color: isDark ? "#fff" : "#415A77" }} />
+          Items:{row.total_items} 
+        </div>
+
+        <div
+          style={{
+            fontSize: "12.9px",
+            fontWeight:600,
+            display: "flex",
+            alignItems: "center",
+            gap: "4px"
+          }}
+        >
+          <CurrencyRupeeIcon sx={{ fontSize: 15 }} />
+          {row.amount}
         </div>
       </div>
     )
@@ -40,7 +83,6 @@ export const columns = [
         <Button
           size="small"
           variant="outlined"
-          color="primary"
           onClick={() => extra?.view(row?.id)}
           sx={{
             minWidth: "30px",
@@ -53,7 +95,7 @@ export const columns = [
             color: "#1565C0"
           }}
         >
-          <VisibilityIcon fontSize="16"/>
+          <VisibilityIcon sx={{ fontSize: 16 }} />
         </Button>
       </Box>
     )

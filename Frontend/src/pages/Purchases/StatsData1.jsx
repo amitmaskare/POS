@@ -2,8 +2,8 @@ import { TfiPackage } from "react-icons/tfi";
 import WarehouseIcon from "@mui/icons-material/Inventory2";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
-import {Box} from "@mui/material";
-export  const statsData1 = [
+import { Box } from "@mui/material";
+export const statsData1 = [
   {
     icon: (
       <Box
@@ -17,7 +17,7 @@ export  const statsData1 = [
           justifyContent: "center",
         }}
       >
-       <WarehouseIcon sx={{ fontSize: 28, color: "#2196f3" }} />
+        <WarehouseIcon sx={{ fontSize: 28, color: "#2196f3" }} />
       </Box>
     ),
     title: "Receive Inventory",
@@ -42,7 +42,7 @@ export  const statsData1 = [
     title: "Supplier Performance",
     color: "#4caf50",
   },
-  
+
   {
     icon: (
       <Box

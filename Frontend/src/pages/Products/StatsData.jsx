@@ -55,7 +55,6 @@ export const statsData = [
             width: 50,
             height: 50,
             borderRadius: "50%",
-           
             backgroundColor: "#ed6c0230",
             display: "flex",
             alignItems: "center",
