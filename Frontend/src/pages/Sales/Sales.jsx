@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -19,158 +19,124 @@ import { FaRegSquarePlus } from "react-icons/fa6";
 import { rows } from "./rows";
 import { columns } from "./columns";
 import {saleList,getSaleById} from "../../services/saleService"
-import { printThermalReceipt, formatReceiptData } from "../../utils/thermalPrint";
 
 
 export default function Sales() {
 
   const [openModal, setOpenModal] = React.useState(false);
   const [openReturnModal, setOpenReturnModal] = React.useState(false);
-   const[data,setData]=useState([])
-    const[success,setSuccess]=useState('')
-    const[error,setError]=useState('')
-    const[loading,setLoading]=useState(false)
+  const [data, setData] = useState([])
+  const [success, setSuccess] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const [viewData, setviewData] = useState(null);
-     useEffect(()=>{
-      fetchSaleList()
-      },[])
-      
-        const fetchSaleList =async()=>{
-          setSuccess(null)
-          setError(null)
-          try{
-            const result=await saleList()
+  useEffect(() => {
+    fetchSaleList()
+  }, [])
 
-            console.log(result );
-            if(result.status===true)
-            {
-              setSuccess(result.message)
-              setData(result.data)
-            }else{
-              setError(result.message)
-            }
-          }catch(error)
-          {
-              setError(error.response?.data?.message || error.message);
-          }
-        }
+  const fetchSaleList = async () => {
+    setSuccess(null)
+    setError(null)
+    try {
+      const result = await saleList()
+      if (result.status === true) {
+        setSuccess(result.message)
+        setData(result.data)
+      } else {
+        setError(result.message)
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || error.message);
+    }
+  }
 
-          const handleView =async(id) => {
-                                
-                                try{    
-                                  const result=await getSaleById(id)
-                                  if(result.status===true)
-                                  {
-                                   
-                                   setviewData(result.data);
-                                   setOpenModal(true);
-                                  }else{
-                                    console.log(result.message)
-                                  }
-                                }
-                              catch(error)
-                                {
-                                   console.log(error.response?.data?.message || error.message)
-                                }
-                          };
-         const handleReturn=async(id)=>{
-             try{
-                                  const result=await getSaleById(id)
-                                  if(result.status===true)
-                                  {
+  const handleView = async (id) => {
 
-                                   setviewData(result.data);
-                                   setOpenReturnModal(true);
-                                  }else{
-                                    console.log(result.message)
-                                  }
-                                }
-                              catch(error)
-                                {
-                                   console.log(error.response?.data?.message || error.message)
-                                }
-        }
+    try {
+      const result = await getSaleById(id)
+      if (result.status === true) {
 
-        const handlePrint = async (id) => {
-          try {
-            const result = await getSaleById(id);
-            if (result.status === true) {
-              const { sale, items } = result.data;
+        setviewData(result.data);
+        setOpenModal(true);
+      } else {
+        console.log(result.message)
+      }
+    }
+    catch (error) {
+      console.log(error.response?.data?.message || error.message)
+    }
+  };
+  const handleReturn = async (id) => {
+    try {
+      const result = await getSaleById(id)
+      if (result.status === true) {
 
-              // Format the data for thermal printing
-              const receiptData = formatReceiptData(
-                {
-                  invoice_no: sale.invoice_no,
-                  subtotal: sale.subtotal,
-                  tax: sale.tax,
-                  total: sale.total,
-                  payment_method: sale.payment_method,
-                  cash_amount: sale.cash_amount,
-                  online_amount: sale.online_amount,
-                  online_method: sale.online_method,
-                },
-                items.map(item => ({
-                  product_name: item.product_name,
-                  qty: item.qty,
-                  price: item.price,
-                })),
-                {
-                  payment_method: sale.payment_method,
-                  cash_amount: sale.cash_amount,
-                  online_amount: sale.online_amount,
-                  online_method: sale.online_method,
-                }
-              );
+        setviewData(result.data);
+        setOpenReturnModal(true);
+      } else {
+        console.log(result.message)
+      }
+    }
+    catch (error) {
+      console.log(error.response?.data?.message || error.message)
+    }
+  }
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const columnsConfig = getColumns(isDark);
 
-              // Print the receipt
-              printThermalReceipt(receiptData);
-            } else {
-              console.log(result.message);
-            }
-          } catch (error) {
-            console.log(error.response?.data?.message || error.message);
-          }
-        };
-     
   return (
     <Box sx={{ minHeight: "100vh" }}>
       <Title
         title="Sales"
         subtitle="Manage Sales "
-       
+
       />
       {/* TOP CARDS */}
       <Box mb={3} mt={3}>
         <Stats stats={statsData} />
       </Box>
 
-     
+
       {/* QUICK ACTIONS */}
       <Paper
-        sx={{ p: 3, borderRadius: 2, mt: 4, }}>
+        sx={{ borderRadius: 2, mt: 4, p: 2 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-          <Typography variant="h6" fontWeight={700} color="#415a77">
+          <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? "#fff" : "#415a77" }}>
             Sales
           </Typography>
         </Box>
-        <TableLayout columns={columns} rows={data} extra={{ view: handleView, return: handleReturn, print: handlePrint }} actionButtons={[
-          {
-            label: "Filter",
-            icon: <FilterListIcon />,
-            variant: "outlined",
-            sx: { borderColor: "#5A8DEE", px: 2 },
-            onClick: () => console.log("Filter clicked"),
-          },
-          {
-            label: "Export",
-            icon: <DownloadIcon />,
-            variant: "outlined",
-            sx: { borderColor: "#5A8DEE", px: 2 },
-            onClick: () => console.log("Export clicked"),
-          },
-        ]}/>
+        <Box
+          sx={{
+            width: "100%",
+            "@media (max-width:500px)": {
+              width: "100%",
+              margin: "0 auto",
+              "& .MuiTableCell-root": {
+                padding: "6px",
+                fontSize: "12px"
+              }
+            }
+          }}>
 
-        <Typography variant="h6" color="#415a77" fontWeight={700} mb={2} mt={3}>
+          <TableLayout columns={columnsConfig} rows={data} extra={{ view: handleView, return: handleReturn }} actionButtons={[
+            {
+              label: "Filter",
+              icon: <FilterListIcon />,
+              variant: "outlined",
+              sx: { borderColor: "#5A8DEE", px: 2 },
+              onClick: () => console.log("Filter clicked"),
+            },
+            {
+              label: "Export",
+              icon: <DownloadIcon />,
+              variant: "outlined",
+              sx: { borderColor: "#5A8DEE", px: 2 },
+              onClick: () => console.log("Export clicked"),
+            },
+          ]} /></Box>
+
+        <Typography variant="h6" sx={{ color: isDark ? "#fff" : "#415a77" }} fontWeight={700} mb={2} mt={3}>
           Quick Actions
         </Typography>
         <Box mb={3} mt={3} >
@@ -178,8 +144,8 @@ export default function Sales() {
         </Box>
 
       </Paper>
-      <ViewSaleModal open={openModal} onClose={() => setOpenModal(false)} onSaved={fetchSaleList} viewData={viewData}/>
-      <ReturnModal open={openReturnModal} onClose={() => setOpenReturnModal(false)} onSaved={fetchSaleList} viewData={viewData}/>
+      <ViewSaleModal open={openModal} onClose={() => setOpenModal(false)} onSaved={fetchSaleList} viewData={viewData} />
+      <ReturnModal open={openReturnModal} onClose={() => setOpenReturnModal(false)} onSaved={fetchSaleList} viewData={viewData} />
 
     </Box>
   );

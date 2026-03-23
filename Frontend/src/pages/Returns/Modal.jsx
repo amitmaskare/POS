@@ -28,6 +28,7 @@ export default function ViewSaleModal({ open, onClose, viewData }) {
       {/* ---------- TITLE ---------- */}
       <DialogTitle>
         Invoice Details
+        
         <Typography variant="subtitle2" color="text.secondary">
           Invoice No: {returns.invoice_no}
         </Typography>

@@ -1,12 +1,44 @@
-import { Button, Box, Chip, Typography } from "@mui/material";
-import PrintIcon from "@mui/icons-material/Print";
+import { Button, Box } from "@mui/material";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
+import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 
-export const columns = [
+export const getColumns = (isDark) => [
   {
     id: "invoice_no",
-    label: "Invoice Number",
-    align: "left",
-    sortable: true,
+    label: "Invoice Details",
+    render: (row) => (
+      <Box display="flex" gap={1.5} alignItems="flex-start">
+
+        <ReceiptLongIcon sx={{ fontSize: 20, mt: "2px", color: isDark ? "#fff" : "#415A77" }} />
+
+        <div>
+          <div style={{ fontWeight: 600, color: isDark ? "#fff" : "#415A77" }}>{row.invoice_no}</div>
+
+          <div
+            style={{
+              fontSize: "12px",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "4px"
+            }}
+          >
+
+            {new Date(row.sale_date).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })} 
+            {/* <span>{row.status}</span> */}
+          </div>
+
+
+        </div>
+      </Box>
+    )
   },
   {
     id: "total_items",
@@ -14,10 +46,41 @@ export const columns = [
     align: "center",
     sortable: true,
     render: (row) => (
+<<<<<<< HEAD
       <Typography variant="body2" sx={{ textAlign: "center" }}>
         {row.total_items || 0}
       </Typography>
     ),
+=======
+      <div>
+        <div
+          style={{
+            fontSize: "12.9px",
+            display: "flex",
+            fontWeight:600,
+            alignItems: "center",
+            gap: "4px"
+          }}
+        >
+          <Inventory2Icon sx={{ fontSize: 15 ,color: isDark ? "#fff" : "#415A77" }} />
+          Items:{row.total_items} 
+        </div>
+
+        <div
+          style={{
+            fontSize: "12.9px",
+            fontWeight:600,
+            display: "flex",
+            alignItems: "center",
+            gap: "4px"
+          }}
+        >
+          <CurrencyRupeeIcon sx={{ fontSize: 15 }} />
+          {row.amount}
+        </div>
+      </div>
+    )
+>>>>>>> 635bcb3 (ui changes)
   },
   {
     id: "paymentMethod",
@@ -240,10 +303,13 @@ export const columns = [
         <Button
           size="small"
           variant="outlined"
-          color="primary"
           onClick={() => extra?.view(row?.id)}
         >
+<<<<<<< HEAD
           View Detail
+=======
+          <VisibilityIcon sx={{ fontSize: 16 }} />
+>>>>>>> 635bcb3 (ui changes)
         </Button>
 
         <Button

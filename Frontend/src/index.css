@@ -71,14 +71,4 @@ body {
     height: calc(100vh - 60px); /* navbar height adjust */
   }
 }
-.no-hover,
-.no-hover:hover,
-.no-hover:focus,
-.no-hover:active {
-  background-color: transparent !important;
-  color: #415a77 !important; /* bootstrap primary */
-  border-color: #415a77 !important;
-  box-shadow: none !important;
-
-}
 

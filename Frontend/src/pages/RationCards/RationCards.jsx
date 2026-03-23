@@ -8,7 +8,7 @@ import Title from '../../components/MainContentComponents/Title';
 import SearchFilter from '../../components/MainContentComponents/SearchFilter';
 import TableLayout from '../../components/MainContentComponents/Table';
 import { columns } from './columns';
-import { rows } from './rows';
+import { useTheme } from "@mui/material/styles";
 import {rationcardList,getById,deleteItem} from "../../services/rationcardService"
 import ModalLayout from "./Modal";
 
@@ -21,7 +21,11 @@ export default function RationCards() {
     const[success,setSuccess]=useState('')
     const[error,setError]=useState('')
     const[loading,setLoading]=useState(false)
-      const [editData, setEditData] = useState(null);
+    const [editData, setEditData] = useState(null);
+
+    const theme = useTheme();
+    const isDark = theme.palette.mode === "dark";
+  
     
      useEffect(()=>{
   fetchrationcardList()
@@ -134,7 +138,7 @@ export default function RationCards() {
       </Box>
 
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3} mt={3}>
-        <Typography variant="h6" fontWeight={700} color='#5A8DEE'>
+        <Typography variant="h6" fontWeight={700} sx={{color: isDark ? "#fff" : "#415a77"}}>
           Registered Ration Cards (2)
         </Typography>
       </Box>

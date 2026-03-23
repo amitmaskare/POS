@@ -15,6 +15,7 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { Save, CheckCircle } from "@mui/icons-material";
 import Title from "../../components/MainContentComponents/Title";
 import { roleList } from "../../services/RoleService";
@@ -34,6 +35,9 @@ export default function RolePermission() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   // Fetch roles on component mount
   useEffect(() => {
@@ -156,23 +160,108 @@ export default function RolePermission() {
       />
 
       {/* Role Selection */}
-      <Paper elevation={2} sx={{ p: 3, mt: 3, borderRadius: 2 }}>
-        <FormControl fullWidth>
-          <InputLabel>Select Role</InputLabel>
-          <Select
-            value={selectedRole}
-            label="Select Role"
-            onChange={(e) => setSelectedRole(e.target.value)}
-            sx={{ backgroundColor: "#fff" }}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {roles.map((role) => (
-              <MenuItem key={role.roleId} value={role.roleId}>
-                {role.name}
-              </MenuItem>
-            ))}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          mt: 3,
+          borderRadius: 3,
+          border: "1px solid #e5e7eb",
+          background: isDark ? "#1b263b" : "#fff"
+        }}
+      >
+        <Box display="flex" alignItems="center" gap={1} mb={2}>
+          <ManageAccountsIcon sx={{ color: isDark ? "#fff" : "#415a77", }} />
+          <Typography variant="subtitle1" fontWeight={600} sx={{ color: isDark ? "#fff" : "#415a77", }}>
+            Role Permissions
+          </Typography>
+        </Box>
+
+        <FormControl
+  fullWidth
+  size="small"
+  sx={{
+    "& .MuiOutlinedInput-root": {
+      color: isDark ? "#fff" : "#415a77",
+
+      "& fieldset": {
+        borderColor: isDark ? "#fff" : "#415a77",
+      },
+
+      "&:hover fieldset": {
+        borderColor: isDark ? "#fff" : "#415a77",
+      },
+
+      "&.Mui-focused fieldset": {
+        borderColor: isDark ? "#fff" : "#415a77",
+      },
+    },
+
+    "& .MuiSvgIcon-root": {
+      color: isDark ? "#fff" : "#415a77",
+    },
+  }}
+>
+  <InputLabel
+    sx={{
+      color: isDark ? "#fff" : "#415a77",
+      "&.Mui-focused": {
+        color: isDark ? "#fff" : "#415a77",
+      },
+    }}
+  >
+    Select Role
+  </InputLabel>
+
+  <Select
+    value={selectedRole}
+    label="Select Role"
+    onChange={(e) => setSelectedRole(e.target.value)}
+    sx={{
+      backgroundColor: isDark ? "#1b263b" : "#fff",
+      borderRadius: 2,
+      color: isDark ? "#fff" : "#415a77",
+    }}
+  >
+
+            {roles.map((role) => {
+              const icon =
+                role.name.toLowerCase() === "admin" ? (
+                  <AdminPanelSettingsIcon fontSize="small" color="info" />
+                ) : role.name.toLowerCase() === "manager" ? (
+                  <WorkIcon fontSize="small" color="success" />
+                ) : (
+                  <PersonIcon fontSize="small" color="warning" />
+                );
+
+              return (
+                <MenuItem
+                  key={role.roleId}
+                  value={role.roleId}
+                  sx={{
+                    py: 1.2,
+                    px: 2,
+                    borderRadius: 2,
+                    mx: 1,
+                    my: 0.3,
+
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1.5}>
+                    {icon}
+
+                    <Typography
+                      sx={{
+                        textTransform: "capitalize",
+                        fontWeight: 500
+                      }}
+                    >
+                      {role.name}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              );
+            })}
           </Select>
         </FormControl>
       </Paper>
@@ -204,7 +293,7 @@ export default function RolePermission() {
                 alignItems="center"
                 mb={3}
               >
-                <Typography variant="h6" fontWeight={600} color="#5A8DEE">
+                <Typography variant="h6" fontWeight={600} sx={{ color: isDark ? "#fff" : "#415a77" }}>
                   Module Permissions
                 </Typography>
                 <Chip
@@ -303,23 +392,34 @@ export default function RolePermission() {
                                 textTransform: "capitalize",
                               }}
                             >
-                              {perm.action}
-                            </Typography>
-                            <Switch
-                              size="small"
-                              checked={selectedPermissions.has(
-                                perm.permissionId
-                              )}
-                              onChange={() =>
-                                handleTogglePermission(perm.permissionId)
-                              }
-                              sx={{
-                                "& .MuiSwitch-switchBase.Mui-checked": {
-                                  color: "#4CAF50",
-                                },
-                                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                                  {
-                                    backgroundColor: "#4CAF50",
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 500,
+                                  color: "#415A77",
+                                  fontWeight: 600,
+                                  textTransform: "capitalize",
+                                }}
+                              >
+                                {perm.action}
+                              </Typography>
+                              <Switch
+                                size="small"
+                                checked={selectedPermissions.has(perm.permissionId)}
+                                onChange={() => handleTogglePermission(perm.permissionId)}
+                                sx={{
+                                  "& .MuiSwitch-switchBase": {
+                                    color: "#9CA3AF", // thumb color when unchecked
+                                  },
+                                  "& .MuiSwitch-track": {
+                                    backgroundColor: "#D1D5DB", // track color when unchecked
+                                    opacity: 1,
+                                  },
+                                  "& .MuiSwitch-switchBase.Mui-checked": {
+                                    color: "#415A77",
+                                  },
+                                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                                    backgroundColor: "#415A77",
                                   },
                               }}
                             />
@@ -361,19 +461,41 @@ export default function RolePermission() {
       {/* Empty State */}
       {!selectedRole && !loading && (
         <Paper
-          elevation={1}
+          elevation={3}
           sx={{
             p: 6,
             mt: 3,
             textAlign: "center",
-            backgroundColor: "#f9f9f9",
+            backgroundColor: isDark ? "#1b263b" : "#fff",
+            borderRadius: 3,
+            border: "1px solid #e0e0e0",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 2,
           }}
         >
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+          <Box
+            sx={{
+              backgroundColor: "#e3f2fd",
+              borderRadius: "50%",
+              width: 60,
+              height: 60,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mb: 1,
+            }}
+          >
+            <AssignmentIcon sx={{ fontSize: 32, color: "#415a77" }} />
+          </Box>
+
+          <Typography variant="h6" fontWeight={600} sx={{color:isDark ? "#fff" : "#415a77"}}>
             No Role Selected
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Please select a role from the dropdown above to manage permissions
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 300 }}>
+            Please select a role from the dropdown above to manage permissions.
           </Typography>
         </Paper>
       )}

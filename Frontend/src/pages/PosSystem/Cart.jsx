@@ -1,10 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
-import DeleteIcon from "@mui/icons-material/Delete";
-import PrintIcon from "@mui/icons-material/Print";
-import EditIcon from "@mui/icons-material/Edit";
-import { Box,
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import UnarchiveIcon from "@mui/icons-material/Unarchive";
+import PosCart from "../../components/Cart/PosCart";
+import { useTheme } from "@mui/material/styles";
+import {
   Typography,
   Paper,
   Modal,
@@ -58,85 +62,82 @@ const [cashAmount, setCashAmount] = useState("");
 const [onlineAmount, setOnlineAmount] = useState("");
 const [splitPaymentMethod, setSplitPaymentMethod] = useState("");
   // Handle Quantity
- const updateQty = (id, action) => {
-  setCart((prev) =>
-    prev.map((item) => {
-      if (item.id !== id) return item;
+  const updateQty = (id, action) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
 
-      const newQty =
-        action === "inc" ? item.qty + 1 : Math.max(1, item.qty - 1);
-      let totalPrice = newQty * item.selling_price; // default
-      if (item.offer_price) {
-        if (item.offer_qty_price === "offer_price") {
-          totalPrice = newQty * item.offer_price;
+        const newQty =
+          action === "inc" ? item.qty + 1 : Math.max(1, item.qty - 1);
+        let totalPrice = newQty * item.selling_price; // default
+        if (item.offer_price) {
+          if (item.offer_qty_price === "offer_price") {
+            totalPrice = newQty * item.offer_price;
+          }
+          if (
+            item.offer_qty_price === "regular" &&
+            item.min_qty &&
+            newQty >= item.min_qty
+          ) {
+            const offerTotal = item.min_qty * item.offer_price;
+            const remainingQty = newQty - item.min_qty;
+            totalPrice =
+              offerTotal + remainingQty * item.selling_price;
+          }
         }
-        if (
-          item.offer_qty_price === "regular" &&
-          item.min_qty &&
-          newQty >= item.min_qty
-        ) {
-          const offerTotal = item.min_qty * item.offer_price;
-          const remainingQty = newQty - item.min_qty;
-
-          totalPrice =
-            offerTotal + remainingQty * item.selling_price;
-        }
-      }
-
-      return {
-        ...item,
-        qty: newQty,
-        price: totalPrice, // TOTAL price
-      };
-    })
-  );
-};
+        return {
+          ...item,
+          qty: newQty,
+          price: totalPrice, // TOTAL price
+        };
+      })
+    );
+  };
 
   // Delete Item
   const deleteItem = (id) => {
-  const deleteData=window.confirm('Are you sure you want to delete this item?')
-    if(deleteData)
-  {
-    setCart((prev) => prev.filter((item) => item.id !== id));
-  }
+    const deleteData = window.confirm('Are you sure you want to delete this item?')
+    if (deleteData) {
+      setCart((prev) => prev.filter((item) => item.id !== id));
+    }
   };
 
   // Clear Cart
   const clearCart = () => setCart([]);
 
   // Retrieve Example (Mock)
-  const retrieveCart = async() => {
-     try{
+  const retrieveCart = async () => {
+    try {
 
-  if (mobile.length !== 10) {
-    alert("Enter valid mobile number");
-    return;
-  }
+      if (mobile.length !== 10) {
+        showToastNotification("Enter valid mobile number", "warning");
+        return;
+      }
 
-const payload={customer_mobile: mobile}
+      const payload = { customer_mobile: mobile }
 
-  const result= await retrieveHoldSale(payload);
-  if(result.status===true)
-  {
-    const { items } = result.data;
-      setCart(
-    items.map(item => ({
-      id: item.product_id || item.id,
-      product_id: item.product_id || item.id,
-      product_name: item.product_name,
-      qty: item.qty,
-      price: item.price,
-      image: item.image,
-      tax:item.tax,
-    }))
-     );
-  setOpenRetrieveModal(false);
-  setMobile("");
-  }
-  }catch(error)
-    {
-      console.log(error.message)
-    } 
+      const result = await retrieveHoldSale(payload);
+      if (result.status === true) {
+        const { items, sale } = result.data;
+        const saleId = sale?.id || null;
+        setCart(
+          items.map(item => ({
+            id: item.product_id || item.id,
+            product_id: item.product_id || item.id,
+            product_name: item.product_name,
+            qty: item.qty,
+            price: item.price,
+            image: item.image,
+            tax: item.tax,
+            sale_id: saleId
+          }))
+        );
+        setOpenRetrieveModal(false);
+        setMobile("");
+      }
+    } catch (error) {
+      showToastNotification(error?.message || "Failed to retrieve sale", "error");
+    }
   };
 
   // Payment Button Style
@@ -146,53 +147,53 @@ const payload={customer_mobile: mobile}
   });
 
   const updatePrice = (id, newPrice) => {
-  setCart((prev) =>
-    prev.map((item) =>
-      item.id === id
-        ? { ...item, price: parseFloat(newPrice) || 0 }
-        : item
-    )
-  );
-};
+    setCart((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? { ...item, price: parseFloat(newPrice) || 0 }
+          : item
+      )
+    );
+  };
   // Totals
   const getItemTaxAmount = (item) => {
-  const base = item.qty * item.price;
-  const taxPercent = item.tax || 0;
-  return (base * taxPercent) / 100;
-};
- const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
- const tax =  cart.reduce((sum, item) => sum + getItemTaxAmount(item),0);
- const totalTax = cart.reduce((sum, item) => sum + Number(item.tax), 0);
-const total = subtotal + tax;
+    const base = item.qty * item.price;
+    const taxPercent = item.tax || 0;
+    return (base * taxPercent) / 100;
+  };
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
+  const tax = cart.reduce((sum, item) => sum + getItemTaxAmount(item), 0);
+  const totalTax = cart.reduce((sum, item) => sum + Number(item.tax), 0);
+  const total = subtotal + tax;
 
 
   const submitHoldSale = async () => {
-    try{
+    try {
 
-  if (mobile.length !== 10) {
-    alert("Enter valid mobile number");
-    return;
-  }
+      if (mobile.length !== 10) {
+        showToastNotification("Enter valid mobile number", "warning");
+        return;
+      }
 
-  if (cart.length === 0) {
-    alert("Cart is empty");
-    return;
-  }
+      if (cart.length === 0) {
+        showToastNotification("Cart is empty", "warning");
+        return;
+      }
 
-  const payload = {
-    customer_mobile: mobile,
-    subtotal,
-    tax,
-    total,
-    cart: cart.map(item => ({
-      product_id: item.id,
-      product_name: item.product_name,
-      qty: item.qty,
-      price: item.price,
-      image: item.image,
-      tax: item.tax,
-    }))
-  };
+      const payload = {
+        customer_mobile: mobile,
+        subtotal,
+        tax,
+        total,
+        cart: cart.map(item => ({
+          product_id: item.id,
+          product_name: item.product_name,
+          qty: item.qty,
+          price: item.price,
+          image: item.image,
+          tax: item.tax,
+        }))
+      };
 
   const result= await holdSale(payload);
   if(result.status===true)
@@ -314,95 +315,68 @@ const handlePOSPayment = async () => {
       }))
     };
 
-    const saleResult = await checkout_sale(payload);
-
-    if (!saleResult.status) {
-      alert('Failed to create sale');
-      setPosProcessing(false);
-      return;
-    }
-
-    // Step 2: Process payment through POS device
-    alert('Please insert, swipe, or tap the customer\'s card on the POS machine...');
-
-    const paymentResult = await processPayment({
-      amount: total,
-      invoiceNo: saleResult.data.invoice_no,
-      saleId: saleResult.data.id || null
-    });
-
-    if (paymentResult.success && paymentResult.data.success) {
-      // Payment approved!
-      alert(`Payment Approved!
-Transaction ID: ${paymentResult.data.transactionId}
-Card: ${paymentResult.data.cardNumber || 'XXXX'}
-Auth Code: ${paymentResult.data.authCode || 'N/A'}`);
-
-      // Print thermal receipt
-      printReceipt(saleResult.data, { payment_method: 'pos_card' });
-
-      // Send thank you to customer display
-      socket.emit("show-thankyou", { roomId });
-
-      // Clear cart
-      setCart([]);
-      setActive("");
-    } else {
-      alert('Payment declined or failed. Please try again or use another payment method.');
-    }
-  } catch (error) {
-    console.error('POS payment error:', error);
-    alert('Error processing payment: ' + (error.response?.data?.message || error.message));
-  } finally {
-    setPosProcessing(false);
+  const result= await checkout_sale(payload)
+  if(result.status===true) {
+    showToastNotification("Sale completed successfully", "success");
+    const invoice = buildExchangeInvoice(result.data);
+    printInvoice(invoice);
+    setCashOpen(false);
+    setCart([]);
+    setReceivedAmount("");
+    setReturnAmount(0);
   }
+} catch(error) {
+  showToastNotification(error?.message || "Sale failed", "error");
+}
 };
 
-const holdlist=async()=>{
-  try{
-    const result=await HoldList()
-    if(result.status===true)
-    {
-      setHoldItem(result.data)
-    }
-    else{
-       setHoldItem([])
-    }
-  }catch(error)
-  {
-    console.log(error.message)
-  }
-}
+useEffect(()=>{
+  holdlist()
+},[])
 
-const retrieveItem=async(id)=>{
-   try{
-  const result= await retrieveHoldItem(id);
-  if(result.status===true)
-  {
-    const { items } = result.data;
-      setCart(
-     items.map(item => ({
-      id: item.product_id || item.id,
-      product_id: item.product_id || item.id,
-      product_name: item.product_name,
-      qty: item.qty,
-      price: item.price,
-      image: item.image,
-      tax: item.tax,
-    }))
-     );
-  setOpenRetrieveModal(false);
-  setMobile("");
-  }
-  else{
-    alert("Hold Item Not Found")
-  setOpenRetrieveModal(false);
-  }
-  }catch(error)
-    {
-      console.log(error.message)
+  const holdlist = async () => {
+    try {
+      const result = await HoldList()
+      if (result.status === true) {
+        setHoldItem(result.data)
+      }
+      else {
+        setHoldItem([])
+      }
+    } catch (error) {
+      showToastNotification(error?.message || "Failed to load holds", "error");
     }
-}
+  }
+
+  const retrieveItem = async (id) => {
+    try {
+      const result = await retrieveHoldItem(id);
+      if (result.status === true) {
+        const { items, sale } = result.data;
+        const saleId = sale?.id || id;
+        setCart(
+          items.map(item => ({
+            id: item.product_id || item.id,
+            product_id: item.product_id || item.id,
+            product_name: item.product_name,
+            qty: item.qty,
+            price: item.price,
+            image: item.image,
+            tax: item.tax,
+            sale_id: saleId,
+          }))
+        );
+        setOpenRetrieveModal(false);
+        setMobile("");
+        showToastNotification("Sale retrieved successfully", "success");
+      } else {
+        showToastNotification("Hold Item Not Found", "warning");
+        setOpenRetrieveModal(false);
+      }
+    } catch (error) {
+      showToastNotification(error?.message || "Failed to retrieve item", "error");
+    }
+  }
 
  const loadRazorpay = () => {
   return new Promise((resolve) => {
@@ -657,33 +631,16 @@ const handleSplitPOSPayment = async () => {
     return;
   }
 
-  setPosProcessing(true);
+    console.log("✅ API Success:", result);
 
-  try {
-    const payload = {
-      payment_method: 'split',
-      cash_amount: Number(cashAmount),
-      online_amount: Number(onlineAmount),
-      online_method: 'pos_card',
-      subtotal,
-      tax,
-      total,
-      cart: cart.map(item => ({
-        product_id: item.id,
-        product_name: item.product_name,
-        qty: item.qty,
-        tax: item.tax,
-        price: item.price,
-        total: item.price * item.qty,
-        image: item.image
-      }))
-    };
+    const payloadData = result.data?.data || result.data || {};
+    const amount = payloadData.amount || payloadData.total_amount || 0;
+    const razorpayOrderId = payloadData.razorpayOrderId || payloadData.razorpay_order_id || payloadData.order_id;
+    const saleId = payloadData.saleId || payloadData.sale_id;
 
-    const saleResult = await checkout_sale(payload);
-
-    if (!saleResult.status) {
-      alert('Failed to create sale');
-      setPosProcessing(false);
+    if (!razorpayOrderId || !amount || amount <= 0) {
+      console.error("❌ Invalid data:", { razorpayOrderId, amount });
+      showToastNotification("Invalid payment data", "error");
       return;
     }
 
@@ -773,757 +730,232 @@ const handleSplitCreditPayment = async () => {
           amount: Number(onlineAmount),
         };
 
-        const verifyRes = await verifyPayment(verifyPayload);
-
-        if (verifyRes.status === true) {
-          // Print thermal receipt
-          printReceipt(result.data.saleData, {
-            payment_method: 'split',
-            cash_amount: cashAmount,
-            online_amount: onlineAmount,
-            online_method: 'credit'
-          });
-
-          // Send thank you to customer display
-          socket.emit("show-thankyou", { roomId });
-
-          setSplitPaymentOpen(false);
-          setCart([]);
-          setCashAmount("");
-          setOnlineAmount("");
-          setActive("");
-        } else {
-          alert("Payment verification failed");
+          const verifyRes = await verifyPayment(verifyPayload);
+          
+          if (verifyRes.status === true) {
+            console.log("✅ Verified");
+            showToastNotification("Payment verified successfully", "success");
+            const invoice = buildExchangeInvoice(result.data.saleData || result.data);
+            printInvoice(invoice);
+            setCashOpen(false);
+            setCart([]);
+          } else {
+            showToastNotification(verifyRes.message || "Payment verification failed", "error");
+          }
+        } catch (err) {
+          console.error('Verification error:', err);
+          showToastNotification(err?.message || "Payment verification error", "error");
         }
-      } catch (err) {
-        console.error("Verification Error", err);
-        alert("Payment verification error");
-      }
-    },
+      },
 
-    theme: {
-      color: "#2e86de",
-    },
-  };
+      theme: {
+        color: "#2e86de",
+      },
+    };
 
-  setSplitPaymentOpen(false);
-  const rzp = new window.Razorpay(options);
-  rzp.open();
+    console.log("🎯 Creating Razorpay instance...");
+    const rzp = new window.Razorpay(options);
+    console.log("📞 Opening modal...");
+    rzp.open();
+    console.log("✅ Modal opened");
+
+  } catch (err) {
+    console.error('Error:', err);
+    showToastNotification(err?.message || "Payment failed", "error");
+  }
 };
 
   return (
     <>
-    <aside className="cart p-3">
-      <h3 className="fw-bold mb-4" style={{color:"#5A8DEE"}}>Cart</h3>
-
-      {/* Product List */}
-      <div className="mt-1">
-        {cart.map((item) => (
-          <div
-            key={item.id}
-            className="d-flex p-3 rounded-3 mb-3"
-            style={{
-              background: "#ffffff",
-              border: "1px solid #e6e6e6",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-              alignItems: "center",
-            }}
-          >
-           <img
-             src={item.image}
-              alt="product"
-              className="rounded-3"
-              style={{ width: 55, height: 55, objectFit: "cover" }}
-            /> 
-
-            <div className="ms-3 flex-grow-1">
-              <div className="d-flex justify-content-between align-items-start">
-                <div>
-                  <h6 className="fw-semibold mb-1" style={{ fontSize: "15px" }}>
-                    {item.product_name}
-                  </h6>
-                  {/* <span className="text-muted" style={{ fontSize: "12px" }}>
-                    {item.category} • SKU: {item.sku}
-                  </span> */}
-                </div>
-
-                <button className="btn p-1 text-danger" onClick={() => deleteItem(item.id)}>
-                  <DeleteIcon fontSize="small" />
-                </button>
-              </div>
-
-              <div className="d-flex justify-content-between align-items-center mt-2">
-                {/* Quantity */}
-                <div
-                  className="d-flex align-items-center rounded-pill px-2 py-1"
-                  style={{
-                    border: "1px solid #dcdcdc",
-                    width: "90px",
-                    justifyContent: "space-between",
-                    height: "32px",
-                  }}
-                >
-                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
-                    −
-                  </button>
-                  <span className="fw-bold" style={{ fontSize: "14px" }}>
-                    {item.qty}
-                  </span>
-                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
-                    +
-                  </button>
-                </div>
-
-                {/* Price */}
-               {/* Price */}
-<div className="d-flex align-items-center gap-2">
-  {editingPriceId === item.id ? (
-    <input
-      type="number"
-      className="form-control form-control-sm"
-      style={{ width: "80px" }}
-      value={item.price}
-      autoFocus
-      onChange={(e) => updatePrice(item.id, e.target.value)}
-      onBlur={() => setEditingPriceId(null)}
-      onKeyDown={(e) => e.key === "Enter" && setEditingPriceId(null)}
-    />
-  ) : (
-    <h6 className="fw-bold mb-0" style={{ fontSize: "15px" }}>
-      ₹{item.price}
-    </h6>
-  )}
-
-  <button
-    className="btn btn-sm p-0 text-primary"
-    onClick={() => setEditingPriceId(item.id)}
-  >
-    <EditIcon fontSize="small" />
-  </button>
-</div>
-
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Totals */}
-      <div className="border-top pt-3 mt-4">
-        <div className="d-flex justify-content-between mb-2">
-          <span>Subtotal</span>
-          <span>₹{Number(subtotal).toFixed(2)}</span>
-        </div>
-        <div className="d-flex justify-content-between mb-2">
-          <span>Tax ({`${totalTax} %`})</span>
-          <span>₹{Number(tax).toFixed(2)}</span>
-        </div>
-        <div className="d-flex justify-content-between fw-bold border-top pt-3 mt-4">
-          <span style={{color:"#5A8DEE"}}>Total</span>
-          <span style={{color:"#5A8DEE"}}>₹{total.toFixed(2)}</span>
-        </div>
-
+      <PosCart
+        title="Cart"
+        cart={cart}
+        deleteItem={deleteItem}
+        updateQty={updateQty}
+        updatePrice={updatePrice}
+        editingPriceId={editingPriceId}
+        setEditingPriceId={setEditingPriceId}
+        subtotal={subtotal}
+        tax={tax}
+        total={total}
+        totalTax={totalTax}
+        checkoutSale={checkoutSale}
+        renderPaymentButtons={
+          <div className="d-flex gap-2 mt-3  d-flex align-items-center text-dark justify-content-around">
         {/* Discount */}
-        <button className="btn btn-outline-secondary btn-sm w-100 mt-3 d-flex align-items-center text-dark justify-content-center">
-          % Apply Discount
-        </button>
+            <Tooltip title="Apply Discount" placement="top" arrow>
+        <button className="btn  d-flex align-items-center justify-content-center no-hover">
+                <LocalOfferIcon fontSize="small" />
+              </button>
+            </Tooltip>
 
-        {/* Payment Buttons */}
-        <div className="d-flex gap-2 mt-3">
+            <Tooltip title="Cash" placement="top" arrow>
+              <button className="btn  d-flex align-items-center justify-content-center no-hover"
+                style={getButtonStyle("cash")}
+                onClick={() => {
+                  setActive("cash");
+                  setCashOpen(true);
+                }}>
+                <PaymentsIcon />
+
+              </button>
+            </ Tooltip >
+
+            <Tooltip title="Credit" placement="top" arrow>
           <button
-            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
-            style={{...getButtonStyle("cash"), flex: 1}}
+            className="btn d-flex align-items-center justify-content-center no-hover"
+            style={getButtonStyle("credit")}
             onClick={() => {
-              setActive("cash");
-              setCashOpen(true);
+              setActive("credit");
+              handleRazorpay();
             }}
           >
-            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Cash
+           <CreditCardIcon />
           </button>
-
-          <button
-            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
-            style={{...getButtonStyle("online"), flex: 1}}
-            onClick={() => setOnlinePaymentOpen(true)}
-          >
-            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Online
+            </ Tooltip >
+          </div>
+        }
+        renderCartOptions={
+          <>
+    <div className="d-flex flex-row mt-3 gap-3 justify-content-around">
+    <Tooltip title="Hold Sale" arrow>
+   <button className="btn  pos-icon-btn no-hover" onClick={() => setOpenHoldModal(true)}><PauseCircleFilledIcon /></button>
+    </ Tooltip >
+    <Tooltip title="Clear Cart" arrow>
+      <button className="btn  no-hover" onClick={clearCart}>
+        <DeleteSweepIcon />
           </button>
-        </div>
-
-        {/* Cash + Online Split Payment Button */}
-        <div className="d-grid gap-2 mt-2">
-          <button
-            className="btn btn-outline-primary d-flex align-items-center justify-content-center"
-            style={{...getButtonStyle("split")}}
-            onClick={() => {
-              setActive("split");
-              setSplitPaymentOpen(true);
-              setCashAmount("");
-              setOnlineAmount("");
-              setSplitPaymentMethod("");
-            }}
-          >
-            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
-            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Cash + Online
+    </ Tooltip >
+    <Tooltip title="Retrieve" arrow>
+      <button className="btn  no-hover" onClick={() => setOpenRetrieveModal(true)}>
+        <UnarchiveIcon />
           </button>
-        </div>
-
-        {/* Cart Options */}
-        <div className="d-flex flex-row mt-3 gap-3 justify-content-center">
-          <button className="btn btn-outline-secondary text-dark" onClick={() => setOpenHoldModal(true)}>Hold Sale</button>
-          <button className="btn btn-outline-secondary text-dark" onClick={clearCart}>
-            Clear Cart
-          </button>
-          <button className="btn btn-outline-secondary text-dark" onClick={() => setOpenRetrieveModal(true)}>
-            Retrieve
-          </button>
-        </div>
-
-        {/* Print */}
-        <div className="d-grid gap-2 mt-3">
-          <button className="btn btn-success" onClick={checkoutSale }>
-            <PrintIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Print Receipt
-          </button>
-        </div>
+    </ Tooltip >
       </div>
-    </aside>
+</>
+    }
+   />
 
+      <Dialog open={openHoldModal} onClose={() => setOpenHoldModal(false)}>
+        <DialogTitle>Hold Sale</DialogTitle>
+        <DialogContent>
+          <input
+            type="text"
+            className="form-control mt-2"
+            placeholder="Enter Mobile Number"
+            value={mobile}
+            maxLength={10}
+            onChange={(e) => setMobile(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenHoldModal(false)}>Cancel</Button>
 
+          <Button variant="contained" color="primary" onClick={() => submitHoldSale()}>
+            Confirm Hold
+          </Button>
+        </DialogActions>
 
-    <Dialog open={openHoldModal} onClose={() => setOpenHoldModal(false)}>
-  <DialogTitle>Hold Sale</DialogTitle>
-         <DialogContent>
-    <input
-      type="text"
-      className="form-control mt-2"
-      placeholder="Enter Mobile Number"
-      value={mobile}
-      maxLength={10}
-      onChange={(e) => setMobile(e.target.value)}
-    />
-      </DialogContent>
-   <DialogActions>
-    <Button onClick={() => setOpenHoldModal(false)}>Cancel</Button>
+      </Dialog>
 
-    <Button variant="contained" color="primary" onClick={()=>submitHoldSale()}>
-      Confirm Hold
-    </Button>
-  </DialogActions>
-   
-</Dialog>
+      <Dialog open={openRetrieveModal} onClose={() => setOpenRetrieveModal(false)}>
+        <DialogTitle>Retrieve</DialogTitle>
+        <DialogContent>
+          <input
+            type="text"
+            className="form-control mt-2"
+            placeholder="Enter Mobile Number"
+            value={mobile}
+            maxLength={10}
+            onChange={(e) => setMobile(e.target.value)}
+          />
+        </DialogContent>
+        {holdItem.length > 0 && (
+          <TableContainer component={Paper} sx={{ mt: 2 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ backgroundColor: "#f1f5f9" }}>
+                  <TableCell><b>Mobile</b></TableCell>
+                  <TableCell><b>Item Count</b></TableCell>
+                  <TableCell align="center"><b>Total</b></TableCell>
+                  <TableCell align="center"><b>DateTime</b></TableCell>
+                  <TableCell align="center"><b>Cashier Name</b></TableCell>
+                  <TableCell align="center"><b>Status</b></TableCell>
+                </TableRow>
+              </TableHead>
 
- <Dialog open={openRetrieveModal} onClose={() => setOpenRetrieveModal(false)}>
-  <DialogTitle>Retrieve</DialogTitle>
-         <DialogContent>
-    <input
-      type="text"
-      className="form-control mt-2"
-      placeholder="Enter Mobile Number"
-      value={mobile}
-      maxLength={10}
-      onChange={(e) => setMobile(e.target.value)}
-    />
-      </DialogContent>
-       {holdItem.length > 0 && (
-  <TableContainer component={Paper} sx={{ mt: 2 }}>
-    <Table size="small">
-      <TableHead>
-        <TableRow sx={{ backgroundColor: "#f1f5f9" }}>
-          <TableCell><b>Mobile</b></TableCell>
-          <TableCell><b>Item Count</b></TableCell>
-          <TableCell align="center"><b>Total</b></TableCell>
-          <TableCell align="center"><b>DateTime</b></TableCell>
-          <TableCell align="center"><b>Cashier Name</b></TableCell>
-          <TableCell align="center"><b>Status</b></TableCell>
-        </TableRow>
-      </TableHead>
+              <TableBody>
+                {holdItem.map(item => (
+                  <TableRow>
+                    <TableCell>{item.customer_mobile}</TableCell>
+                    <TableCell>{item.total_items}</TableCell>
+                    <TableCell align="center">{item.total}</TableCell>
+                    <TableCell align="center">{item.datetime}
+                    </TableCell>
+                    <TableCell align="center">{item.name}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Button size="small" variant="outlined" color="success" onClick={() => retrieveItem(item.id)}>
+                        Retrieve
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
 
-     <TableBody>
-         {holdItem.map(item => (
-    <TableRow>
-      <TableCell>{item.customer_mobile}</TableCell>
-      <TableCell>{item.total_items}</TableCell>
-      <TableCell align="center">{item.total}</TableCell>
-      <TableCell align="center">{item.datetime}  
-      </TableCell>
-      <TableCell align="center">{item.name} 
-      </TableCell>
-       <TableCell align="center">
-        <Button size="small" variant="outlined" color="success" onClick={() =>retrieveItem(item.id)}>
+            </Table>
+          </TableContainer>
+        )}
+        <DialogActions>
+          <Button onClick={() => setOpenRetrieveModal(false)}>Cancel</Button>
+
+          <Button variant="contained" color="primary" onClick={() => retrieveCart()}>
             Retrieve
           </Button>
-      </TableCell>
-    </TableRow>
-   ))}
-</TableBody>
+        </DialogActions>
 
-    </Table>
-  </TableContainer>
-  )}
-   <DialogActions>
-    <Button onClick={() => setOpenRetrieveModal(false)}>Cancel</Button>
+      </Dialog>
 
-    <Button variant="contained" color="primary" onClick={()=>retrieveCart()}>
-     Retrieve
-    </Button>
-  </DialogActions>
-   
-</Dialog>
+      <Dialog open={cashOpen} onClose={() => setCashOpen(false)}>
+        <DialogTitle>Cash Payment</DialogTitle>
 
-<Dialog open={cashOpen} onClose={() => setCashOpen(false)}>
-  <DialogTitle>Cash Payment</DialogTitle>
+        <DialogContent>
+          <Typography>Total Amount: ₹{Number(total).toFixed(2)}</Typography>
 
-  <DialogContent>
-    <Typography>Total Amount: ₹{Number(total).toFixed(2)}</Typography>
+          <TextField
+            label="Received Amount"
+            type="number"
+            fullWidth
+            sx={{ mt: 2 }}
+            value={receivedAmount}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              setReceivedAmount(val);
+              setReturnAmount(val - total);
+            }}
+          />
 
-    <TextField
-      label="Received Amount"
-      type="number"
-      fullWidth
-      sx={{ mt: 2 }}
-      value={receivedAmount}
-      onChange={(e) => {
-        const val = Number(e.target.value);
-        setReceivedAmount(val);
-        setReturnAmount(val - total);
-      }}
-    />
-
-    <Typography sx={{ mt: 2 }} fontWeight="bold">
-      Return Amount: ₹{returnAmount > 0 ? returnAmount.toFixed(2) : "0.00"}
-    </Typography>
-  </DialogContent>
-
-  <DialogActions>
-    <Button onClick={() => setCashOpen(false)}>Cancel</Button>
-
-    <Button
-      variant="contained"
-      color="success"
-      disabled={receivedAmount < total}
-      onClick={checkoutSale}
-    >
-      OK & Print
-    </Button>
-  </DialogActions>
-</Dialog>
-
-{/* Online Payment Options Modal */}
-<Dialog open={onlinePaymentOpen} onClose={() => setOnlinePaymentOpen(false)} maxWidth="sm" fullWidth>
-  <DialogTitle>Select Online Payment Method</DialogTitle>
-  <DialogContent>
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-
-      {/* Credit Card / Razorpay */}
-      <Button
-        variant="outlined"
-        size="large"
-        fullWidth
-        startIcon={<CreditCardIcon />}
-        onClick={() => {
-          setOnlinePaymentOpen(false);
-          setActive("credit");
-          handleRazorpay();
-        }}
-        sx={{
-          justifyContent: 'flex-start',
-          py: 2,
-          px: 3,
-          textTransform: 'none',
-          borderColor: '#5A8DEE',
-          color: '#5A8DEE',
-          '&:hover': {
-            borderColor: '#5A8DEE',
-            backgroundColor: '#f0f4ff',
-          }
-        }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
-          <Typography variant="body1" fontWeight="600">Credit Card</Typography>
-          <Typography variant="caption" color="text.secondary">Pay via Razorpay Gateway</Typography>
-        </Box>
-      </Button>
-
-      {/* QR Code Payment */}
-      <Button
-        variant="outlined"
-        size="large"
-        fullWidth
-        startIcon={<QrCode2Icon />}
-        onClick={() => {
-          setOnlinePaymentOpen(false);
-          handleQRPayment();
-        }}
-        sx={{
-          justifyContent: 'flex-start',
-          py: 2,
-          px: 3,
-          textTransform: 'none',
-          borderColor: '#28a745',
-          color: '#28a745',
-          '&:hover': {
-            borderColor: '#28a745',
-            backgroundColor: '#f0fff4',
-          }
-        }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
-          <Typography variant="body1" fontWeight="600">QR Code / UPI</Typography>
-          <Typography variant="caption" color="text.secondary">Scan QR to pay via UPI</Typography>
-        </Box>
-      </Button>
-
-      {/* POS Machine */}
-      <Button
-        variant="outlined"
-        size="large"
-        fullWidth
-        startIcon={posProcessing ? <CircularProgress size={20} /> : <CreditCardIcon />}
-        onClick={() => {
-          setOnlinePaymentOpen(false);
-          handlePOSPayment();
-        }}
-        disabled={!posConnected || posProcessing}
-        sx={{
-          justifyContent: 'flex-start',
-          py: 2,
-          px: 3,
-          textTransform: 'none',
-          borderColor: posConnected ? '#ff6b6b' : '#999',
-          color: posConnected ? '#ff6b6b' : '#999',
-          '&:hover': {
-            borderColor: posConnected ? '#ff6b6b' : '#999',
-            backgroundColor: posConnected ? '#fff5f5' : '#f5f5f5',
-          },
-          '&:disabled': {
-            borderColor: '#ddd',
-            color: '#999',
-          }
-        }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
-          <Typography variant="body1" fontWeight="600">
-            POS Machine {!posConnected && '⚠️'}
+          <Typography sx={{ mt: 2 }} fontWeight="bold">
+            Return Amount: ₹{returnAmount > 0 ? returnAmount.toFixed(2) : "0.00"}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {posConnected ? 'Card swipe/chip/contactless' : 'POS device not connected'}
-          </Typography>
-        </Box>
-      </Button>
+        </DialogContent>
 
-    </Box>
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setOnlinePaymentOpen(false)}>Cancel</Button>
-  </DialogActions>
-</Dialog>
+        <DialogActions>
+          <Button onClick={() => setCashOpen(false)}>Cancel</Button>
 
-<Dialog
-  open={qrModalOpen}
-  onClose={closeQRModal}
-  maxWidth="sm"
-  fullWidth
->
-  <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
-    <QrCode2Icon sx={{ fontSize: 40, color: '#5A8DEE', mb: 1 }} />
-    <Typography variant="h5" fontWeight="bold">
-      Scan QR Code to Pay
-    </Typography>
-  </DialogTitle>
+          <Button
+            variant="contained"
+            color="success"
+            disabled={receivedAmount < total}
+            onClick={checkoutSale}
+          >
+            OK & Print
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-  <DialogContent sx={{ textAlign: 'center', py: 3 }}>
-    {qrCodeData && (
-      <>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 3,
-            mb: 3,
-            backgroundColor: '#f8f9fa',
-            borderRadius: 2
-          }}
-        >
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            Invoice: {qrCodeData.invoice_no}
-          </Typography>
-          <Typography variant="h4" fontWeight="bold" color="#5A8DEE" sx={{ mb: 2 }}>
-            ₹{Number(qrCodeData.amount).toFixed(2)}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Items: {cart.length}
-          </Typography>
-        </Paper>
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            mb: 3,
-            p: 2,
-            backgroundColor: 'white',
-            borderRadius: 2,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}
-        >
-          {qrCodeImage ? (
-            <img
-              src={qrCodeImage}
-              alt="QR Code"
-              style={{
-                width: '400px',
-                height: '400px',
-                objectFit: 'contain'
-              }}
-            />
-          ) : (
-            <CircularProgress size={60} />
-          )}
-        </Box>
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            backgroundColor: paymentStatus === 'paid' ? '#d4edda' : paymentStatus === 'confirming' ? '#cce5ff' : '#fff3cd',
-            borderRadius: 2,
-            border: `2px solid ${paymentStatus === 'paid' ? '#28a745' : paymentStatus === 'confirming' ? '#007bff' : '#ffc107'}`
-          }}
-        >
-          {paymentStatus === 'pending' && (
-            <Box>
-              <Typography variant="body1" fontWeight="bold" color="#856404" sx={{ mb: 2, textAlign: 'center' }}>
-                Scan QR code with any UPI app to pay
-              </Typography>
-              <Button
-                variant="contained"
-                color="success"
-                fullWidth
-                size="large"
-                onClick={handleConfirmPayment}
-                sx={{ mt: 1 }}
-              >
-                I Have Paid - Confirm Payment
-              </Button>
-            </Box>
-          )}
-
-          {paymentStatus === 'confirming' && (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-              <CircularProgress size={24} sx={{ color: '#007bff' }} />
-              <Typography variant="body1" fontWeight="bold" color="#004085">
-                Confirming payment...
-              </Typography>
-            </Box>
-          )}
-
-          {paymentStatus === 'paid' && (
-            <Typography variant="body1" fontWeight="bold" color="#155724">
-              ✓ Payment Successful! Printing receipt...
-            </Typography>
-          )}
-        </Paper>
-
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-          1. Scan QR code with GPay/PhonePe/Paytm
-          2. Complete the payment
-          3. Click "I Have Paid" button above
-        </Typography>
-      </>
-    )}
-  </DialogContent>
-
-  <DialogActions sx={{ px: 3, pb: 2 }}>
-    <Button
-      onClick={closeQRModal}
-      variant="outlined"
-      disabled={paymentStatus === 'paid'}
-    >
-      Cancel
-    </Button>
-  </DialogActions>
-</Dialog>
-
-{/* Split Payment Modal */}
-<Dialog open={splitPaymentOpen} onClose={() => setSplitPaymentOpen(false)} maxWidth="sm" fullWidth>
-  <DialogTitle>Split Payment (Cash + Online)</DialogTitle>
-  <DialogContent>
-    <Box sx={{ mt: 2 }}>
-      <Typography variant="h6" sx={{ mb: 2, color: '#5A8DEE', fontWeight: 'bold' }}>
-        Total Amount: ₹{Number(total).toFixed(2)}
-      </Typography>
-
-      <TextField
-        label="Cash Amount"
-        type="number"
-        fullWidth
-        value={cashAmount}
-        onChange={(e) => {
-          const cash = Number(e.target.value);
-          setCashAmount(e.target.value);
-          if (cash > 0 && cash < total) {
-            setOnlineAmount((total - cash).toFixed(2));
-          } else if (cash >= total) {
-            setCashAmount(total.toFixed(2));
-            setOnlineAmount("0");
-          } else {
-            setOnlineAmount("");
-          }
-        }}
-        sx={{ mb: 2 }}
-        inputProps={{ min: 0, max: total, step: 0.01 }}
-        helperText={`Maximum: ₹${total.toFixed(2)}`}
-      />
-
-      <TextField
-        label="Online Payment Amount (Remaining)"
-        type="number"
-        fullWidth
-        value={onlineAmount}
-        disabled
-        sx={{ mb: 3 }}
-        InputProps={{
-          readOnly: true,
-        }}
-      />
-
-      {Number(cashAmount) > 0 && Number(onlineAmount) > 0 && (
-        <>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
-            Select Online Payment Method for ₹{Number(onlineAmount).toFixed(2)}:
-          </Typography>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* QR Code Payment */}
-            <Button
-              variant={splitPaymentMethod === 'qr' ? 'contained' : 'outlined'}
-              size="large"
-              fullWidth
-              startIcon={<QrCode2Icon />}
-              onClick={() => setSplitPaymentMethod('qr')}
-              sx={{
-                justifyContent: 'flex-start',
-                py: 2,
-                px: 3,
-                textTransform: 'none',
-                borderColor: '#28a745',
-                color: splitPaymentMethod === 'qr' ? '#fff' : '#28a745',
-                backgroundColor: splitPaymentMethod === 'qr' ? '#28a745' : 'transparent',
-                '&:hover': {
-                  borderColor: '#28a745',
-                  backgroundColor: splitPaymentMethod === 'qr' ? '#218838' : '#f0fff4',
-                }
-              }}
-            >
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
-                <Typography variant="body1" fontWeight="600">QR Code / UPI</Typography>
-                <Typography variant="caption" color={splitPaymentMethod === 'qr' ? 'inherit' : 'text.secondary'}>
-                  Scan QR to pay remaining ₹{Number(onlineAmount).toFixed(2)}
-                </Typography>
-              </Box>
-            </Button>
-
-            {/* POS Machine */}
-            <Button
-              variant={splitPaymentMethod === 'pos' ? 'contained' : 'outlined'}
-              size="large"
-              fullWidth
-              startIcon={<CreditCardIcon />}
-              onClick={() => setSplitPaymentMethod('pos')}
-              disabled={!posConnected}
-              sx={{
-                justifyContent: 'flex-start',
-                py: 2,
-                px: 3,
-                textTransform: 'none',
-                borderColor: posConnected ? '#ff6b6b' : '#999',
-                color: splitPaymentMethod === 'pos' ? '#fff' : (posConnected ? '#ff6b6b' : '#999'),
-                backgroundColor: splitPaymentMethod === 'pos' ? '#ff6b6b' : 'transparent',
-                '&:hover': {
-                  borderColor: posConnected ? '#ff6b6b' : '#999',
-                  backgroundColor: splitPaymentMethod === 'pos' ? '#e63946' : (posConnected ? '#fff5f5' : '#f5f5f5'),
-                },
-                '&:disabled': {
-                  borderColor: '#ddd',
-                  color: '#999',
-                }
-              }}
-            >
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
-                <Typography variant="body1" fontWeight="600">
-                  POS Machine {!posConnected && '⚠️'}
-                </Typography>
-                <Typography variant="caption" color={splitPaymentMethod === 'pos' ? 'inherit' : 'text.secondary'}>
-                  {posConnected ? `Card payment for ₹${Number(onlineAmount).toFixed(2)}` : 'POS device not connected'}
-                </Typography>
-              </Box>
-            </Button>
-
-            {/* Credit Card / Razorpay */}
-            <Button
-              variant={splitPaymentMethod === 'credit' ? 'contained' : 'outlined'}
-              size="large"
-              fullWidth
-              startIcon={<CreditCardIcon />}
-              onClick={() => setSplitPaymentMethod('credit')}
-              sx={{
-                justifyContent: 'flex-start',
-                py: 2,
-                px: 3,
-                textTransform: 'none',
-                borderColor: '#5A8DEE',
-                color: splitPaymentMethod === 'credit' ? '#fff' : '#5A8DEE',
-                backgroundColor: splitPaymentMethod === 'credit' ? '#5A8DEE' : 'transparent',
-                '&:hover': {
-                  borderColor: '#5A8DEE',
-                  backgroundColor: splitPaymentMethod === 'credit' ? '#4a7dd8' : '#f0f4ff',
-                }
-              }}
-            >
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', ml: 1 }}>
-                <Typography variant="body1" fontWeight="600">Credit Card (Razorpay)</Typography>
-                <Typography variant="caption" color={splitPaymentMethod === 'credit' ? 'inherit' : 'text.secondary'}>
-                  Pay ₹{Number(onlineAmount).toFixed(2)} via Razorpay
-                </Typography>
-              </Box>
-            </Button>
-          </Box>
-        </>
-      )}
-    </Box>
-  </DialogContent>
-
-  <DialogActions>
-    <Button onClick={() => {
-      setSplitPaymentOpen(false);
-      setCashAmount("");
-      setOnlineAmount("");
-      setSplitPaymentMethod("");
-    }}>
-      Cancel
-    </Button>
-
-    <Button
-      variant="contained"
-      color="success"
-      disabled={!cashAmount || !onlineAmount || !splitPaymentMethod || Number(cashAmount) <= 0 || Number(onlineAmount) <= 0}
-      onClick={() => {
-        if (splitPaymentMethod === 'qr') {
-          handleSplitQRPayment();
-        } else if (splitPaymentMethod === 'pos') {
-          handleSplitPOSPayment();
-        } else if (splitPaymentMethod === 'credit') {
-          handleSplitCreditPayment();
-        }
-      }}
-    >
-      Proceed to Payment
-    </Button>
-  </DialogActions>
-</Dialog>
+    {/* Toast Notification */}
+    <Toast show={showToast} message={toastMessage} type={toastType} />
 
     </>
   );

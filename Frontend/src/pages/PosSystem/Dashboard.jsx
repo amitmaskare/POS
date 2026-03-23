@@ -19,12 +19,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import SearchFilter from "../../components/MainContentComponents/SearchFilter";
 import TableLayout from "../../components/MainContentComponents/Table";
-import FilterListIcon from "@mui/icons-material/FilterList";
-import DownloadIcon from "@mui/icons-material/Download";
-
 import { columns } from "./columns";
-import { rows } from "./rows";
-
 import {
   searchProduct,
   add_product,
@@ -32,9 +27,12 @@ import {
   looseItemList,
 } from "../../services/productService";
 
+import { getColumns } from "./columns";
+import { searchProduct,add_product,favouriteList,looseItemList } from "../../services/productService";
 import { useOutletContext } from "react-router-dom";
 import { useToast } from "../../hooks/useToast";
 import Toast from "../../components/Toast/Toast";
+import { useTheme } from "@mui/material/styles";
 
 import socket from "../../socket";   // ✅ SOCKET IMPORT
 
@@ -285,7 +283,10 @@ export default function Dashboard() {
     return [];
 
   };
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
+  const columnsConfig = getColumns(isDark);
   return (
     <>
       <main
@@ -331,13 +332,13 @@ export default function Dashboard() {
               onClick={() => setActiveFilter(item)}
               className="btn rounded-pill"
               style={{
-                backgroundColor:
-                  activeFilter === item ? "#415a77" : "transparent",
-                border:
-                  activeFilter === item
-                    ? "1px solid #415a77"
-                    : "1px solid #ccc",
-                color: activeFilter === item ? "#fff" : "#444",
+                backgroundColor: activeFilter === item ? "#415a77" : "transparent",
+                border: activeFilter === item ? "1px solid #415a77" : "1px solid #415a77",
+                color: activeFilter === item
+                  ? "#fff" 
+                  : isDark 
+                    ? "#fff"  // text white in dark mode
+                    : "#415a77", // text dark in light mode
               }}
             >
               {item}
@@ -354,18 +355,22 @@ export default function Dashboard() {
           <div className="row">
 
             <div className="col-12 col-md-12 col-lg-8">
-
-              <TableLayout
-                columns={columns}
-                rows={getFilteredProducts()}
-                extra={{ selectItem: handleSelectItem }}
-                actionButtons={[
-                  { label: "Filter", variant: "outlined" },
-                  { label: "Export", variant: "outlined" },
-                  { label: "Import", variant: "outlined" },
-                ]}
-              />
-
+              <TableLayout columns={columnsConfig} rows={getFilteredProducts()} extra={{ selectItem: handleSelectItem }} actionButtons={
+                [
+                  {
+                    label: "Filter",
+                    variant: "outlined",
+                  },
+                  {
+                    label: "Export",
+                    variant: "outlined",
+                  },
+                  {
+                    label: "Import",
+                    variant: "outlined",
+                  },
+                ]
+              } />
             </div>
 
           </div>

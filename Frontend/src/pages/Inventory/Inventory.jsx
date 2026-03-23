@@ -9,21 +9,17 @@ import {
   Chip,
   IconButton
 } from '@mui/material';
-
+import { useTheme } from "@mui/material/styles";
 
 import Title from '../../components/MainContentComponents/Title';
 import Stats from '../../components/MainContentComponents/Stats';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import AddIcon from '@mui/icons-material/Add';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import DownloadIcon from '@mui/icons-material/Download';
 import SearchFilter from '../../components/MainContentComponents/SearchFilter';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { statsData } from './StatsData';
-import { inventory } from './Inventoryitems';
 import {inventoryList} from "../../services/productService"
 import {saleList} from "../../services/saleService"
 import {purchaseList} from "../../services/purchaseService"
@@ -98,6 +94,8 @@ const outOfStock = data.filter(
     totalSaleCount: totalSale.length,
     totalPurchaseCount: totalPurchase.length,
   });
+  const theme = useTheme();
+        const isDark = theme.palette.mode === "dark";
   return (
     <Box sx={{ minHeight: "100vh" }}>
 
@@ -131,14 +129,14 @@ const outOfStock = data.filter(
               label: "Filter",
               icon: <FilterListIcon />,
               variant: "outlined",
-              sx: { borderColor: "#5A8DEE", px: 2 },
+              sx: { borderColor: "#415a77" ,color:"#415a77"},
               onClick: () => console.log("Filter clicked"),
             },
             {
               label: "Export",
               icon: <DownloadIcon />,
               variant: "outlined",
-              sx: { borderColor: "#5A8DEE", px: 2 },
+              sx: { borderColor: "#415a77", color:"#415a77" },
               onClick: () => console.log("Export clicked"),
             },
           ]}
@@ -146,7 +144,7 @@ const outOfStock = data.filter(
       </Box>
       
       {/* Inventory Items */}
-      <Typography variant="h5" color="#415a77" mt={3}>Inventory Items</Typography>
+      <Typography variant="h6"  mt={3} sx={{color: isDark ? "#fff" : "#415a77"}}>Inventory Items</Typography>
       <Divider sx={{ mb: 2, bgcolor: '#333' }} />
 
       <Grid container spacing={1}>
@@ -248,7 +246,32 @@ const outOfStock = data.filter(
 
 
       {/* Bottom Panels */}
-      <Grid container spacing={2} mt={4} alignItems="stretch" justifyContent={'space-around'}>
+      <Grid
+  container
+  spacing={3}
+  mt={4}
+  justifyContent="center"
+>
+  {/* LOW STOCK */}
+  <Grid item xs={12} md={6} lg={4}>
+    <Card
+      sx={{
+        height: "100%",
+        borderRadius: 3,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+      }}
+    >
+      <CardContent>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            color: isDark ? "#fff" : "#415a77",
+            mb: 2,
+          }}
+        >
+          Low in Stock
+        </Typography>
 
         <Grid item xs={4}>
           <Card sx={{ height: "100%" }}>
@@ -261,16 +284,26 @@ const outOfStock = data.filter(
           </Card>
         </Grid>
 
-        <Grid item xs={4}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent sx={{ height: "100%" }}>
-              <Typography variant="h6" color="#5A8DEE">Out of Stock</Typography>
-              {outOfStock.map((item, i) => (
-                <Chip key={i} label={item.product_name} color="error" sx={{ m: 0.5 }} />
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
+  {/* OUT OF STOCK */}
+  <Grid item xs={12} md={6} lg={4}>
+    <Card
+      sx={{
+        height: "100%",
+        borderRadius: 3,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+      }}
+    >
+      <CardContent>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            color: isDark ? "#fff" : "#415a77",
+            mb: 2,
+          }}
+        >
+          Out of Stock
+        </Typography>
 
         <Grid item xs={4}>
           <Card sx={{ height: "100%" }}>
@@ -285,7 +318,52 @@ const outOfStock = data.filter(
           </Card>
         </Grid>
 
-      </Grid>
+  {/* RECENT ACTIVITY */}
+ <Grid item xs={12} md={6} lg={4}>
+    <Card
+      sx={{
+        height: "100%",
+        borderRadius: 3,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+      }}
+    >
+      <CardContent>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            color: isDark ? "#fff" : "#415a77",
+            mb: 2,
+          }}
+        >
+          Recent Activity
+        </Typography>
+
+        {data.slice(0, 5).map((item, i) => (
+          <Box
+            key={i}
+            sx={{
+              p: 1.5,
+              mb: 1,
+              borderRadius: 2,
+              background: "#f8fafc",
+            }}
+          >
+            <Typography variant="body2" sx={{ color: "#475569" }}>
+              2 days ago
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 500, color: "#0f172a" }}
+            >
+              {item.product_name} updated
+            </Typography>
+          </Box>
+        ))}
+      </CardContent>
+    </Card>
+  </Grid>
+</Grid>
 
     </Box>
   );

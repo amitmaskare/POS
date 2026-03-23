@@ -30,7 +30,7 @@ import Settings from "../pages/Settings/Settings";
 import Store from "../pages/Store/Stores";
 import CustomerDisplay from "../pages/PosSystem/CustomerDisplay";
 
-const AppRoutes = () => {
+const AppRoutes = ({ darkMode, toggleDarkMode }) => {
  const [auth, setAuth] = useState(localStorage.getItem('token'));
 
   return (
@@ -44,13 +44,13 @@ const AppRoutes = () => {
      
            {/* PROTECTED PAGES */}
            <Route
-             path="/"
-             element={
-               <ProtectedRoute>
-                 <Manage />
-               </ProtectedRoute>
-             }
-           >
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Manage darkMode={darkMode} toggleDarkMode={toggleDarkMode}/>
+          </ProtectedRoute>
+        }
+      >
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="products" element={<PermissionRoute permission="view-product">
       <Products />

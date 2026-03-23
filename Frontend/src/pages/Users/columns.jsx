@@ -1,52 +1,50 @@
-import { Button, Box, Chip, Tooltip } from "@mui/material";
-import LockIcon from "@mui/icons-material/Lock";
-import LockOpenIcon from "@mui/icons-material/LockOpen";
-
-export const columns = [
-    { id: "name", label: "Name" },
-    { id: "email", label: "Email" },
-    { id: "roleName", label: "Role" },
-    {
-      id: "store_info",
-      label: "Store / Counter Limit",
-      render: (row) => {
-        // Show for Store Admins (role = 1)
-        if (row.role === 1 && row.store_id) {
-          const usage = row.counter_count || 0;
-          const limit = row.counter_limit || 0;
-          const percentage = limit > 0 ? (usage / limit) * 100 : 0;
-
-          let chipColor = 'success';
-          if (percentage >= 90) chipColor = 'error';
-          else if (percentage >= 70) chipColor = 'warning';
-
-          return (
-            <Box>
-              <Box sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
-                {row.store_name || row.store_id}
-              </Box>
-              <Chip
-                label={`${usage} / ${limit} counters`}
-                color={chipColor}
-                size="small"
-                sx={{ mt: 0.5 }}
-              />
-            </Box>
-          );
-        }
-
-        // Show for Counter Users (role = 2)
-        if (row.role === 2 && row.store_id) {
-          return (
-            <Box sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
-              {row.store_name || row.store_id}
-            </Box>
-          );
-        }
-
-        // Super Admin or no store
-        return <Box sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>-</Box>;
-      }
+import { Button,Box } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import SecurityIcon from "@mui/icons-material/Security";
+export const getColumns = (isDark) => [
+  {
+    id: "name",
+    label: "User Info",
+    render: (row) => (
+      <div style={{ display: "flex", flexDirection: "column", fontSize: "12.9px", gap: "2px" }}>
+        {/* Name */}
+        <span style={{ fontWeight: 600,textTransform:"capitalize" , color: isDark ? "#fff" : "#415A77"}}>{row?.name}</span>
+  
+        {/* Email */}
+        <span style={{ fontSize: "12px",fontWeight:600}}>{row?.email}</span>
+  
+        {/* Role */}
+        <span style={{ fontSize: "12px",fontWeight:600 }}>{row?.roleName}</span>
+      </div>
+    ),
+  },
+  {
+    id: "created_at",
+    label: "Created At",
+    render: (row) => {
+      if (!row?.created_at) return "";
+  
+      const dateObj = new Date(row.created_at);
+  
+      const formattedDate = dateObj.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+  
+      const formattedTime = dateObj.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+  
+      return (
+        <span style={{ fontSize: "12px",fontWeight:600}}>
+          {formattedDate} <br />
+          {formattedTime}
+        </span>
+      );
     },
     {
       id: "device_status",
