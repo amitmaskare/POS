@@ -1,14 +1,14 @@
 import { useEffect, useState, useRef } from "react";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-import CreditCardIcon from "@mui/icons-material/CreditCard";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import UnarchiveIcon from "@mui/icons-material/Unarchive";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
 import PosCart from "../../components/Cart/PosCart";
-import { useTheme } from "@mui/material/styles";
-import {
+import Toast from "../../components/Toast/Toast";
+import { useToast } from "../../hooks/useToast";
+import { 
   Typography,
   Paper,
   Modal,
@@ -28,11 +28,10 @@ import {
   TableHead,
   TableRow,
   DialogActions} from "@mui/material";
+  import { useTheme } from "@mui/material/styles";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
 import { checkout_sale,verifyPayment,createQRPayment,checkQRPaymentStatus,confirmQRPayment } from "../../services/saleService";
 import { processPayment, getDeviceStatus } from "../../services/posService";
-import QrCode2Icon from "@mui/icons-material/QrCode2";
-import CircularProgress from "@mui/material/CircularProgress";
 import QRCode from "qrcode";
 import { printThermalReceipt, formatReceiptData } from "../../utils/thermalPrint";
 import socket from "../../socket";
@@ -61,83 +60,88 @@ const [splitPaymentOpen, setSplitPaymentOpen] = useState(false);
 const [cashAmount, setCashAmount] = useState("");
 const [onlineAmount, setOnlineAmount] = useState("");
 const [splitPaymentMethod, setSplitPaymentMethod] = useState("");
-  // Handle Quantity
-  const updateQty = (id, action) => {
-    setCart((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
 
-        const newQty =
-          action === "inc" ? item.qty + 1 : Math.max(1, item.qty - 1);
-        let totalPrice = newQty * item.selling_price; // default
-        if (item.offer_price) {
-          if (item.offer_qty_price === "offer_price") {
-            totalPrice = newQty * item.offer_price;
-          }
-          if (
-            item.offer_qty_price === "regular" &&
-            item.min_qty &&
-            newQty >= item.min_qty
-          ) {
-            const offerTotal = item.min_qty * item.offer_price;
-            const remainingQty = newQty - item.min_qty;
-            totalPrice =
-              offerTotal + remainingQty * item.selling_price;
-          }
+const { showToast, toastMessage, toastType, showToastNotification } = useToast();
+  // Handle Quantity
+ const updateQty = (id, action) => {
+  setCart((prev) =>
+    prev.map((item) => {
+      if (item.id !== id) return item;
+
+      const newQty =
+        action === "inc" ? item.qty + 1 : Math.max(1, item.qty - 1);
+      let totalPrice = newQty * item.selling_price; // default
+      if (item.offer_price) {
+        if (item.offer_qty_price === "offer_price") {
+          totalPrice = newQty * item.offer_price;
         }
-        return {
-          ...item,
-          qty: newQty,
-          price: totalPrice, // TOTAL price
-        };
-      })
-    );
-  };
+        if (
+          item.offer_qty_price === "regular" &&
+          item.min_qty &&
+          newQty >= item.min_qty
+        ) {
+          const offerTotal = item.min_qty * item.offer_price;
+          const remainingQty = newQty - item.min_qty;
+
+          totalPrice =
+            offerTotal + remainingQty * item.selling_price;
+        }
+      }
+
+      return {
+        ...item,
+        qty: newQty,
+        price: totalPrice, // TOTAL price
+      };
+    })
+  );
+};
 
   // Delete Item
   const deleteItem = (id) => {
-    const deleteData = window.confirm('Are you sure you want to delete this item?')
-    if (deleteData) {
-      setCart((prev) => prev.filter((item) => item.id !== id));
-    }
+  const deleteData=window.confirm('Are you sure you want to delete this item?')
+    if(deleteData)
+  {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  }
   };
 
   // Clear Cart
   const clearCart = () => setCart([]);
 
   // Retrieve Example (Mock)
-  const retrieveCart = async () => {
-    try {
+  const retrieveCart = async() => {
+     try{
 
-      if (mobile.length !== 10) {
-        showToastNotification("Enter valid mobile number", "warning");
-        return;
-      }
+  if (mobile.length !== 10) {
+    alert("Enter valid mobile number");
+    return;
+  }
 
-      const payload = { customer_mobile: mobile }
+const payload={customer_mobile: mobile}
 
-      const result = await retrieveHoldSale(payload);
-      if (result.status === true) {
-        const { items, sale } = result.data;
-        const saleId = sale?.id || null;
-        setCart(
-          items.map(item => ({
-            id: item.product_id || item.id,
-            product_id: item.product_id || item.id,
-            product_name: item.product_name,
-            qty: item.qty,
-            price: item.price,
-            image: item.image,
-            tax: item.tax,
-            sale_id: saleId
-          }))
-        );
-        setOpenRetrieveModal(false);
-        setMobile("");
-      }
-    } catch (error) {
-      showToastNotification(error?.message || "Failed to retrieve sale", "error");
-    }
+  const result= await retrieveHoldSale(payload);
+  if(result.status===true)
+  {
+    const { items } = result.data;
+      setCart(
+    items.map(item => ({
+      id: item.product_id || item.id,
+      product_id: item.product_id || item.id,
+      product_name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      image: item.image,
+      tax:item.tax,
+    }))
+     );
+  setOpenRetrieveModal(false);
+  setMobile("");
+  }
+  }catch(error)
+    {
+      console.log(error.message)
+    } 
   };
 
   // Payment Button Style
@@ -147,53 +151,53 @@ const [splitPaymentMethod, setSplitPaymentMethod] = useState("");
   });
 
   const updatePrice = (id, newPrice) => {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, price: parseFloat(newPrice) || 0 }
-          : item
-      )
-    );
-  };
+  setCart((prev) =>
+    prev.map((item) =>
+      item.id === id
+        ? { ...item, price: parseFloat(newPrice) || 0 }
+        : item
+    )
+  );
+};
   // Totals
   const getItemTaxAmount = (item) => {
-    const base = item.qty * item.price;
-    const taxPercent = item.tax || 0;
-    return (base * taxPercent) / 100;
-  };
-  const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
-  const tax = cart.reduce((sum, item) => sum + getItemTaxAmount(item), 0);
-  const totalTax = cart.reduce((sum, item) => sum + Number(item.tax), 0);
-  const total = subtotal + tax;
+  const base = item.qty * item.price;
+  const taxPercent = item.tax || 0;
+  return (base * taxPercent) / 100;
+};
+ const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
+ const tax =  cart.reduce((sum, item) => sum + getItemTaxAmount(item),0);
+ const totalTax = cart.reduce((sum, item) => sum + Number(item.tax), 0);
+const total = subtotal + tax;
 
 
   const submitHoldSale = async () => {
-    try {
+    try{
 
-      if (mobile.length !== 10) {
-        showToastNotification("Enter valid mobile number", "warning");
-        return;
-      }
+  if (mobile.length !== 10) {
+    alert("Enter valid mobile number");
+    return;
+  }
 
-      if (cart.length === 0) {
-        showToastNotification("Cart is empty", "warning");
-        return;
-      }
+  if (cart.length === 0) {
+    alert("Cart is empty");
+    return;
+  }
 
-      const payload = {
-        customer_mobile: mobile,
-        subtotal,
-        tax,
-        total,
-        cart: cart.map(item => ({
-          product_id: item.id,
-          product_name: item.product_name,
-          qty: item.qty,
-          price: item.price,
-          image: item.image,
-          tax: item.tax,
-        }))
-      };
+  const payload = {
+    customer_mobile: mobile,
+    subtotal,
+    tax,
+    total,
+    cart: cart.map(item => ({
+      product_id: item.id,
+      product_name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      image: item.image,
+      tax: item.tax,
+    }))
+  };
 
   const result= await holdSale(payload);
   if(result.status===true)
@@ -315,68 +319,95 @@ const handlePOSPayment = async () => {
       }))
     };
 
-  const result= await checkout_sale(payload)
-  if(result.status===true) {
-    showToastNotification("Sale completed successfully", "success");
-    const invoice = buildExchangeInvoice(result.data);
-    printInvoice(invoice);
-    setCashOpen(false);
-    setCart([]);
-    setReceivedAmount("");
-    setReturnAmount(0);
+    const saleResult = await checkout_sale(payload);
+
+    if (!saleResult.status) {
+      alert('Failed to create sale');
+      setPosProcessing(false);
+      return;
+    }
+
+    // Step 2: Process payment through POS device
+    alert('Please insert, swipe, or tap the customer\'s card on the POS machine...');
+
+    const paymentResult = await processPayment({
+      amount: total,
+      invoiceNo: saleResult.data.invoice_no,
+      saleId: saleResult.data.id || null
+    });
+
+    if (paymentResult.success && paymentResult.data.success) {
+      // Payment approved!
+      alert(`Payment Approved!
+Transaction ID: ${paymentResult.data.transactionId}
+Card: ${paymentResult.data.cardNumber || 'XXXX'}
+Auth Code: ${paymentResult.data.authCode || 'N/A'}`);
+
+      // Print thermal receipt
+      printReceipt(saleResult.data, { payment_method: 'pos_card' });
+
+      // Send thank you to customer display
+      socket.emit("show-thankyou", { roomId });
+
+      // Clear cart
+      setCart([]);
+      setActive("");
+    } else {
+      alert('Payment declined or failed. Please try again or use another payment method.');
+    }
+  } catch (error) {
+    console.error('POS payment error:', error);
+    alert('Error processing payment: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setPosProcessing(false);
   }
-} catch(error) {
-  showToastNotification(error?.message || "Sale failed", "error");
-}
 };
 
-useEffect(()=>{
-  holdlist()
-},[])
-
-  const holdlist = async () => {
-    try {
-      const result = await HoldList()
-      if (result.status === true) {
-        setHoldItem(result.data)
-      }
-      else {
-        setHoldItem([])
-      }
-    } catch (error) {
-      showToastNotification(error?.message || "Failed to load holds", "error");
+const holdlist=async()=>{
+  try{
+    const result=await HoldList()
+    if(result.status===true)
+    {
+      setHoldItem(result.data)
     }
-  }
-
-  const retrieveItem = async (id) => {
-    try {
-      const result = await retrieveHoldItem(id);
-      if (result.status === true) {
-        const { items, sale } = result.data;
-        const saleId = sale?.id || id;
-        setCart(
-          items.map(item => ({
-            id: item.product_id || item.id,
-            product_id: item.product_id || item.id,
-            product_name: item.product_name,
-            qty: item.qty,
-            price: item.price,
-            image: item.image,
-            tax: item.tax,
-            sale_id: saleId,
-          }))
-        );
-        setOpenRetrieveModal(false);
-        setMobile("");
-        showToastNotification("Sale retrieved successfully", "success");
-      } else {
-        showToastNotification("Hold Item Not Found", "warning");
-        setOpenRetrieveModal(false);
-      }
-    } catch (error) {
-      showToastNotification(error?.message || "Failed to retrieve item", "error");
+    else{
+       setHoldItem([])
     }
+  }catch(error)
+  {
+    console.log(error.message)
   }
+}
+
+const retrieveItem=async(id)=>{
+   try{
+  const result= await retrieveHoldItem(id);
+  if(result.status===true)
+  {
+    const { items } = result.data;
+      setCart(
+     items.map(item => ({
+      id: item.product_id || item.id,
+      product_id: item.product_id || item.id,
+      product_name: item.product_name,
+      qty: item.qty,
+      price: item.price,
+      image: item.image,
+      tax: item.tax,
+    }))
+     );
+  setOpenRetrieveModal(false);
+  setMobile("");
+  }
+  else{
+    alert("Hold Item Not Found")
+  setOpenRetrieveModal(false);
+  }
+  }catch(error)
+    {
+      console.log(error.message)
+    }
+}
 
  const loadRazorpay = () => {
   return new Promise((resolve) => {
@@ -631,16 +662,33 @@ const handleSplitPOSPayment = async () => {
     return;
   }
 
-    console.log("✅ API Success:", result);
+  setPosProcessing(true);
 
-    const payloadData = result.data?.data || result.data || {};
-    const amount = payloadData.amount || payloadData.total_amount || 0;
-    const razorpayOrderId = payloadData.razorpayOrderId || payloadData.razorpay_order_id || payloadData.order_id;
-    const saleId = payloadData.saleId || payloadData.sale_id;
+  try {
+    const payload = {
+      payment_method: 'split',
+      cash_amount: Number(cashAmount),
+      online_amount: Number(onlineAmount),
+      online_method: 'pos_card',
+      subtotal,
+      tax,
+      total,
+      cart: cart.map(item => ({
+        product_id: item.id,
+        product_name: item.product_name,
+        qty: item.qty,
+        tax: item.tax,
+        price: item.price,
+        total: item.price * item.qty,
+        image: item.image
+      }))
+    };
 
-    if (!razorpayOrderId || !amount || amount <= 0) {
-      console.error("❌ Invalid data:", { razorpayOrderId, amount });
-      showToastNotification("Invalid payment data", "error");
+    const saleResult = await checkout_sale(payload);
+
+    if (!saleResult.status) {
+      alert('Failed to create sale');
+      setPosProcessing(false);
       return;
     }
 
@@ -730,233 +778,305 @@ const handleSplitCreditPayment = async () => {
           amount: Number(onlineAmount),
         };
 
-          const verifyRes = await verifyPayment(verifyPayload);
-          
-          if (verifyRes.status === true) {
-            console.log("✅ Verified");
-            showToastNotification("Payment verified successfully", "success");
-            const invoice = buildExchangeInvoice(result.data.saleData || result.data);
-            printInvoice(invoice);
-            setCashOpen(false);
-            setCart([]);
-          } else {
-            showToastNotification(verifyRes.message || "Payment verification failed", "error");
-          }
-        } catch (err) {
-          console.error('Verification error:', err);
-          showToastNotification(err?.message || "Payment verification error", "error");
+        const verifyRes = await verifyPayment(verifyPayload);
+
+        if (verifyRes.status === true) {
+          // Print thermal receipt
+          printReceipt(result.data.saleData, {
+            payment_method: 'split',
+            cash_amount: cashAmount,
+            online_amount: onlineAmount,
+            online_method: 'credit'
+          });
+
+          // Send thank you to customer display
+          socket.emit("show-thankyou", { roomId });
+
+          setSplitPaymentOpen(false);
+          setCart([]);
+          setCashAmount("");
+          setOnlineAmount("");
+          setActive("");
+        } else {
+          alert("Payment verification failed");
         }
-      },
+      } catch (err) {
+        console.error("Verification Error", err);
+        alert("Payment verification error");
+      }
+    },
 
-      theme: {
-        color: "#2e86de",
-      },
-    };
+    theme: {
+      color: "#2e86de",
+    },
+  };
 
-    console.log("🎯 Creating Razorpay instance...");
-    const rzp = new window.Razorpay(options);
-    console.log("📞 Opening modal...");
-    rzp.open();
-    console.log("✅ Modal opened");
-
-  } catch (err) {
-    console.error('Error:', err);
-    showToastNotification(err?.message || "Payment failed", "error");
-  }
+  setSplitPaymentOpen(false);
+  const rzp = new window.Razorpay(options);
+  rzp.open();
 };
+const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   return (
     <>
-      <PosCart
-        title="Cart"
-        cart={cart}
-        deleteItem={deleteItem}
-        updateQty={updateQty}
-        updatePrice={updatePrice}
-        editingPriceId={editingPriceId}
-        setEditingPriceId={setEditingPriceId}
-        subtotal={subtotal}
-        tax={tax}
-        total={total}
-        totalTax={totalTax}
-        checkoutSale={checkoutSale}
-        renderPaymentButtons={
-          <div className="d-flex gap-2 mt-3  d-flex align-items-center text-dark justify-content-around">
-        {/* Discount */}
-            <Tooltip title="Apply Discount" placement="top" arrow>
-        <button className="btn  d-flex align-items-center justify-content-center no-hover">
-                <LocalOfferIcon fontSize="small" />
-              </button>
-            </Tooltip>
+    <PosCart
+      title="Cart"
+      cart={cart}
+      deleteItem={deleteItem}
+      updateQty={updateQty}
+      updatePrice={updatePrice}
+      editingPriceId={editingPriceId}
+      setEditingPriceId={setEditingPriceId}
+      subtotal={subtotal}
+      tax={tax}
+      total={total}
+      totalTax={totalTax}
+      checkoutSale={checkoutSale}
+      renderPaymentButtons={
+        <div className="d-flex gap-2 mt-3  d-flex align-items-center  justify-content-around">
+          {/* Discount */}
 
-            <Tooltip title="Cash" placement="top" arrow>
-              <button className="btn  d-flex align-items-center justify-content-center no-hover"
-                style={getButtonStyle("cash")}
-                onClick={() => {
-                  setActive("cash");
-                  setCashOpen(true);
-                }}>
-                <PaymentsIcon />
+          <button className="btn d-flex flex-column align-items-center justify-content-center no-hover"
+            style={{
+              border: `1px solid ${isDark ? "#fff" : "#415a77"}`,
+              color: isDark ? "#fff" : "#415a77",
+              borderRadius: "10px",
+              width: 100,         
+              height: 80,        
+              backgroundColor: "transparent",
+              gap: "4px",         
+              fontSize: "12px",
+              fontWeight: 600,
+            }}
+          >
+            <LocalOfferIcon fontSize="small" />
+            Apply Discount
+          </button>
 
-              </button>
-            </ Tooltip >
 
-            <Tooltip title="Credit" placement="top" arrow>
+
+          <button className="btn d-flex flex-column align-items-center justify-content-center no-hover"
+            style={{
+              border: `1px solid ${isDark ? "#fff" : "#415a77"}`,
+              color: isDark ? "#fff" : "#415a77",
+              borderRadius: "10px",
+              width: 100,         
+              height: 80,        
+              backgroundColor: "transparent",
+              gap: "4px",         
+              fontSize: "12px",
+              fontWeight: 600,
+            }}
+            onClick={() => {
+              setActive("cash");
+              setCashOpen(true);
+            }}>
+            <PaymentsIcon />
+            Cash
+          </button>
+
           <button
-            className="btn d-flex align-items-center justify-content-center no-hover"
-            style={getButtonStyle("credit")}
+            className="btn d-flex flex-column align-items-center justify-content-center no-hover"
+            style={{
+              border: `1px solid ${isDark ? "#fff" : "#415a77"}`,
+              color: isDark ? "#fff" : "#415a77",
+              borderRadius: "10px",
+              width: 100,         
+              height: 80,        
+              backgroundColor: "transparent",
+              gap: "4px",         
+              fontSize: "12px",
+              fontWeight: 600,
+            }}
             onClick={() => {
               setActive("credit");
               handleRazorpay();
             }}
           >
-           <CreditCardIcon />
+            <CreditCardIcon />
+            Credit
           </button>
-            </ Tooltip >
+
+        </div>
+      }
+      renderCartOptions={
+        <>
+          <div className="d-flex flex-row mt-3 gap-2 justify-content-around">
+
+            <button className="btn d-flex flex-column align-items-center justify-content-center no-hover"
+            style={{
+              border: `1px solid ${isDark ? "#fff" : "#415a77"}`,
+              color: isDark ? "#fff" : "#415a77",
+              borderRadius: "10px",
+              width: 100,         
+              height: 80,        
+              backgroundColor: "transparent",
+              gap: "4px",         
+              fontSize: "12px",
+              fontWeight: 600,
+            }} onClick={() => setOpenHoldModal(true)}><PauseCircleFilledIcon />
+              Hold sale
+            </button>
+
+            <button className="btn d-flex flex-column align-items-center justify-content-center no-hover"
+            style={{
+              border: `1px solid ${isDark ? "#fff" : "#415a77"}`,
+              color: isDark ? "#fff" : "#415a77",
+              borderRadius: "10px",
+              width: 100,         
+              height: 80,        
+              backgroundColor: "transparent",
+              gap: "4px",         
+              fontSize: "12px",
+              fontWeight: 600,
+            }} onClick={clearCart}>
+              <DeleteSweepIcon />
+              Clear cart
+            </button>
+
+            <button className="btn d-flex flex-column align-items-center justify-content-center no-hover"
+            style={{
+              border: `1px solid ${isDark ? "#fff" : "#415a77"}`,
+              color: isDark ? "#fff" : "#415a77",
+              borderRadius: "10px",
+              width: 100,         
+              height: 80,        
+              backgroundColor: "transparent",
+              gap: "4px",         
+              fontSize: "12px",
+              fontWeight: 600,
+            }} onClick={() => setOpenRetrieveModal(true)}>
+              <UnarchiveIcon />
+              Retrive
+            </button>
+
           </div>
-        }
-        renderCartOptions={
-          <>
-    <div className="d-flex flex-row mt-3 gap-3 justify-content-around">
-    <Tooltip title="Hold Sale" arrow>
-   <button className="btn  pos-icon-btn no-hover" onClick={() => setOpenHoldModal(true)}><PauseCircleFilledIcon /></button>
-    </ Tooltip >
-    <Tooltip title="Clear Cart" arrow>
-      <button className="btn  no-hover" onClick={clearCart}>
-        <DeleteSweepIcon />
-          </button>
-    </ Tooltip >
-    <Tooltip title="Retrieve" arrow>
-      <button className="btn  no-hover" onClick={() => setOpenRetrieveModal(true)}>
-        <UnarchiveIcon />
-          </button>
-    </ Tooltip >
-      </div>
-</>
-    }
-   />
+        </>
+      }
+    />
 
-      <Dialog open={openHoldModal} onClose={() => setOpenHoldModal(false)}>
-        <DialogTitle>Hold Sale</DialogTitle>
-        <DialogContent>
-          <input
-            type="text"
-            className="form-control mt-2"
-            placeholder="Enter Mobile Number"
-            value={mobile}
-            maxLength={10}
-            onChange={(e) => setMobile(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenHoldModal(false)}>Cancel</Button>
+    <Dialog open={openHoldModal} onClose={() => setOpenHoldModal(false)}>
+      <DialogTitle>Hold Sale</DialogTitle>
+      <DialogContent>
+        <input
+          type="text"
+          className="form-control mt-2"
+          placeholder="Enter Mobile Number"
+          value={mobile}
+          maxLength={10}
+          onChange={(e) => setMobile(e.target.value)}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setOpenHoldModal(false)}>Cancel</Button>
 
-          <Button variant="contained" color="primary" onClick={() => submitHoldSale()}>
-            Confirm Hold
-          </Button>
-        </DialogActions>
+        <Button variant="contained" color="primary" onClick={() => submitHoldSale()}>
+          Confirm Hold
+        </Button>
+      </DialogActions>
 
-      </Dialog>
+    </Dialog>
 
-      <Dialog open={openRetrieveModal} onClose={() => setOpenRetrieveModal(false)}>
-        <DialogTitle>Retrieve</DialogTitle>
-        <DialogContent>
-          <input
-            type="text"
-            className="form-control mt-2"
-            placeholder="Enter Mobile Number"
-            value={mobile}
-            maxLength={10}
-            onChange={(e) => setMobile(e.target.value)}
-          />
-        </DialogContent>
-        {holdItem.length > 0 && (
-          <TableContainer component={Paper} sx={{ mt: 2 }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "#f1f5f9" }}>
-                  <TableCell><b>Mobile</b></TableCell>
-                  <TableCell><b>Item Count</b></TableCell>
-                  <TableCell align="center"><b>Total</b></TableCell>
-                  <TableCell align="center"><b>DateTime</b></TableCell>
-                  <TableCell align="center"><b>Cashier Name</b></TableCell>
-                  <TableCell align="center"><b>Status</b></TableCell>
+    <Dialog open={openRetrieveModal} onClose={() => setOpenRetrieveModal(false)}>
+      <DialogTitle>Retrieve</DialogTitle>
+      <DialogContent>
+        <input
+          type="text"
+          className="form-control mt-2"
+          placeholder="Enter Mobile Number"
+          value={mobile}
+          maxLength={10}
+          onChange={(e) => setMobile(e.target.value)}
+        />
+      </DialogContent>
+      {holdItem.length > 0 && (
+        <TableContainer component={Paper} sx={{ mt: 2 }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ backgroundColor: "#f1f5f9" }}>
+                <TableCell><b>Mobile</b></TableCell>
+                <TableCell><b>Item Count</b></TableCell>
+                <TableCell align="center"><b>Total</b></TableCell>
+                <TableCell align="center"><b>DateTime</b></TableCell>
+                <TableCell align="center"><b>Cashier Name</b></TableCell>
+                <TableCell align="center"><b>Status</b></TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {holdItem.map(item => (
+                <TableRow>
+                  <TableCell>{item.customer_mobile}</TableCell>
+                  <TableCell>{item.total_items}</TableCell>
+                  <TableCell align="center">{item.total}</TableCell>
+                  <TableCell align="center">{item.datetime}
+                  </TableCell>
+                  <TableCell align="center">{item.name}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Button size="small" variant="outlined" color="success" onClick={() => retrieveItem(item.id)}>
+                      Retrieve
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
+              ))}
+            </TableBody>
 
-              <TableBody>
-                {holdItem.map(item => (
-                  <TableRow>
-                    <TableCell>{item.customer_mobile}</TableCell>
-                    <TableCell>{item.total_items}</TableCell>
-                    <TableCell align="center">{item.total}</TableCell>
-                    <TableCell align="center">{item.datetime}
-                    </TableCell>
-                    <TableCell align="center">{item.name}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Button size="small" variant="outlined" color="success" onClick={() => retrieveItem(item.id)}>
-                        Retrieve
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+      <DialogActions>
+        <Button onClick={() => setOpenRetrieveModal(false)}>Cancel</Button>
 
-            </Table>
-          </TableContainer>
-        )}
-        <DialogActions>
-          <Button onClick={() => setOpenRetrieveModal(false)}>Cancel</Button>
+        <Button variant="contained" color="primary" onClick={() => retrieveCart()}>
+          Retrieve
+        </Button>
+      </DialogActions>
 
-          <Button variant="contained" color="primary" onClick={() => retrieveCart()}>
-            Retrieve
-          </Button>
-        </DialogActions>
+    </Dialog>
 
-      </Dialog>
+    <Dialog open={cashOpen} onClose={() => setCashOpen(false)}>
+      <DialogTitle>Cash Payment</DialogTitle>
 
-      <Dialog open={cashOpen} onClose={() => setCashOpen(false)}>
-        <DialogTitle>Cash Payment</DialogTitle>
+      <DialogContent>
+        <Typography>Total Amount: ₹{Number(total).toFixed(2)}</Typography>
 
-        <DialogContent>
-          <Typography>Total Amount: ₹{Number(total).toFixed(2)}</Typography>
+        <TextField
+          label="Received Amount"
+          type="number"
+          fullWidth
+          sx={{ mt: 2 }}
+          value={receivedAmount}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            setReceivedAmount(val);
+            setReturnAmount(val - total);
+          }}
+        />
 
-          <TextField
-            label="Received Amount"
-            type="number"
-            fullWidth
-            sx={{ mt: 2 }}
-            value={receivedAmount}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setReceivedAmount(val);
-              setReturnAmount(val - total);
-            }}
-          />
+        <Typography sx={{ mt: 2 }} fontWeight="bold">
+          Return Amount: ₹{returnAmount > 0 ? returnAmount.toFixed(2) : "0.00"}
+        </Typography>
+      </DialogContent>
 
-          <Typography sx={{ mt: 2 }} fontWeight="bold">
-            Return Amount: ₹{returnAmount > 0 ? returnAmount.toFixed(2) : "0.00"}
-          </Typography>
-        </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setCashOpen(false)}>Cancel</Button>
 
-        <DialogActions>
-          <Button onClick={() => setCashOpen(false)}>Cancel</Button>
-
-          <Button
-            variant="contained"
-            color="success"
-            disabled={receivedAmount < total}
-            onClick={checkoutSale}
-          >
-            OK & Print
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Button
+          variant="contained"
+          color="success"
+          disabled={receivedAmount < total}
+          onClick={checkoutSale}
+        >
+          OK & Print
+        </Button>
+      </DialogActions>
+    </Dialog>
 
     {/* Toast Notification */}
     <Toast show={showToast} message={toastMessage} type={toastType} />
 
-    </>
+  </>
   );
 }

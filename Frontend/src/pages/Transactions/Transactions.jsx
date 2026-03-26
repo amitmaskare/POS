@@ -7,7 +7,7 @@ import {
   Button,
   Paper,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import TableLayout from "../../components/MainContentComponents/Table";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
@@ -15,7 +15,7 @@ import AddIcon from "@mui/icons-material/Add";
 import Title from "../../components/MainContentComponents/Title";
 import SearchFilter from "../../components/MainContentComponents/SearchFilter";
 import {transactionList} from "../../services/saleService"
-
+import { columns } from "./columns";
 export default function Transactions() {
 const [transactions, setTransactions] = useState([]);
   const fetchTransactions = async () => {

@@ -14,7 +14,7 @@ import Title from "../../components/MainContentComponents/Title";
 import Stats from "../../components/MainContentComponents/Stats";
 import TableLayout from "../../components/MainContentComponents/Table";
 import { stats } from "./StatsData";
-import {userList,getById,deleteItem,unbindDevice} from "../../services/userService"
+import {unbindDevice} from "../../services/userService"
 import { getColumns } from "./columns";
 import { userList, getById, deleteItem } from "../../services/userService"
 import ModalLayout from "./Modal";

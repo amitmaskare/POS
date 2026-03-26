@@ -12,7 +12,6 @@ import Receiving from "../pages/Receiving/Receiving";
 import Sales from "../pages/Sales/Sales";
 import Return from "../pages/Returns/Return";
 import Transactions from "../pages/Transactions/Transactions";
-import Inventory from "../pages/Inventory/Inventory";
 import Reports from "../pages/Reports/Reports";
 import Customers from "../pages/Customers/Customers";
 import Users from "../pages/Users/Users";
@@ -29,6 +28,7 @@ import POSSettings from "../pages/Settings/POSSettings";
 import Settings from "../pages/Settings/Settings";
 import Store from "../pages/Store/Stores";
 import CustomerDisplay from "../pages/PosSystem/CustomerDisplay";
+import { Inventory } from "../pages/Inventory/Inventory";
 
 const AppRoutes = ({ darkMode, toggleDarkMode }) => {
  const [auth, setAuth] = useState(localStorage.getItem('token'));

@@ -15,8 +15,14 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
+import Save from "@mui/icons-material/Save";
+import CheckCircle from "@mui/icons-material/CheckCircle";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import WorkIcon from "@mui/icons-material/Work";
+import PersonIcon from "@mui/icons-material/Person";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import { useTheme } from "@mui/material/styles";
-import { Save, CheckCircle } from "@mui/icons-material";
 import Title from "../../components/MainContentComponents/Title";
 import { roleList } from "../../services/RoleService";
 import {
@@ -24,6 +30,7 @@ import {
   getById,
   updateRolePermissions,
 } from "../../services/RolePermissionService";
+
 
 export default function RolePermission() {
   const [roles, setRoles] = useState([]);
@@ -423,6 +430,7 @@ export default function RolePermission() {
                                   },
                               }}
                             />
+                            </Typography>
                           </Box>
                         ))}
                       </Paper>

@@ -19,7 +19,7 @@ const Manage = ({ darkMode, toggleDarkMode }) => {
   // Separate cart states for PosSystem and SaleReturn
   const [posSystemCart, setPosSystemCart] = useState([]);
   const [saleReturnCart, setSaleReturnCart] = useState([]);
-  const [cartOpen, setCartOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false); 
 
   // Generic cart addition function factory
   const createAddToCart = (setCartFunc) => (product) => {

@@ -14,7 +14,10 @@ import {
   useTheme,
   Drawer,
 } from "@mui/material";
-
+import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
+import PeopleIcon from '@mui/icons-material/People';
+import PersonIcon from '@mui/icons-material/Person';
+import CategoryIcon from '@mui/icons-material/Category';
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -23,7 +26,6 @@ import WarehouseIcon from "@mui/icons-material/Warehouse";
 import AdminPanelSettingsIcon from "@mui/icons-material/Group";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import BadgeIcon from "@mui/icons-material/Badge";
-import CreditCardIcon from "@mui/icons-material/CreditCard";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import MoveToInboxIcon from "@mui/icons-material/MoveToInbox";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";

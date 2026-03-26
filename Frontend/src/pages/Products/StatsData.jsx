@@ -1,4 +1,9 @@
 import { TfiPackage } from "react-icons/tfi";
+import { Box } from "@mui/material";
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined';
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 export const statsData = [
   {
     title: "Total Products",

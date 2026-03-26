@@ -1,9 +1,9 @@
-import { Button, Box } from "@mui/material";
+import { Button, Box, Chip, Typography } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
+import PrintIcon from "@mui/icons-material/Print";
 
 export const getColumns = (isDark) => [
   {
@@ -46,12 +46,6 @@ export const getColumns = (isDark) => [
     align: "center",
     sortable: true,
     render: (row) => (
-<<<<<<< HEAD
-      <Typography variant="body2" sx={{ textAlign: "center" }}>
-        {row.total_items || 0}
-      </Typography>
-    ),
-=======
       <div>
         <div
           style={{
@@ -80,7 +74,6 @@ export const getColumns = (isDark) => [
         </div>
       </div>
     )
->>>>>>> 635bcb3 (ui changes)
   },
   {
     id: "paymentMethod",
@@ -305,11 +298,7 @@ export const getColumns = (isDark) => [
           variant="outlined"
           onClick={() => extra?.view(row?.id)}
         >
-<<<<<<< HEAD
-          View Detail
-=======
           <VisibilityIcon sx={{ fontSize: 16 }} />
->>>>>>> 635bcb3 (ui changes)
         </Button>
 
         <Button

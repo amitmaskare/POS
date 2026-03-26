@@ -1,6 +1,5 @@
 import {
   Box,
-  Modal,
   Typography,
   Paper,
   TextField,
@@ -16,7 +15,10 @@ import {
   Button,
   Chip,
   Checkbox,
-  IconButton
+  IconButton,
+  Dialog,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -395,35 +397,6 @@ export default function NewPurchaseOrderModal({ open, onClose, onSaved, editData
                       />
                     </TableCell> */}
 
-<<<<<<< HEAD
-          {/* FOOTER BUTTONS */}
-          <Box display="flex" justifyContent="flex-end" mt={3} gap={2}>
-            <Button onClick={onClose} variant="outlined" color="inherit">
-              Cancel
-            </Button>
-           
-          {(!editData || editData?.purchase?.type === "draft") && (
-  <Button
-    variant="contained"
-    sx={{ bgcolor: "#5A8DEE" }}
-    onClick={() => handleCreatePurchase("draft")}
-  >
-    Save as Draft
-  </Button>
-     )}
-
-            <Button
-              variant="contained"
-              sx={{ bgcolor: "#5A8DEE" }}
-              onClick={() => handleCreatePurchase("send")}
-            >
-              Create Purchase Order
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
-    </Modal>
-=======
                     <TableCell>
                       <Box display="flex" alignItems="center" >
 
@@ -589,6 +562,5 @@ export default function NewPurchaseOrderModal({ open, onClose, onSaved, editData
         </Box>
       </DialogContent>
     </Dialog>
->>>>>>> 635bcb3 (ui changes)
   );
 }

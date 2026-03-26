@@ -15,11 +15,9 @@ import { statsData1 } from "./StatsData1";
 import TableLayout from "../../components/MainContentComponents/Table";
 import ViewSaleModal from "./Modal";
 import ReturnModal from "./ReturnModal";
-import { FaRegSquarePlus } from "react-icons/fa6";
-import { rows } from "./rows";
-import { columns } from "./columns";
+import { getColumns } from "./columns";
 import {saleList,getSaleById} from "../../services/saleService"
-
+import {useTheme} from "@mui/material";
 
 export default function Sales() {
 

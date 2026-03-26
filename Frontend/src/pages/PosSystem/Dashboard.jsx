@@ -28,7 +28,7 @@ import {
 } from "../../services/productService";
 
 import { getColumns } from "./columns";
-import { searchProduct,add_product,favouriteList,looseItemList } from "../../services/productService";
+
 import { useOutletContext } from "react-router-dom";
 import { useToast } from "../../hooks/useToast";
 import Toast from "../../components/Toast/Toast";
