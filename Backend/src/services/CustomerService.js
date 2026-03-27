@@ -4,8 +4,8 @@ import {CommonModel} from "../models/CommonModel.js"
 export const CustomerService={
 
     list:async(storeId)=>{
-        const result=await CommonModel.getAllData({table:"customers",fields:["id,name,email,phone,address,status,created_at"], storeId})
-        return result      
+        const result=await CommonModel.getAllData({table:"customers",fields:["id,name,email,phone,aadhaar_no,address,created_at"], storeId})
+        return result
     },
 
     add:async(data, storeId)=>{
@@ -20,7 +20,7 @@ export const CustomerService={
 
     update:async(data, storeId)=>
     {
-        const {id,name,email,phone,address}=data
+        const {id,name,email,phone,aadhaar_no,address}=data
         const result=await CommonModel.updateData({table:"customers",data:data,conditions:{id}, storeId})
         return result
     },
@@ -41,6 +41,13 @@ export const CustomerService={
         return await CommonModel.findOne({
           table: "customers",
           where: { phone }
+        });
+      },
+
+      checkAadhaar: async (aadhaar_no) => {
+        return await CommonModel.findOne({
+          table: "customers",
+          where: { aadhaar_no }
         });
       },
 }

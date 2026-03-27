@@ -42,7 +42,11 @@ export const SaleController={
               cart,
               cash_amount,
               online_amount,
-              online_method
+              online_method,
+              customer_id,
+              customer_name,
+              customer_phone,
+              customer_aadhaar
             } = req.body;
 
             if (!Array.isArray(cart) || cart.length === 0) {
@@ -59,11 +63,15 @@ export const SaleController={
                      tax,
                      total,
                      payment_method,
-                     payment_status:payment_method === "cash" ? "paid" : "pending",
+                     payment_status:(payment_method === "cash" || payment_method === "aadhaar_customer") ? "paid" : "pending",
                      store_id: storeId,
                      cash_amount: payment_method === "split" ? cash_amount : null,
                      online_amount: payment_method === "split" ? online_amount : null,
-                     online_method: payment_method === "split" ? online_method : null
+                     online_method: payment_method === "split" ? online_method : null,
+                     customer_id: customer_id || null,
+                     customer_name: customer_name || null,
+                     customer_phone: customer_phone || null,
+                     customer_aadhaar: customer_aadhaar || null
                   };
             const saleId = await SaleService.createSale(saleData, storeId);
              

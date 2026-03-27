@@ -7,6 +7,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { BrowserRouter } from 'react-router-dom';
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { CustomerProvider } from './context/CustomerContext';
 
 const theme = createTheme({
   components: {
@@ -32,7 +33,9 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <BrowserRouter>
   <ThemeProvider theme={theme}>
-    <App />
+    <CustomerProvider>
+      <App />
+    </CustomerProvider>
     </ThemeProvider>
   </BrowserRouter>
 );

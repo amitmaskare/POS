@@ -25,15 +25,20 @@ import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import HistoryIcon from "@mui/icons-material/History";
+import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 
 import Aadhaar from "../components/HeaderComponents/Aadhaar";
 import RationCardSelection from "../components/HeaderComponents/RationCard";
 import CashierCheckoutModal from "../components/HeaderComponents/CheckOut";
 import SalesHistoryModal from "../components/HeaderComponents/SalesHistory";
 import CheckPriceModal from "../components/HeaderComponents/CheckPrice";
-import SaleReturnModal from "../components/HeaderComponents/SaleReturn"
+import SaleReturnModal from "../components/HeaderComponents/SaleReturn";
+import CheckCustomerModal from "../components/HeaderComponents/CheckCustomer";
+import { useCustomer } from "../context/CustomerContext";
+
 export default function Header({ sidebarState, setCartOpen }) {
   const navigate = useNavigate();
+  const { selectedCustomer, clearCustomer } = useCustomer();
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [actionsAnchorEl, setActionsAnchorEl] = useState(null);
@@ -43,6 +48,7 @@ export default function Header({ sidebarState, setCartOpen }) {
   const [openSalesHistory, setopenSalesHistory] = useState(false);
   const [openCheckPrice, setopenCheckPrice] = useState(false);
   const [openSaleReturn, setopenSaleReturn] = useState(false);
+  const [openCheckCustomer, setOpenCheckCustomer] = useState(false);
 
   const open = Boolean(anchorEl);
   const actionsOpen = Boolean(actionsAnchorEl);
@@ -73,8 +79,8 @@ export default function Header({ sidebarState, setCartOpen }) {
 >
 
 
-      {/* LEFT SIDE - Admin Dropdown */}
-      <Box>
+      {/* LEFT SIDE - Admin Dropdown and Customer Info */}
+      <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
         <Button
           variant="outlined"
           onClick={handleOpenMenu}
@@ -101,6 +107,54 @@ export default function Header({ sidebarState, setCartOpen }) {
             admin
           </Box>
         </Button>
+
+        {/* Selected Customer Display */}
+        {selectedCustomer && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 2,
+              py: 1,
+              backgroundColor: "#d4edda",
+              border: "1px solid #28a745",
+              borderRadius: "5px",
+            }}
+          >
+            <AccountCircleIcon sx={{ color: "#28a745" }} />
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#155724",
+                }}
+              >
+                {selectedCustomer.name}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: "10px",
+                  color: "#155724",
+                }}
+              >
+                {selectedCustomer.phone}
+              </Typography>
+            </Box>
+            <IconButton
+              size="small"
+              onClick={clearCustomer}
+              sx={{
+                ml: 1,
+                color: "#155724",
+                "&:hover": { backgroundColor: "#c3e6cb" },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        )}
 
         <Menu anchorEl={anchorEl} open={open} onClose={handleCloseMenu}>
           <MenuItem onClick={handleCloseMenu}>👤 Profile</MenuItem>
@@ -261,6 +315,10 @@ export default function Header({ sidebarState, setCartOpen }) {
               <MenuItem onClick={() => { setopenSalesHistory(true); handleActionsClose(); }}>
                 Sales History
               </MenuItem>
+
+              <MenuItem onClick={() => { setOpenCheckCustomer(true); handleActionsClose(); }}>
+                Check Customer
+              </MenuItem>
             </Menu>
             {isMobile && (
               <IconButton onClick={() => setCartOpen(prev => !prev)}>
@@ -372,9 +430,29 @@ export default function Header({ sidebarState, setCartOpen }) {
                   borderColor: "#D32F2F"
                 }
               }}
-              
+
             >
               Sales History
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setOpenCheckCustomer(true)}
+              startIcon={<PersonSearchIcon />}
+              sx={{
+                color: "#fff",
+                backgroundColor: "#415a77",
+                textTransform: "none",
+                fontWeight: 500,
+                "&:hover": {
+                  backgroundColor: "#415a77",
+                  color: "#fff",
+                  borderColor: "#D32F2F"
+                }
+              }}
+            >
+              Check Customer
             </Button>
           </>
         )}
@@ -391,17 +469,21 @@ export default function Header({ sidebarState, setCartOpen }) {
         onClose={() => setopenCheckout(false)}
       />
 
-<SalesHistoryModal 
-  open={openSalesHistory} 
-  onClose={() => setopenSalesHistory(false)} 
+<SalesHistoryModal
+  open={openSalesHistory}
+  onClose={() => setopenSalesHistory(false)}
 />
-<CheckPriceModal 
-  open={openCheckPrice} 
-  onClose={() => setopenCheckPrice(false)} 
+<CheckPriceModal
+  open={openCheckPrice}
+  onClose={() => setopenCheckPrice(false)}
 />
-<SaleReturnModal 
-  open={openSaleReturn} 
-  onClose={() => setopenSaleReturn(false)} 
+<SaleReturnModal
+  open={openSaleReturn}
+  onClose={() => setopenSaleReturn(false)}
+/>
+<CheckCustomerModal
+  open={openCheckCustomer}
+  onClose={() => setOpenCheckCustomer(false)}
 />
 
     </Box>

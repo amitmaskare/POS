@@ -32,8 +32,10 @@ import CircularProgress from "@mui/material/CircularProgress";
 import QRCode from "qrcode";
 import { printThermalReceipt, formatReceiptData } from "../../utils/thermalPrint";
 import socket from "../../socket";
+import { useCustomer } from "../../context/CustomerContext";
 
 export default function Cart({ cart, setCart }) {
+  const { selectedCustomer, clearCustomer } = useCustomer();
   const roomId = "pos_terminal_1"; // Same room as Dashboard
   const [active, setActive] = useState(""); 
   const [editingPriceId, setEditingPriceId] = useState(null);
@@ -226,11 +228,16 @@ const printReceipt = (saleData, paymentDetails = {}) => {
 
 const checkoutSale = async () => {
   try{
+  // If customer is selected via Aadhaar, auto-complete the order
   const payload = {
-    payment_method: 'cash',
+    payment_method: selectedCustomer ? 'aadhaar_customer' : 'cash',
     subtotal,
     tax,
     total,
+    customer_id: selectedCustomer ? selectedCustomer.id : null,
+    customer_name: selectedCustomer ? selectedCustomer.name : null,
+    customer_phone: selectedCustomer ? selectedCustomer.phone : null,
+    customer_aadhaar: selectedCustomer ? selectedCustomer.aadhaar_no : null,
     cart: cart.map(item => ({
       product_id: item.id,
       product_name: item.product_name,
@@ -247,7 +254,9 @@ const checkoutSale = async () => {
   {
     // Print thermal receipt
     printReceipt(result.data, {
-      payment_method: 'cash',
+      payment_method: selectedCustomer ? 'Aadhaar Customer' : 'cash',
+      customer_name: selectedCustomer ? selectedCustomer.name : null,
+      customer_phone: selectedCustomer ? selectedCustomer.phone : null,
       received_amount: receivedAmount,
       change_amount: returnAmount
     });
@@ -259,6 +268,11 @@ const checkoutSale = async () => {
     setCart([]);
     setReceivedAmount("");
     setReturnAmount(0);
+
+    // Clear selected customer after checkout
+    if (selectedCustomer) {
+      clearCustomer();
+    }
   }
 }catch(error)
 {
@@ -982,12 +996,25 @@ const handleSplitCreditPayment = async () => {
           </button>
         </div>
 
-        {/* Print */}
+        {/* Print / Checkout Button */}
         <div className="d-grid gap-2 mt-3">
-          <button className="btn btn-success" onClick={checkoutSale }>
-            <PrintIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Print Receipt
-          </button>
+          {selectedCustomer ? (
+            // For Aadhaar customers - direct checkout without payment selection
+            <button
+              className="btn btn-success"
+              onClick={checkoutSale}
+              disabled={cart.length === 0}
+            >
+              <PrintIcon style={{ fontSize: 18, marginRight: 5 }} />
+              Complete Order for {selectedCustomer.name}
+            </button>
+          ) : (
+            // For regular customers - show print receipt
+            <button className="btn btn-success" onClick={checkoutSale }>
+              <PrintIcon style={{ fontSize: 18, marginRight: 5 }} />
+              Print Receipt
+            </button>
+          )}
         </div>
       </div>
     </aside>

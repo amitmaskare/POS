@@ -22,17 +22,19 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
     name: "",
     email: "",
     phone: "",
+    aadhaar_no: "",
     address: "",
     id:"",
   });
 
   useEffect(() => {
       if (editData) {
-      
+
         setForm({
           name: editData.name || "",
           email: editData.email || "",
           phone: editData.phone || "",
+          aadhaar_no: editData.aadhaar_no || "",
           address: editData.address || "",
           id: editData.id || "",
         });
@@ -41,6 +43,7 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
          name: "",
     email: "",
     phone: "",
+    aadhaar_no: "",
     address: "",
     id:"",
         });
@@ -63,14 +66,15 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
 
     try {
       let result;
-      
-          if (form.id) {
-           
-            result = await updateCustomer(form);
-          } else {
-          
-            result = await addCustomer(form);
-          }
+
+      if (form.id) {
+        // Update existing customer
+        result = await updateCustomer(form);
+      } else {
+        // Add new customer - don't send id field
+        const { id, ...customerData } = form;
+        result = await addCustomer(customerData);
+      }
       if (result.status === true) {
         setSuccess(result.message);
         setForm({
@@ -78,6 +82,7 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
           name: "",
           email: "",
           phone: "",
+          aadhaar_no: "",
           address: "",
         });
         onClose();
@@ -86,7 +91,9 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
         setError(result.message);
       }
     } catch (err) {
-      setError("Failed to save product");
+      console.error("Customer save error:", err);
+      const errorMessage = err.response?.data?.message || err.message || "Failed to save customer";
+      setError(errorMessage);
     }
   };
 
@@ -128,32 +135,56 @@ const ModalLayout = ({ open, onClose,onSaved,editData  }) => {
 
           <Grid item xs={12}>
             <TextField
-              label="email"
+              label="Email"
               name="email"
               fullWidth
               required
+              type="email"
               value={form.email}
               onChange={handleChange}
+              helperText="Enter valid email address"
             />
           </Grid>
 
           <Grid item xs={12}>
             <TextField
-              label="phone"
+              label="Phone Number"
               name="phone"
               fullWidth
+              required
+              type="tel"
               value={form.phone}
               onChange={handleChange}
+              inputProps={{ maxLength: 10 }}
+              helperText="Enter 10-digit mobile number"
             />
           </Grid>
 
+          <Grid item xs={12}>
             <TextField
-              label="address"
+              label="Aadhaar Number (Optional)"
+              name="aadhaar_no"
+              fullWidth
+              value={form.aadhaar_no}
+              onChange={handleChange}
+              inputProps={{ maxLength: 12 }}
+              helperText="Enter 12-digit Aadhaar number"
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              label="Address"
               name="address"
               fullWidth
+              required
+              multiline
+              rows={2}
               value={form.address}
               onChange={handleChange}
+              helperText="Enter full address"
             />
+          </Grid>
           
         </Grid>
         <input type="hidden" name="id" value={form.id || ''} />

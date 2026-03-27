@@ -92,9 +92,27 @@ export const CommonModel = {
   insertData: async ({ table, data, storeId = null } = {}) => {
     // ✅ AUTO-ADD STORE_ID FOR TENANT TABLES
     const tenantTables = ['categories', 'subcategories', 'products', 'customers', 'suppliers', 'packages', 'offers', 'purchases', 'sales', 'returns', 'hold_sales', 'ration_cards', 'payments', 'cards'];
-    
+
     if (storeId && tenantTables.includes(table) && !data.store_id) {
       data.store_id = storeId;
+    }
+
+    // ✅ REMOVE empty id field (causes "Incorrect integer value: ''" error)
+    if (data.id === "" || data.id === null || data.id === undefined) {
+      delete data.id;
+    }
+
+    // ✅ AUTO-ADD created_at and updated_at ONLY for tables that have these columns
+    // Tables without timestamps: sales, sale_items, etc.
+    const tablesWithTimestamps = ['customers', 'products', 'categories', 'subcategories', 'suppliers', 'users'];
+
+    if (tablesWithTimestamps.includes(table)) {
+      if (!data.created_at) {
+        data.created_at = new Date();
+      }
+      if (!data.updated_at) {
+        data.updated_at = new Date();
+      }
     }
 
     const keys = Object.keys(data);
@@ -151,12 +169,12 @@ export const CommonModel = {
   findOne: async ({ table, where }) => {
     const keys = Object.keys(where);
     const values = Object.values(where);
-  
+
     const conditions = keys.map(key => `${key} = ?`).join(" AND ");
-  
+
     const sql = `SELECT * FROM ${table} WHERE ${conditions} LIMIT 1`;
-  
-    const [rows] = await db.query(sql, values);
+
+    const [rows] = await pool.promise().query(sql, values);
     return rows.length ? rows[0] : null;
   },
 

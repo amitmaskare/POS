@@ -6,8 +6,8 @@ import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 export const CustomerController={
     list:async(req,resp)=>{
         try{
-            const storeId = getStoreIdFromRequest(req);
-            const result=await CustomerService.list(storeId)
+            // Note: customers table doesn't have store_id column, so pass null
+            const result=await CustomerService.list(null)
             if(!result || result.length===0)
             {
                 return sendResponse(resp,false,400,"No Data Found")
@@ -20,7 +20,8 @@ export const CustomerController={
     },
     add:async(req,resp)=>{
         try{
-           const storeId = getStoreIdFromRequest(req);
+           // Note: customers table doesn't have store_id column
+           const storeId = null;
            const requiredFields = [
         "name",
         "email",
@@ -44,6 +45,14 @@ export const CustomerController={
     if (phoneExists) {
       return sendResponse(resp, false, 400, "Phone number already exists");
     }
+
+    // Check if Aadhaar already exists (optional field)
+    if (req.body.aadhaar_no) {
+      const aadhaarExists = await CustomerService.checkAadhaar(req.body.aadhaar_no);
+      if (aadhaarExists) {
+        return sendResponse(resp, false, 400, "Aadhaar number already exists");
+      }
+    }
             const result= await CustomerService.add(req.body, storeId)
             if(!result || result.length===0)
             {
@@ -57,7 +66,7 @@ export const CustomerController={
     },
     getById:async(req,resp)=>{
         try{
-            const storeId = getStoreIdFromRequest(req);
+            const storeId = null; // customers table doesn't have store_id
             const {id}=req.params
             if(!id)
             {
@@ -76,7 +85,7 @@ export const CustomerController={
     },
     update:async(req,resp)=>{
         try{
-             const storeId = getStoreIdFromRequest(req);
+             const storeId = null; // customers table doesn't have store_id
              const requiredFields = [
                 "id",
         "name",
@@ -104,7 +113,7 @@ export const CustomerController={
     },
     deleteData:async(req,resp)=>{
         try{
-            const storeId = getStoreIdFromRequest(req);
+            const storeId = null; // customers table doesn't have store_id
             const {id}=req.params
             const result=await CustomerService.deleteData(id, storeId)
             if(!result || result.length===0)
