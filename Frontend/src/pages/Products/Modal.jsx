@@ -116,13 +116,27 @@ const [newSupplier, setNewSupplier] = useState("");
     setError("");
 
     try {
+       // Build FormData for multipart upload
+       const formData = new FormData();
+       Object.keys(form).forEach((key) => {
+         if (key === 'image') {
+           // Only append image if it's a File (new upload)
+           if (form.image instanceof File) {
+             formData.append('image', form.image);
+           }
+         } else if (key !== 'id' || form[key]) {
+           // Send all fields except empty id
+           formData.append(key, form[key] ?? '');
+         }
+       });
+
        let result;
                 if (form.id) {
-                 
-                  result = await updateProduct(form);
+                  // For update, always include id
+                  if (!formData.has('id')) formData.append('id', form.id);
+                  result = await updateProduct(formData);
                 } else {
-                
-                  result = await addProduct(form);
+                  result = await addProduct(formData);
                 }
      
       if (result.status === true) {
@@ -149,7 +163,8 @@ const [newSupplier, setNewSupplier] = useState("");
         showToastNotification(result.message, "error");
       }
     } catch (err) {
-      showToastNotification("Failed to save product", "error");
+      const message = err.response?.data?.message || err.message || "Failed to save product";
+      showToastNotification(message, "error");
     }
   };
 
@@ -309,8 +324,8 @@ const handleAddSupplier = async () => {
       select
       fullWidth
       required
-      value={categoryId}
-      onChange={(e) => setCategoryId(e.target.value)}
+      value={form.category_id}
+      onChange={handleChange}
       sx={{ width: "230px" }}
     >
       <MenuItem value="">Select</MenuItem>

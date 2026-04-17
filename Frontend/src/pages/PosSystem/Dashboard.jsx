@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box,
-  Typography,
-  Paper,
-  Modal,
-  Tabs,
-  Tab,
-  Grid,
   TextField,
-  MenuItem,
   Button,
   Dialog,
   DialogTitle,
@@ -16,21 +8,21 @@ import {
   DialogActions,
 } from "@mui/material";
 
-import SearchIcon from "@mui/icons-material/Search";
 import SearchFilter from "../../components/MainContentComponents/SearchFilter";
 import TableLayout from "../../components/MainContentComponents/Table";
-import FilterListIcon from "@mui/icons-material/FilterList";
-import DownloadIcon from "@mui/icons-material/Download";
 
 import { columns } from "./columns";
-import { rows } from "./rows";
 
 import {
-  searchProduct,
   add_product,
+  allProductsList,
   favouriteList,
   looseItemList,
+  decodeLooseBarcode,
+  searchProductList,
 } from "../../services/productService";
+
+import WeightEntryModal from "./WeightEntryModal";
 
 import { useOutletContext } from "react-router-dom";
 import { useToast } from "../../hooks/useToast";
@@ -54,11 +46,20 @@ export default function Dashboard() {
   const [openAddModal, setOpenAddModal] = useState(false);
 
   const [barcode, setBarcode] = useState("");
+  const [searchFilter, setSearchFilter] = useState("");
   const [product_name, setProduct_name] = useState("");
   const [selling_price, setSelling_price] = useState("");
 
+  const [allProducts, setAllProducts] = useState([]);
   const [favourites, setFavourites] = useState([]);
   const [looseItems, setLooseItems] = useState([]);
+
+  // Barcode search results from API
+  const [barcodeResults, setBarcodeResults] = useState([]);
+
+  // Loose item weight entry modal
+  const [weightModalOpen, setWeightModalOpen] = useState(false);
+  const [selectedLooseProduct, setSelectedLooseProduct] = useState(null);
 
   const { showToast, toastMessage, toastType, showToastNotification } =
     useToast();
@@ -101,57 +102,75 @@ export default function Dashboard() {
   };
 
   const handleBarcodeChange = async (value) => {
+    setSearchFilter(value);
 
-    const trimmedValue = value.trim();
-    setBarcode(trimmedValue);
+    const trimmed = value.trim();
+    const isNumeric = /^\d+$/.test(trimmed);
 
-    if (!trimmedValue || trimmedValue.length !== BARCODE_LENGTH) {
-      return;
+    // Auto-detect weighted barcode from scanner (prefix "20", length 13)
+    if (trimmed.length === 13 && trimmed.startsWith("20")) {
+      try {
+        const result = await decodeLooseBarcode({ barcode: trimmed });
+        if (result.status === true) {
+          const item = result.data;
+          const looseCartItem = {
+            ...item,
+            id: `${item.id}_loose_${Date.now()}`,
+            product_id: item.id,
+            qty: item.loose_weight,
+            total: item.price,
+            is_loose: 1,
+          };
+          addToCart(looseCartItem);
+          sendToCustomerDisplay(looseCartItem);
+          setSearchFilter("");
+          setBarcodeResults([]);
+          showToastNotification(
+            `${item.product_name} (${item.loose_weight}${item.loose_unit}) added - Rs.${item.price}`,
+            "success"
+          );
+          return;
+        }
+      } catch (error) {
+        console.log("Not a weighted barcode, proceeding with normal search");
+      }
     }
 
-    try {
-
-      const payload = {
-        search: trimmedValue,
-      };
-
-      const result = await searchProduct(payload);
-
-      if (result.status === true) {
-
-        showToastNotification("Product added to cart", "success");
-
-        addToCart(result.data);
-
-        sendToCustomerDisplay(result.data);  // ✅ SEND TO CUSTOMER
-
-        setBarcode("");
-        setConfirmAdd(false);
-
-      } else {
-
-        setConfirmAdd(true);
-
+    // Barcode search: when 5+ numeric digits, search by barcode via API
+    if (isNumeric && trimmed.length >= 5) {
+      try {
+        const result = await searchProductList({ search: trimmed });
+        if (result.status === true && result.data?.length > 0) {
+          setBarcodeResults(result.data);
+        } else {
+          setBarcodeResults([]);
+        }
+      } catch (error) {
+        setBarcodeResults([]);
       }
-
-    } catch (error) {
-
-      showToastNotification(
-        error.response?.data?.message || "Failed to search product",
-        "error"
-      );
-
-      setConfirmAdd(true);
-
+    } else {
+      setBarcodeResults([]);
     }
   };
 
   const handleSelectItem = (row) => {
+    // If loose item → open weight entry modal
+    if (row.is_loose === 1 || row.is_loose === true || row.favourite === 'loose') {
+      setSelectedLooseProduct(row);
+      setWeightModalOpen(true);
+      return;
+    }
 
     addToCart(row);
+    sendToCustomerDisplay(row);
+  };
 
-    sendToCustomerDisplay(row);   // ✅ SEND PRODUCT
-
+  // Handle adding loose item from weight modal (both manual & label print)
+  const handleAddLooseItem = (looseCartItem) => {
+    // Directly set in cart (don't use addToCart which would qty++ for same id)
+    // looseCartItem already has unique id like "5_loose_1681234567890"
+    addToCart(looseCartItem);
+    sendToCustomerDisplay(looseCartItem);
   };
 
   const addProduct = async () => {
@@ -212,9 +231,37 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    getAllProductsList();
     getFavouriteList();
     fetchLooseItemList();
   }, []);
+
+  const getAllProductsList = async () => {
+
+    try {
+
+      const result = await allProductsList();
+
+      console.log('All Products List Result:', result);
+
+      if (result.status === true) {
+
+        setAllProducts(result.data || []);
+
+      } else {
+
+        setAllProducts([]);
+        console.log('No products found');
+
+      }
+
+    } catch (error) {
+
+      console.error('Error loading all products:', error);
+      setAllProducts([]);
+
+    }
+  };
 
   const getFavouriteList = async () => {
 
@@ -274,15 +321,35 @@ export default function Dashboard() {
 
   const getFilteredProducts = () => {
 
-    if (activeFilter === "All") {
-      return [...favourites, ...looseItems];
+    const trimmed = searchFilter.trim();
+    const isNumeric = /^\d+$/.test(trimmed);
+
+    // If barcode search is active (5+ digits), show API results
+    if (isNumeric && trimmed.length >= 5 && barcodeResults.length > 0) {
+      return barcodeResults;
     }
 
-    if (activeFilter === "Favourite") return favourites;
+    let products = [];
 
-    if (activeFilter === "Loose Items") return looseItems;
+    // Get products based on active tab
+    if (activeFilter === "All") {
+      products = allProducts;
+    } else if (activeFilter === "Favourite") {
+      products = favourites;
+    } else if (activeFilter === "Loose Items") {
+      products = looseItems;
+    }
 
-    return [];
+    // Apply local search filter (product name only for text search)
+    if (trimmed.length > 0 && !isNumeric) {
+      const searchTerm = trimmed.toLowerCase();
+      products = products.filter(product => {
+        const productName = (product.product_name || '').toLowerCase();
+        return productName.includes(searchTerm);
+      });
+    }
+
+    return products;
 
   };
 
@@ -313,7 +380,7 @@ export default function Dashboard() {
           <div className="col-12 col-md-12 col-lg-8">
 
             <SearchFilter
-              value={barcode}
+              value={searchFilter}
               onSearchChange={(e) => handleBarcodeChange(e.target.value)}
               autoFocus
             />
@@ -461,6 +528,17 @@ export default function Dashboard() {
           </DialogActions>
 
         </Dialog>
+
+        {/* WEIGHT ENTRY MODAL FOR LOOSE ITEMS */}
+        <WeightEntryModal
+          open={weightModalOpen}
+          onClose={() => {
+            setWeightModalOpen(false);
+            setSelectedLooseProduct(null);
+          }}
+          product={selectedLooseProduct}
+          onAddToCart={handleAddLooseItem}
+        />
 
       </main>
     </>

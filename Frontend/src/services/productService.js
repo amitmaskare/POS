@@ -123,6 +123,21 @@ export const searchProduct=async(data)=>{
   }
 }
 
+export const searchProductList=async(data)=>{
+  try{
+    const token = localStorage.getItem("token");
+   const response= await axios.post(`${apiUrl}/product/searchProductList`,data,{
+     headers: {
+          Authorization: `Bearer ${token}`,
+        },
+   })
+   return response.data
+  }catch(error)
+  {
+    throw error
+  }
+}
+
 export const add_product=async(data)=>{
   try{
     const token = localStorage.getItem("token");
@@ -131,6 +146,22 @@ export const add_product=async(data)=>{
           Authorization: `Bearer ${token}`,
         },
    })
+   return response.data
+  }catch(error)
+  {
+    throw error
+  }
+}
+
+export const allProductsList=async()=>{
+  try{
+    const token = localStorage.getItem("token");
+   const response=await axios.get(`${apiUrl}/product/allProductsList`,{
+     headers: {
+          Authorization: `Bearer ${token}`,
+        },
+   })
+   console.log('allProductsList front-end', response.data);
    return response.data
   }catch(error)
   {
@@ -199,6 +230,36 @@ export const addSupplier=async(data)=>{
     throw error
   }
 }
+export const generateLooseBarcode=async(data)=>{
+  try{
+    const token = localStorage.getItem("token");
+   const response= await axios.post(`${apiUrl}/product/generateLooseBarcode`,data,{
+     headers: {
+          Authorization: `Bearer ${token}`,
+        },
+   })
+   return response.data
+  }catch(error)
+  {
+    throw error
+  }
+}
+
+export const decodeLooseBarcode=async(data)=>{
+  try{
+    const token = localStorage.getItem("token");
+   const response= await axios.post(`${apiUrl}/product/decodeLooseBarcode`,data,{
+     headers: {
+          Authorization: `Bearer ${token}`,
+        },
+   })
+   return response.data
+  }catch(error)
+  {
+    throw error
+  }
+}
+
 export const addStock=async(data)=>{
   try{
     const token = localStorage.getItem("token");

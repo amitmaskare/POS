@@ -187,12 +187,16 @@ const total = subtotal + tax;
     tax,
     total,
     cart: cart.map(item => ({
-      product_id: item.id,
+      product_id: item.product_id || item.id,
       product_name: item.product_name,
       qty: item.qty,
       price: item.price,
       image: item.image,
       tax: item.tax,
+      is_loose: item.is_loose || 0,
+      loose_weight: item.loose_weight || null,
+      loose_unit: item.loose_unit || null,
+      price_per_unit: item.price_per_unit || null,
     }))
   };
 
@@ -239,13 +243,17 @@ const checkoutSale = async () => {
     customer_phone: selectedCustomer ? selectedCustomer.phone : null,
     customer_aadhaar: selectedCustomer ? selectedCustomer.aadhaar_no : null,
     cart: cart.map(item => ({
-      product_id: item.id,
+      product_id: item.product_id || item.id,
       product_name: item.product_name,
       qty: item.qty,
       tax: item.tax,
-      price: item.price,
-      total:item.price*item.qty,
-      image: item.image
+      price: item.is_loose ? item.price : item.price,
+      total: item.is_loose ? item.price : item.price * item.qty,
+      image: item.image,
+      is_loose: item.is_loose || 0,
+      loose_weight: item.loose_weight || null,
+      loose_unit: item.loose_unit || null,
+      price_per_unit: item.price_per_unit || null,
     }))
   };
 
@@ -867,26 +875,45 @@ const handleSplitCreditPayment = async () => {
               </div>
 
               <div className="d-flex justify-content-between align-items-center mt-2">
-                {/* Quantity */}
-                <div
-                  className="d-flex align-items-center rounded-pill px-2 py-1"
-                  style={{
-                    border: "1px solid #dcdcdc",
-                    width: "90px",
-                    justifyContent: "space-between",
-                    height: "32px",
-                  }}
-                >
-                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
-                    −
-                  </button>
-                  <span className="fw-bold" style={{ fontSize: "14px" }}>
-                    {item.qty}
-                  </span>
-                  <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
-                    +
-                  </button>
-                </div>
+                {/* Quantity / Weight */}
+                {item.is_loose === 1 || item.is_loose === true ? (
+                  // Loose item: show weight with unit (no +/- buttons)
+                  <div
+                    className="d-flex align-items-center rounded-pill px-2 py-1"
+                    style={{
+                      border: "1px solid #4caf50",
+                      background: "#e8f5e9",
+                      minWidth: "100px",
+                      justifyContent: "center",
+                      height: "32px",
+                    }}
+                  >
+                    <span className="fw-bold" style={{ fontSize: "13px", color: "#2e7d32" }}>
+                      {Number(item.qty).toFixed(3)} {item.loose_unit || "kg"}
+                    </span>
+                  </div>
+                ) : (
+                  // Regular item: show qty with +/- buttons
+                  <div
+                    className="d-flex align-items-center rounded-pill px-2 py-1"
+                    style={{
+                      border: "1px solid #dcdcdc",
+                      width: "90px",
+                      justifyContent: "space-between",
+                      height: "32px",
+                    }}
+                  >
+                    <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
+                      −
+                    </button>
+                    <span className="fw-bold" style={{ fontSize: "14px" }}>
+                      {item.qty}
+                    </span>
+                    <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
+                      +
+                    </button>
+                  </div>
+                )}
 
                 {/* Price */}
                {/* Price */}

@@ -24,9 +24,23 @@ const Manage = () => {
   // Generic cart addition function factory
   const createAddToCart = (setCartFunc) => (product) => {
     setCartFunc((prev) => {
+      // Loose items always get a NEW cart row (each has unique weight)
+      if (product.is_loose === 1 || product.is_loose === true) {
+        return [
+          ...prev,
+          {
+            ...product,
+            product_id: product.product_id || product.id,
+            qty: product.qty || product.loose_weight || 1,
+            price: product.price || product.total,
+            total: product.total || product.price,
+          },
+        ];
+      }
+
       const exists = prev.find((item) => item.id === product.id);
 
-      // ✅ product already in cart → qty++
+      // product already in cart → qty++
       if (exists) {
         return prev.map((item) => {
           if (item.id !== product.id) return item;
@@ -43,7 +57,7 @@ const Manage = () => {
         });
       }
 
-      // ✅ new product → add first time
+      // new product → add first time
       const basePrice = product.selling_price ?? product.price;
 
       return [

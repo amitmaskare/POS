@@ -27,6 +27,7 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import HistoryIcon from "@mui/icons-material/History";
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 
+import ScaleIcon from "@mui/icons-material/Scale";
 import Aadhaar from "../components/HeaderComponents/Aadhaar";
 import RationCardSelection from "../components/HeaderComponents/RationCard";
 import CashierCheckoutModal from "../components/HeaderComponents/CheckOut";
@@ -34,6 +35,7 @@ import SalesHistoryModal from "../components/HeaderComponents/SalesHistory";
 import CheckPriceModal from "../components/HeaderComponents/CheckPrice";
 import SaleReturnModal from "../components/HeaderComponents/SaleReturn";
 import CheckCustomerModal from "../components/HeaderComponents/CheckCustomer";
+import LooseItemCounter from "../components/HeaderComponents/LooseItemCounter";
 import { useCustomer } from "../context/CustomerContext";
 
 export default function Header({ sidebarState, setCartOpen }) {
@@ -49,6 +51,7 @@ export default function Header({ sidebarState, setCartOpen }) {
   const [openCheckPrice, setopenCheckPrice] = useState(false);
   const [openSaleReturn, setopenSaleReturn] = useState(false);
   const [openCheckCustomer, setOpenCheckCustomer] = useState(false);
+  const [openLooseCounter, setOpenLooseCounter] = useState(false);
 
   const open = Boolean(anchorEl);
   const actionsOpen = Boolean(actionsAnchorEl);
@@ -304,6 +307,10 @@ export default function Header({ sidebarState, setCartOpen }) {
                 Check Price
               </MenuItem>
 
+              <MenuItem onClick={() => { setOpenLooseCounter(true); handleActionsClose(); }}>
+                Loose Counter
+              </MenuItem>
+
               <MenuItem onClick={() => { handleOpenAadhaar(); handleActionsClose(); }}>
                 Enter Aadhaar
               </MenuItem>
@@ -372,6 +379,26 @@ export default function Header({ sidebarState, setCartOpen }) {
               }}
             >
           Check Price
+        </Button>
+
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<ScaleIcon />}
+          onClick={() => setOpenLooseCounter(true)}
+          sx={{
+            color: "#fff",
+            backgroundColor: "#e65100",
+            textTransform: "none",
+            fontWeight: 500,
+            "&:hover": {
+              backgroundColor: "#bf360c",
+              color: "#fff",
+              borderColor: "#bf360c"
+            }
+          }}
+        >
+          Loose Counter
         </Button>
 
         <Button
@@ -484,6 +511,10 @@ export default function Header({ sidebarState, setCartOpen }) {
 <CheckCustomerModal
   open={openCheckCustomer}
   onClose={() => setOpenCheckCustomer(false)}
+/>
+<LooseItemCounter
+  open={openLooseCounter}
+  onClose={() => setOpenLooseCounter(false)}
 />
 
     </Box>

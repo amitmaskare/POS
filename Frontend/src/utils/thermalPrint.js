@@ -301,9 +301,9 @@ export const printThermalReceipt = (receiptData) => {
           ${items.map(item => `
             <div class="item-row">
               <div class="item-name">${item.name || item.product_name}</div>
-              <div class="item-qty">${item.qty}</div>
-              <div class="item-price">₹${Number(item.price).toFixed(2)}</div>
-              <div class="item-total">₹${(Number(item.price) * Number(item.qty)).toFixed(2)}</div>
+              <div class="item-qty">${item.is_loose ? `${Number(item.qty).toFixed(3)}${item.loose_unit || 'kg'}` : item.qty}</div>
+              <div class="item-price">${item.is_loose ? `₹${Number(item.price_per_unit || item.price).toFixed(2)}/${item.loose_unit || 'kg'}` : `₹${Number(item.price).toFixed(2)}`}</div>
+              <div class="item-total">₹${item.is_loose ? Number(item.total || item.price).toFixed(2) : (Number(item.price) * Number(item.qty)).toFixed(2)}</div>
             </div>
           `).join('')}
         </div>
@@ -449,8 +449,11 @@ export const formatReceiptData = (saleData, cartItems, paymentDetails = {}) => {
     items: cartItems.map(item => ({
       name: item.product_name || item.name,
       qty: item.qty,
-      price: item.price,
-      total: Number(item.price) * Number(item.qty)
+      price: item.is_loose ? (item.price_per_unit || item.selling_price) : item.price,
+      total: item.is_loose ? Number(item.price) : Number(item.price) * Number(item.qty),
+      is_loose: item.is_loose || 0,
+      loose_unit: item.loose_unit || null,
+      price_per_unit: item.price_per_unit || null,
     })),
     subtotal: saleData.subtotal,
     tax: saleData.tax,

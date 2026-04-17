@@ -16,9 +16,9 @@ export const ProductController = {
     try {
       const storeId = getStoreIdFromRequest(req);
       const result = await ProductService.list(storeId);
-    
+
       if (!result || result.length === 0) {
-        return sendResponse(resp, false, 400, "No Data Found");
+        return sendResponse(resp, true, 200, "No products found", []);
       }
      const data = result.map(item => ({
       ...item,
@@ -40,31 +40,34 @@ export const ProductController = {
       const requiredFields = [
         "product_name",
         "sku",
-        "barcode",
-        "brand",
         "category_id",
         "favourite",
-        "description",
         "cost_price",
         "selling_price",
         "tax_rate",
-        "supplier_id",
       ];
-      
+
       for (let field of requiredFields) {
-        if (req.body[field] === undefined) {
+        if (req.body[field] === undefined || req.body[field] === null || req.body[field] === '') {
           return sendResponse(resp, false, 400, `${field} is required`);
         }
       }
    try{
       const storeId = getStoreIdFromRequest(req);
-      const stockFields = [
-        "initial_stock"
-      ];
-      if (req.body.initial_stock === undefined) {
+      if (req.body.initial_stock === undefined || req.body.initial_stock === null || req.body.initial_stock === '') {
         return sendResponse(resp, false, 400, "initial_stock is required");
       }
       const imageUrl = req.file ? req.file.filename : null;
+      // Set defaults for optional numeric fields to avoid empty string DB errors
+      if (!req.body.supplier_id) req.body.supplier_id = 0;
+      if (!req.body.barcode) req.body.barcode = '';
+      if (!req.body.brand) req.body.brand = '';
+      if (!req.body.description) req.body.description = '';
+      // Auto-set is_loose when favourite is 'loose'
+      if (req.body.favourite === 'loose') {
+        req.body.is_loose = 1;
+        if (!req.body.price_per_unit) req.body.price_per_unit = req.body.selling_price;
+      }
       const payLoad={
         ...req.body,
         image: imageUrl,
@@ -206,8 +209,41 @@ export const ProductController = {
         return sendResponse(resp,false,400,"search field is required")
       }
         const storeId = getStoreIdFromRequest(req);
+
+      // Check if this is a weighted barcode (starts with "2", length 13)
+      if (search.length === 13 && search.startsWith("20")) {
+        const decoded = ProductService.decodeLooseBarcode(search);
+        if (decoded) {
+          const productResult = await ProductService.findByLooseProductCode(decoded.productCode, storeId);
+          if (productResult && productResult.length > 0) {
+            const item = productResult[0];
+            const pricePerUnit = item.price_per_unit || item.selling_price;
+            const calculatedPrice = parseFloat((decoded.weightInKg * pricePerUnit).toFixed(2));
+
+            const data = {
+              id: item.id,
+              product_name: item.product_name,
+              qty: decoded.weightInKg,
+              selling_price: pricePerUnit,
+              price: calculatedPrice,
+              image: item.image ? `${baseUrl}/public/uploads/product/${item.image}` : null,
+              min_qty: item.min_qty,
+              offer_price: item.offer_price,
+              offer_qty_price: item.offer_qty_price,
+              tax: item.tax_rate,
+              is_loose: 1,
+              price_per_unit: pricePerUnit,
+              loose_unit: item.loose_unit || 'kg',
+              loose_weight: decoded.weightInKg,
+              weighted_barcode: search,
+            };
+            return sendResponse(resp, true, 200, "Loose item found", data);
+          }
+        }
+      }
+
       const result=await ProductService.searchProduct(search, storeId)
-     
+
       if(!result || result.length===0)
       {
         return sendResponse(resp,false,400,"No Data Found")
@@ -226,8 +262,97 @@ export const ProductController = {
         offer_price:item.offer_price,
         offer_qty_price:item.offer_qty_price,
         tax:item.tax_rate,
+        favourite: item.favourite,
+        is_loose: (item.is_loose === 1 || item.favourite === 'loose') ? 1 : 0,
+        price_per_unit: item.price_per_unit || item.selling_price,
+        loose_unit: item.loose_unit || 'kg',
       }
       return sendResponse(resp,true,200,"Fetch Data Successful",data)
+    }catch(error)
+    {
+      return sendResponse(resp,false,500,`Error : ${error.message}`)
+    }
+  },
+
+  searchProductList:async(req,resp)=>{
+    try{
+      const {search}=req.body
+      if(!search)
+      {
+        return sendResponse(resp,false,400,"search field is required")
+      }
+      const storeId = getStoreIdFromRequest(req);
+
+      // Check if this is a weighted barcode (starts with "2", length 13)
+      if (search.length === 13 && search.startsWith("20")) {
+        const decoded = ProductService.decodeLooseBarcode(search);
+        if (decoded) {
+          const productResult = await ProductService.findByLooseProductCode(decoded.productCode, storeId);
+          if (productResult && productResult.length > 0) {
+            const item = productResult[0];
+            const pricePerUnit = item.price_per_unit || item.selling_price;
+            const calculatedPrice = parseFloat((decoded.weightInKg * pricePerUnit).toFixed(2));
+
+            const data = [{
+              id: item.id,
+              product_name: item.product_name,
+              qty: decoded.weightInKg,
+              selling_price: pricePerUnit,
+              price: calculatedPrice,
+              image: item.image ? `${baseUrl}/public/uploads/product/${item.image}` : null,
+              barcode: item.barcode,
+              sku: item.sku,
+              brand: item.brand || '',
+              category_name: '',
+              stock: 0,
+              min_qty: item.min_qty,
+              offer_price: item.offer_price,
+              offer_qty_price: item.offer_qty_price,
+              tax: item.tax_rate,
+              is_loose: 1,
+              price_per_unit: pricePerUnit,
+              loose_unit: item.loose_unit || 'kg',
+              loose_weight: decoded.weightInKg,
+              weighted_barcode: search,
+            }];
+            return sendResponse(resp, true, 200, "Loose item found", data);
+          }
+        }
+      }
+
+      const result=await ProductService.searchProductList(search, storeId)
+
+      if(!result || result.length===0)
+      {
+        return sendResponse(resp,false,404,"No products found")
+      }
+
+      const data = result.map(item => ({
+        id: item.id,
+        product_name: item.product_name,
+        qty: 1,
+        selling_price: item.selling_price,
+        price: item.selling_price,
+        image: item.image
+        ? `${baseUrl}/public/uploads/product/${item.image}`
+        : null,
+        barcode: item.barcode,
+        sku: item.sku,
+        brand: item.brand,
+        category_name: item.category_name,
+        stock: item.stock || 0,
+        min_qty:item.min_qty,
+        offer_price:item.offer_price,
+        offer_qty_price:item.offer_qty_price,
+        tax:item.tax_rate,
+        favourite: item.favourite,
+        is_loose: (item.is_loose === 1 || item.favourite === 'loose') ? 1 : 0,
+        price_per_unit: item.price_per_unit || item.selling_price,
+        loose_unit: item.loose_unit || 'kg',
+        loose_product_code: item.loose_product_code,
+      }));
+
+      return sendResponse(resp,true,200,"Products found",data)
     }catch(error)
     {
       return sendResponse(resp,false,500,`Error : ${error.message}`)
@@ -266,12 +391,13 @@ export const ProductController = {
            return sendResponse(resp, false, 400, `${field} is required`);
          }
        }
+       const storeId = getStoreIdFromRequest(req);
        const {barcode,product_name,selling_price}=req.body
-         const result = await ProductService.add(req.body);
-         const getImage=await CommonModel.getSingle({table:"products",fields:['id','image'],conditions:{id:result}})
+         const result = await ProductService.add({...req.body, store_id: storeId}, storeId);
          if (!result) {
            return sendResponse(resp, false, 400, "Something went wrong");
          }
+         const getImage=await CommonModel.getSingle({table:"products",fields:['id','image'],conditions:{id:result}, storeId})
 
          const data={
            id:result,
@@ -298,7 +424,38 @@ export const ProductController = {
        }
    },
 
-   favouriteList: async (req, resp) => {
+   allProductsList: async (req, resp) => {
+    try {
+      const storeId = getStoreIdFromRequest(req);
+      const result = await ProductService.allProductsList(storeId);
+
+      if (!result || result.length === 0) {
+        return sendResponse(resp, true, 200, "No products found", []);
+      }
+     const data = result.map(item => ({
+      ...item,
+      qty:1,
+      selling_price: item.selling_price,
+      price:item.selling_price,
+      image: item.image
+        ? `${baseUrl}/public/uploads/product/${item.image}`
+        : null,
+        min_qty:item.min_qty,
+        offer_price:item.offer_price,
+        tax:item.tax_rate,
+        favourite: item.favourite,
+        is_loose: (item.is_loose === 1 || item.favourite === 'loose') ? 1 : 0,
+        price_per_unit: item.price_per_unit || item.selling_price,
+        loose_unit: item.loose_unit || 'kg',
+        loose_product_code: item.loose_product_code,
+    }));
+      return sendResponse(resp, true, 200, "Fetch all products", data);
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error :${error.message}`);
+    }
+  },
+
+  favouriteList: async (req, resp) => {
     try {
       const storeId = getStoreIdFromRequest(req);
       console.log('backend-log favouriteList - storeId:', storeId);
@@ -320,6 +477,10 @@ export const ProductController = {
         min_qty:item.min_qty,
         offer_price:item.offer_price,
         tax:item.tax_rate,
+        favourite: item.favourite,
+        is_loose: (item.is_loose === 1 || item.favourite === 'loose') ? 1 : 0,
+        price_per_unit: item.price_per_unit || item.selling_price,
+        loose_unit: item.loose_unit || 'kg',
     }));
       return sendResponse(resp, true, 200, "Fetch store data", data);
     } catch (error) {
@@ -330,10 +491,7 @@ export const ProductController = {
   looseItemList: async (req, resp) => {
     try {
       const storeId = getStoreIdFromRequest(req);
-      console.log('backend-log looseItemList - storeId:', storeId);
-      console.log('backend-log looseItemList - req.user:', req.user);
       const result = await ProductService.looseItemList(storeId);
-      console.log('backend-log looseItemList - result:', result);
 
       if (!result || result.length === 0) {
         return sendResponse(resp, true, 200, "No loose items found", []);
@@ -349,7 +507,11 @@ export const ProductController = {
         min_qty:item.min_qty,
         offer_price:item.offer_price,
         tax:item.tax_rate,
-
+        favourite: item.favourite,
+        is_loose: 1,
+        price_per_unit: item.price_per_unit || item.selling_price,
+        loose_unit: item.loose_unit || 'kg',
+        loose_product_code: item.loose_product_code,
     }));
       return sendResponse(resp, true, 200, "Fetch store data", data);
     } catch (error) {
@@ -361,9 +523,9 @@ export const ProductController = {
     try {
       const storeId = getStoreIdFromRequest(req);
       const result = await ProductService.inventoryList(storeId);
-    
+
       if (!result || result.length === 0) {
-        return sendResponse(resp, false, 400, "No Data Found");
+        return sendResponse(resp, true, 200, "No products found", []);
       }
      const data = result.map(item => ({
       ...item,
@@ -394,6 +556,122 @@ export const ProductController = {
       return sendResponse(resp, true, 200, "Fetch store data", data);
     } catch (error) {
       return sendResponse(resp, false, 500, `Error : ${error.message}`);
+    }
+  },
+
+  // Generate weighted barcode for loose item
+  generateLooseBarcode: async (req, resp) => {
+    try {
+      const { product_id, weight } = req.body;
+      const storeId = getStoreIdFromRequest(req);
+
+      if (!product_id) {
+        return sendResponse(resp, false, 400, "product_id is required");
+      }
+      if (!weight || weight <= 0) {
+        return sendResponse(resp, false, 400, "Valid weight is required");
+      }
+
+      // Get product details
+      const product = await ProductService.getById(product_id, storeId);
+      if (!product) {
+        return sendResponse(resp, false, 404, "Product not found");
+      }
+
+      // Get or assign loose_product_code
+      let productCode = product.loose_product_code;
+      if (!productCode) {
+        productCode = await ProductService.getNextLooseProductCode(storeId);
+        // Save the code to the product
+        await CommonModel.updateData({
+          table: "products",
+          data: { loose_product_code: productCode, is_loose: 1 },
+          conditions: { id: product_id },
+          storeId,
+        });
+      }
+
+      const pricePerUnit = product.price_per_unit || product.selling_price;
+      const calculatedPrice = parseFloat((weight * pricePerUnit).toFixed(2));
+
+      // Generate the weighted barcode
+      const barcode = ProductService.generateLooseBarcode(productCode, weight, pricePerUnit);
+
+      // Save label record
+      await CommonModel.insertData({
+        table: "loose_item_labels",
+        data: {
+          product_id,
+          weight,
+          calculated_price: calculatedPrice,
+          generated_barcode: barcode,
+          store_id: storeId,
+        },
+      });
+
+      const data = {
+        barcode,
+        product_name: product.product_name,
+        weight: parseFloat(weight),
+        unit: product.loose_unit || 'kg',
+        price_per_unit: pricePerUnit,
+        calculated_price: calculatedPrice,
+        tax_rate: product.tax_rate,
+        image: product.image ? `${baseUrl}/public/uploads/product/${product.image}` : null,
+        product_id: product.id,
+      };
+
+      return sendResponse(resp, true, 200, "Barcode generated successfully", data);
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error: ${error.message}`);
+    }
+  },
+
+  // Decode a scanned weighted barcode
+  decodeLooseBarcode: async (req, resp) => {
+    try {
+      const { barcode } = req.body;
+      const storeId = getStoreIdFromRequest(req);
+
+      if (!barcode) {
+        return sendResponse(resp, false, 400, "barcode is required");
+      }
+
+      const decoded = ProductService.decodeLooseBarcode(barcode);
+      if (!decoded) {
+        return sendResponse(resp, false, 400, "Invalid weighted barcode");
+      }
+
+      const productResult = await ProductService.findByLooseProductCode(decoded.productCode, storeId);
+      if (!productResult || productResult.length === 0) {
+        return sendResponse(resp, false, 404, "Loose product not found for this barcode");
+      }
+
+      const item = productResult[0];
+      const pricePerUnit = item.price_per_unit || item.selling_price;
+      const calculatedPrice = parseFloat((decoded.weightInKg * pricePerUnit).toFixed(2));
+
+      const data = {
+        id: item.id,
+        product_name: item.product_name,
+        qty: decoded.weightInKg,
+        selling_price: pricePerUnit,
+        price: calculatedPrice,
+        image: item.image ? `${baseUrl}/public/uploads/product/${item.image}` : null,
+        tax: item.tax_rate,
+        is_loose: 1,
+        price_per_unit: pricePerUnit,
+        loose_unit: item.loose_unit || 'kg',
+        loose_weight: decoded.weightInKg,
+        weighted_barcode: barcode,
+        min_qty: item.min_qty,
+        offer_price: item.offer_price,
+        offer_qty_price: item.offer_qty_price,
+      };
+
+      return sendResponse(resp, true, 200, "Loose item decoded successfully", data);
+    } catch (error) {
+      return sendResponse(resp, false, 500, `Error: ${error.message}`);
     }
   },
 
