@@ -11,7 +11,7 @@ const Manage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md')); // < 900px
   const location = useLocation();
-  const isDashboard = location.pathname === "/dashboard";
+  const isDashboard = location.pathname === "/dashboard" || location.pathname === "/pos";
   const isSaleReturnDashboard = location.pathname === "/salereturn";
 
   // receives: "expanded", "collapsed", "hidden"
@@ -19,11 +19,23 @@ const Manage = () => {
   // Separate cart states for PosSystem and SaleReturn
   const [posSystemCart, setPosSystemCart] = useState([]);
   const [saleReturnCart, setSaleReturnCart] = useState([]);
+  const [saleReturnSaleId, setSaleReturnSaleId] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
 
   // Generic cart addition function factory
   const createAddToCart = (setCartFunc) => (product) => {
     setCartFunc((prev) => {
+      // Refund/exchange items from Sale Return — add as-is, no qty merging
+      if (product.cart_type === "refund" || product.cart_type === "exchange") {
+        return [
+          ...prev,
+          {
+            ...product,
+            product_id: product.product_id || product.id,
+          },
+        ];
+      }
+
       // Loose items always get a NEW cart row (each has unique weight)
       if (product.is_loose === 1 || product.is_loose === true) {
         return [
@@ -162,7 +174,7 @@ const Manage = () => {
             scrollbarColor: "#5A8DEE #f1f1f1",
           }}
         >
-         <Outlet context={{ addToCart }} />
+         <Outlet context={{ addToCart, setSaleReturnSaleId }} />
         </Box>
 
         {/* Desktop cart */}
@@ -183,7 +195,7 @@ const Manage = () => {
     />
   </Drawer>
 )}
-        {isSaleReturnDashboard && <SaleReturnCart cart={saleReturnCart} setCart={setSaleReturnCart} />}
+        {isSaleReturnDashboard && <SaleReturnCart cart={saleReturnCart} setCart={setSaleReturnCart} saleId={saleReturnSaleId} />}
       </Box>
     </Box>
   );

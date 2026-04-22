@@ -31,7 +31,7 @@ export const handleCashExchange = async ({
     const return_items = cart
       .filter(item => item.cart_type === "refund")
       .map(item => ({
-        sale_item_id: item.id,
+        sale_item_id: item.sale_item_id || item.id,
         product_id: item.product_id,
         product_name: item.product_name,
         image: item.image || null,
@@ -98,7 +98,7 @@ export const handleQRExchange = async ({
     const return_items = cart
       .filter(i => i.cart_type === "refund")
       .map(i => ({
-        sale_item_id: i.id,
+        sale_item_id: i.sale_item_id || i.id,
         product_id: i.product_id,
         product_name: i.product_name,
         image: i.image,
@@ -177,7 +177,7 @@ export const handlePOSExchange = async ({
     const return_items = cart
       .filter(item => item.cart_type === "refund")
       .map(item => ({
-        sale_item_id: item.id,
+        sale_item_id: item.sale_item_id || item.id,
         product_id: item.product_id,
         product_name: item.product_name,
         image: item.image || null,
@@ -260,7 +260,7 @@ export const handleCreditExchange = async ({
     const return_items = cart
       .filter(i => i.cart_type === "refund")
       .map(i => ({
-        sale_item_id: i.id,
+        sale_item_id: i.sale_item_id || i.id,
         product_id: i.product_id,
         product_name: i.product_name,
         image: i.image,
@@ -357,7 +357,7 @@ export const handleSplitPayment = async ({
     const return_items = cart
       .filter(item => item.cart_type === "refund")
       .map(item => ({
-        sale_item_id: item.id,
+        sale_item_id: item.sale_item_id || item.id,
         product_id: item.product_id,
         product_name: item.product_name,
         image: item.image || null,

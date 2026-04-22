@@ -28,7 +28,7 @@ import { Box,
   DialogActions} from "@mui/material";
 import { holdSale,retrieveHoldSale,HoldList,retrieveHoldItem } from "../../services/HoldSaleService";
 import { checkout_sale,verifyPayment } from "../../services/saleService";
-import {confirmReturn,confirmExchange,verifyManagerAuth} from "../../services/ReturnService";
+import {confirmReturn,confirmExchange} from "../../services/ReturnService";
 import { getDeviceStatus } from "../../services/posService";
 import {
   handleCashExchange,
@@ -38,7 +38,7 @@ import {
   handleSplitPayment
 } from "./paymentHandlers";
 
-export default function SaleReturnCart({ cart, setCart }) {
+export default function SaleReturnCart({ cart, setCart, saleId: saleIdProp }) {
 
   const [active, setActive] = useState(""); 
   const [editingPriceId, setEditingPriceId] = useState(null);
@@ -49,10 +49,6 @@ const [cashOpen, setCashOpen] = useState(false);
 const [receivedAmount, setReceivedAmount] = useState("");
 const [returnAmount, setReturnAmount] = useState(0);
 const [holdItem, setHoldItem] = useState([]);
-const [showApproval, setShowApproval] = useState(false);
-const[managerUser,setManagerUser]=useState("")
-const[managerPass,setManagerPass]=useState("")
-const [approvalType, setApprovalType] = useState("");
 const [onlinePaymentOpen, setOnlinePaymentOpen] = useState(false);
 const [splitPaymentOpen, setSplitPaymentOpen] = useState(false);
 const [cashAmount, setCashAmount] = useState("");
@@ -63,7 +59,10 @@ const [qrCodeData, setQrCodeData] = useState(null);
 const [qrCodeImage, setQrCodeImage] = useState(null);
 const [paymentStatus, setPaymentStatus] = useState("pending");
 const [posConnected, setPosConnected] = useState(false);
-const [posProcessing, setPosProcessing] = useState(false); 
+const [posProcessing, setPosProcessing] = useState(false);
+const [refundModalOpen, setRefundModalOpen] = useState(false);
+const [refundProcessing, setRefundProcessing] = useState(false);
+const [refundResult, setRefundResult] = useState(null);
   // Handle Quantity
  const updateQty = (id, type) => {
   setCart((prev) =>
@@ -187,7 +186,7 @@ const getItemTaxAmount = (item) => {
 };
 const tax =  cart.reduce((sum, item) => sum + getItemTaxAmount(item),0);
 const totalTax = cart.reduce((sum, item) => sum + Number(item.tax), 0);
-const saleId = cart.length > 0 ? cart[0].id : null;
+const saleId = saleIdProp || (cart.length > 0 ? cart[0].sale_id : null);
 
 const total = subtotal + tax;
 
@@ -473,67 +472,73 @@ const retrieveItem=async(id)=>{
       console.log(error.message)
     }
 }
- const handleRefundSave = async (manager_id) => {
-  
+ const handleRefundSave = async (refundMethod = 'auto') => {
+
    try{
     const payload = {
     sale_id: saleId,
     return_type: "refund",
-    manager_id,
-    items: cart.map(item => ({
-      sale_item_id: item.id,
-      product_id: item.product_id,
-      product_name: item.product_name,
-      image: item.image,
-      qty: Number(item.return_qty),   // 👈 backend expects this
-      price: item.price,
-      tax: item.tax
-    }))
+    refund_method: refundMethod,
+    items: cart
+      .filter(item => item.cart_type === "refund")
+      .map(item => ({
+        sale_item_id: item.sale_item_id || item.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        image: item.image,
+        qty: Number(item.return_qty || item.qty),
+        price: item.price,
+        tax: item.tax
+      }))
   };
+
+  if (!payload.items.length) {
+    alert("No refund items in cart");
+    return;
+  }
+
+  // For online refund, show processing modal
+  if (refundMethod === 'online') {
+    setRefundModalOpen(true);
+    setRefundProcessing(true);
+    setRefundResult(null);
+  }
 
   const result= await confirmReturn(payload);
     if(result.status===true)
     {
-      alert(`Refund Amount ₹${result.data.refundAmount}`);
-      setCart([])
-      const invoice = buildExchangeInvoice(result.data.invoice_no, { payment_method: 'cash' });
-      printInvoice(invoice);
+      const refund = result.data.refund || {};
+
+      if (refundMethod === 'online') {
+        setRefundProcessing(false);
+        setRefundResult({
+          success: true,
+          data: result.data,
+          refund
+        });
+      } else {
+        // Cash refund — show alert and print
+        const msg = refund.message || `Refund Amount ₹${result.data.refundAmount}`;
+        alert(msg);
+        setCart([]);
+        const invoice = buildExchangeInvoice(result.data, { payment_method: 'cash' });
+        printInvoice(invoice);
+      }
     }
    }catch(error)
    {
-    console.log(error.message)
+    if (refundMethod === 'online') {
+      setRefundProcessing(false);
+      setRefundResult({
+        success: false,
+        error: error.response?.data?.message || error.message
+      });
+    } else {
+      alert(error.response?.data?.message || error.message);
+    }
    }
 };
 
-const verifyManager = async () => {
-  try{
-    const result = await verifyManagerAuth({
-      user_id: managerUser,
-      password: managerPass
-    });
-    if (result.status === true) {
-      setShowApproval(false);
-       switch (approvalType) { 
-      case "refund":
-       handleRefundSave(result.data.manager_id);
-        break;
-      case "exchange":
-        setCashOpen(true);
-        break;
-
-      // case "credit":
-      //   handleRazorpay();  
-      //   break;
-
-      default:
-        alert("Invalid approval type");
-    }
-  }
- }catch(error)
- {
-  alert(error.response?.data?.message || error.message)
- }
-};
 
 const handleRazorpay = async () => {
   await handleCreditExchange({
@@ -602,23 +607,22 @@ const handleRazorpay = async () => {
                     height: "32px",
                   }}
                 >
-                   {!item.return_qty ? (
+                   {item.return_qty ? (
+                    <span className="fw-bold" style={{ fontSize: "14px" }}>
+                    {item.return_qty}
+                  </span>
+                  ):(
                     <>
                   <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "dec")}>
                     −
                   </button>
                   <span className="fw-bold" style={{ fontSize: "14px" }}>
-                    {item.return_qty}
+                    {item.qty}
                   </span>
                   <button className="btn btn-sm p-0 px-2" onClick={() => updateQty(item.id, "inc")}>
                     +
                   </button>
                   </>
-                  ):(
-                    <span className="fw-bold" style={{ fontSize: "14px" }}>
-                    {item.qty}
-                  </span> 
-
                   )}
                 </div>
 
@@ -677,62 +681,78 @@ const handleRazorpay = async () => {
         </button>
 
 
-          <div className="d-flex gap-2 mt-3">
-          <button
-            className="btn btn-outline-secondary w-50 d-flex align-items-center justify-content-center"
-            style={getButtonStyle("cash")} onClick={() => {
-                setApprovalType("refund");
-                setShowApproval(true);
-              }}>
-            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Refund
-          </button>
+        {/* Refund Buttons - for refund-only mode (no exchange items) */}
+        {mode === "refund" && (
+          <>
+            <div className="d-flex gap-2 mt-3">
+              <button
+                className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+                style={{...getButtonStyle("cash"), flex: 1}}
+                onClick={() => handleRefundSave('cash')}>
+                <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+                Cash Refund
+              </button>
 
-        </div>
+              <button
+                className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+                style={{...getButtonStyle("online"), flex: 1}}
+                onClick={() => handleRefundSave('online')}>
+                <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
+                Online Refund
+              </button>
+            </div>
+          </>
+        )}
 
-        {/* Payment Buttons */}
-        <div className="d-flex gap-2 mt-3">
-          <button
-            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
-            style={{...getButtonStyle("cash"), flex: 1}}
-            onClick={() => {
-              setActive("cash");
-              setApprovalType("exchange");
-              setShowApproval(true);
-            }}
-          >
-            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Cash
-          </button>
+        {/* Exchange Payment Buttons - only show when exchange items exist */}
+        {mode === "exchange" && (
+          <>
+            <div className="d-flex gap-2 mt-3">
+              <button
+                className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+                style={{...getButtonStyle("cash"), flex: 1}}
+                onClick={() => {
+                  setActive("cash");
+                  setCashOpen(true);
+                }}
+              >
+                <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+                Cash
+              </button>
 
-          <button
-            className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
-            style={{...getButtonStyle("online"), flex: 1}}
-            onClick={() => setOnlinePaymentOpen(true)}
-          >
-            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Online
-          </button>
-        </div>
+              <button
+                className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+                style={{...getButtonStyle("online"), flex: 1}}
+                onClick={() => {
+                  setActive("online");
+                  setOnlinePaymentOpen(true);
+                }}
+              >
+                <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
+                Online
+              </button>
+            </div>
 
-        {/* Cash + Online Split Payment Button */}
-        <div className="d-grid gap-2 mt-2">
-          <button
-            className="btn btn-outline-primary d-flex align-items-center justify-content-center"
-            style={{...getButtonStyle("split")}}
-            onClick={() => {
-              setActive("split");
-              setSplitPaymentOpen(true);
-              setCashAmount("");
-              setOnlineAmount("");
-              setSplitPaymentMethod("");
-            }}
-          >
-            <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
-            <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
-            Cash + Online
-          </button>
-        </div>
+            {/* Cash + Online Split Payment Button */}
+            <div className="d-grid gap-2 mt-2">
+              <button
+                className="btn btn-outline-primary d-flex align-items-center justify-content-center"
+                style={{...getButtonStyle("split")}}
+                onClick={() => {
+                  setActive("split");
+                  setSplitPaymentOpen(true);
+                  setCashAmount("");
+                  setOnlineAmount("");
+                  setSplitPaymentMethod("");
+                }}
+              >
+                <AttachMoneyIcon style={{ fontSize: 18, marginRight: 5 }} />
+                <CreditCardIcon style={{ fontSize: 18, marginRight: 5 }} />
+                Cash + Online
+              </button>
+            </div>
+          </>
+        )}
 
         {/* Cart Options */}
         <div className="d-flex flex-row mt-3 gap-3 justify-content-center">
@@ -882,35 +902,6 @@ const handleRazorpay = async () => {
 
 
 
-      <Dialog open={showApproval} onClose={() => setShowApproval(false)}>
-  <DialogTitle>Manager Approval Required</DialogTitle>
-         <DialogContent>
-     <input
-    type="text"
-    placeholder="Manager Username"
-     className="form-control mt-2"
-    value={managerUser}
-    onChange={e => setManagerUser(e.target.value)}
-  />
-      </DialogContent>
-      <DialogContent>
-     <input
-    type="password"
-    placeholder="Manager Passsword"
-     className="form-control mt-2"
-    value={managerPass}
-    onChange={e => setManagerPass(e.target.value)}
-  />
-      </DialogContent>
-   <DialogActions>
-    <Button onClick={() => setShowApproval(false)}>Cancel</Button>
-
-    <Button variant="contained" color="primary" onClick={() =>verifyManager()}>
-     Approve
-    </Button>
-  </DialogActions>
-
-</Dialog>
 
 {/* Online Payment Options Modal */}
 <Dialog open={onlinePaymentOpen} onClose={() => setOnlinePaymentOpen(false)} maxWidth="sm" fullWidth>
@@ -927,7 +918,6 @@ const handleRazorpay = async () => {
         onClick={() => {
           setOnlinePaymentOpen(false);
           setActive("credit");
-          setApprovalType("credit");
           handleRazorpay();
         }}
         sx={{
@@ -1363,6 +1353,140 @@ const handleRazorpay = async () => {
     >
       Close
     </Button>
+  </DialogActions>
+</Dialog>
+
+{/* Online Refund Status Modal */}
+<Dialog
+  open={refundModalOpen}
+  onClose={() => {
+    if (!refundProcessing) {
+      setRefundModalOpen(false);
+      setRefundResult(null);
+    }
+  }}
+  maxWidth="sm"
+  fullWidth
+>
+  <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
+    <CreditCardIcon sx={{ fontSize: 40, color: '#5A8DEE', mb: 1 }} />
+    <Typography variant="h5" fontWeight="bold">
+      Online Refund
+    </Typography>
+  </DialogTitle>
+
+  <DialogContent sx={{ textAlign: 'center', py: 3 }}>
+    {refundProcessing && (
+      <Box sx={{ py: 4 }}>
+        <CircularProgress size={60} sx={{ color: '#5A8DEE', mb: 3 }} />
+        <Typography variant="h6" color="text.secondary">
+          Processing refund via payment gateway...
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Please wait, do not close this window
+        </Typography>
+      </Box>
+    )}
+
+    {!refundProcessing && refundResult && refundResult.success && (
+      <Box sx={{ py: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 3,
+            backgroundColor: refundResult.refund?.method === 'cash' ? '#fff3cd' : '#d4edda',
+            borderRadius: 2,
+            border: `2px solid ${refundResult.refund?.method === 'cash' ? '#ffc107' : '#28a745'}`
+          }}
+        >
+          <Typography variant="h4" fontWeight="bold" sx={{ mb: 2 }}>
+            {refundResult.refund?.method === 'cash' ? '⚠️' : '✓'}
+          </Typography>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: refundResult.refund?.method === 'cash' ? '#856404' : '#155724' }}>
+            {refundResult.refund?.method === 'cash' ? 'Cash Refund Required' : 'Refund Processed Successfully'}
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            {refundResult.refund?.message}
+          </Typography>
+          <Typography variant="h5" fontWeight="bold" color="#5A8DEE">
+            Refund Amount: ₹{Number(refundResult.data?.refundAmount || 0).toFixed(2)}
+          </Typography>
+        </Paper>
+
+        {refundResult.refund?.refund_details && (
+          <Paper elevation={1} sx={{ p: 2, textAlign: 'left', borderRadius: 2 }}>
+            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>Refund Details</Typography>
+            <Typography variant="body2">Refund ID: {refundResult.refund.refund_id || 'N/A'}</Typography>
+            <Typography variant="body2">Status: {refundResult.refund.refund_details?.status || 'N/A'}</Typography>
+            <Typography variant="body2">Amount: ₹{refundResult.refund.refund_details?.amount || 'N/A'}</Typography>
+            {refundResult.refund.payment_details?.vpa && (
+              <Typography variant="body2">UPI: {refundResult.refund.payment_details.vpa}</Typography>
+            )}
+            {refundResult.refund.payment_details?.card_last4 && (
+              <Typography variant="body2">
+                Card: {refundResult.refund.payment_details.card_network} ****{refundResult.refund.payment_details.card_last4}
+              </Typography>
+            )}
+          </Paper>
+        )}
+      </Box>
+    )}
+
+    {!refundProcessing && refundResult && !refundResult.success && (
+      <Box sx={{ py: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            backgroundColor: '#f8d7da',
+            borderRadius: 2,
+            border: '2px solid #dc3545'
+          }}
+        >
+          <Typography variant="h6" fontWeight="bold" color="#721c24" sx={{ mb: 2 }}>
+            Refund Failed
+          </Typography>
+          <Typography variant="body1" color="#721c24">
+            {refundResult.error}
+          </Typography>
+        </Paper>
+      </Box>
+    )}
+  </DialogContent>
+
+  <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'center' }}>
+    {!refundProcessing && refundResult?.success && (
+      <Button
+        variant="contained"
+        color="success"
+        onClick={() => {
+          const refund = refundResult.refund || {};
+          const invoice = buildExchangeInvoice(refundResult.data, { payment_method: refund.method || 'online' });
+          printInvoice(invoice);
+          setCart([]);
+          setRefundModalOpen(false);
+          setRefundResult(null);
+        }}
+        sx={{ mr: 1 }}
+      >
+        Print Receipt & Close
+      </Button>
+    )}
+    {!refundProcessing && (
+      <Button
+        variant="outlined"
+        onClick={() => {
+          if (refundResult?.success) {
+            setCart([]);
+          }
+          setRefundModalOpen(false);
+          setRefundResult(null);
+        }}
+      >
+        {refundResult?.success ? 'Close' : 'Cancel'}
+      </Button>
+    )}
   </DialogActions>
 </Dialog>
 

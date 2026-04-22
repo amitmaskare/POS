@@ -71,18 +71,22 @@ export const ReturnService={
 
       getReturnById :async(id, storeId)=>{
         const query = `
-        SELECT 
+        SELECT
         r.id,
-        s.invoice_no
+        r.refund_amount,
+        r.refund_status,
+        r.refund_method,
+        r.return_type,
+        s.invoice_no,
+        s.payment_method,
+        s.total AS sale_total,
+        s.tax AS sale_tax
       FROM returns AS r
-      LEFT JOIN sales AS s 
+      LEFT JOIN sales AS s
         ON s.id = r.sale_id
-      WHERE r.store_id = ?
-      ORDER BY r.id DESC
+      WHERE r.id = ? AND r.store_id = ?
       `;
-      return await CommonModel.rawQuery(query, [storeId]);
-       // const result=await CommonModel.getSingle({table:"returns", conditions: { id }, storeId})
-       // return result
+      return await CommonModel.rawQuery(query, [id, storeId]);
       },
       
 

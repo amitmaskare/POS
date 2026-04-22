@@ -40,8 +40,6 @@ export default function Sales() {
           setError(null)
           try{
             const result=await saleList()
-
-            console.log(result );
             if(result.status===true)
             {
               setSuccess(result.message)

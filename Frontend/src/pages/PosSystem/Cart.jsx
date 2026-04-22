@@ -560,6 +560,78 @@ const handleQRPayment = async () => {
   }
 };
 
+// Pay via Razorpay UPI (auto-tracked for refunds)
+const handleQRRazorpayPay = async () => {
+  if (!qrCodeData || !qrCodeData.razorpayOrderId) {
+    alert("Razorpay order not available");
+    return;
+  }
+
+  const res = await loadRazorpay();
+  if (!res) {
+    alert("Razorpay SDK failed to load");
+    return;
+  }
+
+  const options = {
+    key: "rzp_test_RvRduZ5UNffoaN",
+    amount: qrCodeData.amount * 100,
+    currency: "INR",
+    order_id: qrCodeData.razorpayOrderId,
+    name: "My POS",
+    description: `Invoice ${qrCodeData.invoice_no}`,
+    method: { upi: true, card: true, netbanking: true, wallet: true },
+
+    handler: async function (response) {
+      try {
+        const verifyPayload = {
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          saleId: qrCodeData.saleId,
+          amount: qrCodeData.amount,
+        };
+
+        const verifyRes = await verifyPayment(verifyPayload);
+        if (verifyRes.status === true) {
+          setPaymentStatus("paid");
+
+          const paymentDetails = qrCodeData.cash_amount && qrCodeData.online_amount
+            ? {
+                payment_method: 'split',
+                cash_amount: qrCodeData.cash_amount,
+                online_amount: qrCodeData.online_amount,
+                online_method: 'qr_code'
+              }
+            : { payment_method: 'qr_code' };
+
+          printReceipt(qrCodeData.saleData, paymentDetails);
+          socket.emit("show-thankyou", { roomId });
+
+          setTimeout(() => {
+            setQrModalOpen(false);
+            setCart([]);
+            setQrCodeData(null);
+            setQrCodeImage(null);
+            setPaymentStatus("pending");
+          }, 1000);
+        } else {
+          alert("Payment verification failed");
+        }
+      } catch (err) {
+        console.error("QR Razorpay Verification Error", err);
+        alert("Payment verification error");
+      }
+    },
+    theme: { color: "#28a745" },
+  };
+
+  setQrModalOpen(false);
+  const rzp = new window.Razorpay(options);
+  rzp.open();
+};
+
+// Manual confirm for direct UPI scan (fallback - no auto-refund)
 const handleConfirmPayment = async () => {
   try {
     if (!qrCodeData) return;
@@ -573,9 +645,7 @@ const handleConfirmPayment = async () => {
     if (confirmResult.status) {
       setPaymentStatus("paid");
 
-      // Print thermal receipt
       setTimeout(() => {
-        // Check if it's split payment
         const paymentDetails = qrCodeData.cash_amount && qrCodeData.online_amount
           ? {
               payment_method: 'split',
@@ -586,11 +656,8 @@ const handleConfirmPayment = async () => {
           : { payment_method: 'qr_code' };
 
         printReceipt(qrCodeData.saleData, paymentDetails);
-
-        // Send thank you to customer display
         socket.emit("show-thankyou", { roomId });
 
-        // Reset and close
         setQrModalOpen(false);
         setCart([]);
         setQrCodeData(null);
@@ -632,7 +699,7 @@ const handleSplitQRPayment = async () => {
       online_method: 'qr_code',
       subtotal,
       tax,
-      total, // Keep the full total amount (cash + online)
+      total,
       cart: cart.map(item => ({
         product_id: item.id,
         product_name: item.product_name,
@@ -1350,18 +1417,39 @@ const handleSplitCreditPayment = async () => {
           {paymentStatus === 'pending' && (
             <Box>
               <Typography variant="body1" fontWeight="bold" color="#856404" sx={{ mb: 2, textAlign: 'center' }}>
-                Scan QR code with any UPI app to pay
+                Choose how customer wants to pay
               </Typography>
+
+              {/* Option 1: Pay via Razorpay (tracked - supports refunds) */}
               <Button
                 variant="contained"
+                color="primary"
+                fullWidth
+                size="large"
+                onClick={handleQRRazorpayPay}
+                sx={{ mt: 1, py: 1.5, backgroundColor: '#5A8DEE', '&:hover': { backgroundColor: '#4a7dd8' } }}
+              >
+                Pay Online (UPI / Card / Wallet) - Supports Refund
+              </Button>
+
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, mb: 2, display: 'block', textAlign: 'center' }}>
+                Opens Razorpay - payment tracked automatically for refunds
+              </Typography>
+
+              {/* Option 2: Manual QR scan (existing flow) */}
+              <Button
+                variant="outlined"
                 color="success"
                 fullWidth
                 size="large"
                 onClick={handleConfirmPayment}
                 sx={{ mt: 1 }}
               >
-                I Have Paid - Confirm Payment
+                Customer Scanned QR & Paid - Confirm Manually
               </Button>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+                Use if customer already scanned the QR code above and paid via UPI app
+              </Typography>
             </Box>
           )}
 
@@ -1376,15 +1464,14 @@ const handleSplitCreditPayment = async () => {
 
           {paymentStatus === 'paid' && (
             <Typography variant="body1" fontWeight="bold" color="#155724">
-              ✓ Payment Successful! Printing receipt...
+              Payment Successful! Printing receipt...
             </Typography>
           )}
         </Paper>
 
         <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-          1. Scan QR code with GPay/PhonePe/Paytm
-          2. Complete the payment
-          3. Click "I Have Paid" button above
+          Option 1: Click "Pay Online" to open Razorpay payment (refund-enabled){'\n'}
+          Option 2: Customer scans QR above with GPay/PhonePe, then click "Confirm Manually"
         </Typography>
       </>
     )}

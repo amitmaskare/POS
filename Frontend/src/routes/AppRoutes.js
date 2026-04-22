@@ -52,6 +52,7 @@ const AppRoutes = () => {
              }
            >
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="pos" element={<Dashboard />} />
         <Route path="products" element={<PermissionRoute permission="view-product">
       <Products />
     </PermissionRoute>} />

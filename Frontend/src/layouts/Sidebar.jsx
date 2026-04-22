@@ -29,15 +29,18 @@ import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import SettingsIcon from "@mui/icons-material/Settings";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import { getUser } from "../utils/Auth.js";
 
 const menuItems = [
-  { title: "POS System", icon: <ShoppingCartIcon />, path: "/dashboard", permission: "view-dashboard" },
+  { title: "Dashboard", icon: <DashboardIcon />, path: "/dashboard", permission: null },
+  { title: "POS System", icon: <ShoppingCartIcon />, path: "/pos", permission: null },
   { title: "Products", icon: <CategoryIcon />, path: "/products", permission: "view-product" },
   { title: "Purchases", icon: <ShoppingBagIcon />, path: "/purchases", permission: "view-purchase" },
   { title: "Receiving", icon: <ShoppingBagIcon />, path: "/receiving", permission: "view-receiving" },
   { title: "Sales", icon: <ShoppingBagIcon />, path: "/sales", permission: "view-sale" },
   { title: "Return Product", icon: <ShoppingBagIcon />, path: "/return-product", permission: "view-return" },
+  { title: "Sale Return", icon: <ShoppingBagIcon />, path: "/salereturn", permission: "view-return" },
   { title: "Transactions", icon: <ReceiptLongIcon />, path: "/transactions", permission: "view-transaction" },
   { title: "POS Settings", icon: <CreditCardIcon />, path: "/pos-settings", permission: "view-pos" },
   { title: "Inventory", icon: <InventoryIcon />, path: "/inventory", permission: "view-inventory" },
@@ -79,7 +82,7 @@ export default function Sidebar({ sidebarState, setSidebarState }) {
 
   const user = getUser();
   const visibleMenus = menuItems.filter(menu =>
-    user.role === "admin" || user.permissions.includes(menu.permission)
+    !menu.permission || user.role === "admin" || (user.permissions && user.permissions.includes(menu.permission))
   );
 
   // Close sidebar on mobile when clicking a menu item

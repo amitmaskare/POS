@@ -22,12 +22,13 @@ import { confirmReturn,confirmExchange } from "../../services/ReturnService";
 import { searchProduct,add_product } from "../../services/productService";
 import { useToast } from "../../hooks/useToast";
 import Toast from "../../components/Toast/Toast";
+import CircularProgress from "@mui/material/CircularProgress";
 
 export default function ReturnModal({ open, onClose,onSaved, viewData }) {
 
   // ✅ Hooks ALWAYS on top
   const { showToast, toastMessage, toastType, showToastNotification } = useToast();
-  const [mode, setMode] = useState("return"); 
+  const [mode, setMode] = useState("return");
   const [returnItems, setReturnItems] = useState([]);
   const [exchangeCart, setExchangeCart] = useState([]);
  const [confirmAdd, setConfirmAdd] = useState(false);
@@ -105,9 +106,12 @@ const handleConfirmExchange = async () => {
   const returnPayload = returnItems
     .filter(i => i.selected && i.return_qty > 0)
     .map(i => ({
-      sale_item_id: i.id,
+      sale_item_id: i.sale_item_id || i.id,
       product_id: i.product_id,
-      qty: i.return_qty // ✅ correct return qty
+      product_name: i.product_name,
+      image: i.image,
+      tax: i.tax,
+      qty: i.return_qty
     }));
 
   if (!returnPayload.length) {
@@ -124,12 +128,14 @@ const handleConfirmExchange = async () => {
     product_id: i.product_id,
     qty: i.qty,
     price: i.price,
+    tax: i.tax || 0,
     product_name: i.product_name,
     image: i.image
   }));
 
   const payload = {
     sale_id: sale.id,
+    payment_method: 'cash',
     return_items: returnPayload,
     exchange_items: exchangePayload
   };
@@ -157,31 +163,34 @@ const handleConfirmExchange = async () => {
   const payloadItems = returnItems
     .filter(i => i.return_qty > 0)
     .map(i => ({
-      sale_item_id: i.id,
+      sale_item_id: i.sale_item_id || i.id,
       product_id: i.product_id,
+      product_name: i.product_name,
+      image: i.image,
       qty: i.return_qty,
-      price: i.price
+      price: i.price,
+      tax: i.tax
     }));
 
   if (!payloadItems.length) return;
 
   const payload = {
     sale_id: sale.id,
-    return_type: type, // refund | exchange
+    return_type: type,
     items: payloadItems
   };
 
   try {
     const res = await confirmReturn(payload);
     if (res.status === true) {
-      showToastNotification(`Success! Refund ₹${res.data.refundAmount}`, "success");
-        onSaved()
+      showToastNotification(res.data.refund?.message || `Success! Refund ₹${res.data.refundAmount}`, "success");
+      onSaved();
       onClose();
     } else {
       showToastNotification(res.message, "error");
     }
   } catch (err) {
-    showToastNotification("Return failed", "error");
+    showToastNotification(err.response?.data?.message || "Return failed", "error");
   }
 };
 
@@ -440,6 +449,7 @@ const addNewProduct = async () => {
     </div>
     </>
   )}
+
 
       </DialogContent>
 

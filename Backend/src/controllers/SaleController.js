@@ -64,7 +64,6 @@ export const SaleController={
                      total,
                      payment_method,
                      payment_status:(payment_method === "cash" || payment_method === "aadhaar_customer") ? "paid" : "pending",
-                     store_id: storeId,
                      cash_amount: payment_method === "split" ? cash_amount : null,
                      online_amount: payment_method === "split" ? online_amount : null,
                      online_method: payment_method === "split" ? online_method : null,
@@ -73,6 +72,7 @@ export const SaleController={
                      customer_phone: customer_phone || null,
                      customer_aadhaar: customer_aadhaar || null
                   };
+                  if (storeId) saleData.store_id = storeId;
             const saleId = await SaleService.createSale(saleData, storeId);
              
             if (!saleId) {
@@ -204,21 +204,51 @@ export const SaleController={
         UPDATE sales SET payment_status='paid' WHERE id=?`,
         [saleId]
       );
-    
+
+      // Fetch payment details from Razorpay
+      let paymentInfo = {};
+      try {
+        const payment = await razorpay.payments.fetch(razorpay_payment_id);
+        paymentInfo = {
+          payment_method: payment.method || null,
+          card_last4: payment.card?.last4 || null,
+          card_network: payment.card?.network || null,
+          card_type: payment.card?.type || null,
+          card_issuer: payment.card?.issuer || null,
+          vpa: payment.vpa || null,
+          bank: payment.bank || null,
+          wallet: payment.wallet || null,
+          payer_email: payment.email || null,
+          payer_contact: payment.contact || null,
+        };
+      } catch (err) {
+        // Razorpay fetch failed — store without extra details
+      }
+
       await CommonModel.rawQuery(
-        `INSERT INTO payments 
-         (sale_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, status)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO payments
+         (sale_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, status, payment_method, card_last4, card_network, card_type, card_issuer, vpa, bank, wallet, payer_email, payer_contact)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           saleId,
           razorpay_order_id,
           razorpay_payment_id,
           razorpay_signature,
           amount,
-          "paid"
+          "paid",
+          paymentInfo.payment_method || null,
+          paymentInfo.card_last4 || null,
+          paymentInfo.card_network || null,
+          paymentInfo.card_type || null,
+          paymentInfo.card_issuer || null,
+          paymentInfo.vpa || null,
+          paymentInfo.bank || null,
+          paymentInfo.wallet || null,
+          paymentInfo.payer_email || null,
+          paymentInfo.payer_contact || null,
         ]
       );
-     
+
      return sendResponse(resp,true,201,"Payment successful")
       
     },
@@ -228,7 +258,7 @@ export const SaleController={
           const { id } = req.params;
             if(!id)
             {
-                return sendResponse(resp,false,400,"id not found")
+                return sendResponse(res,false,400,"id not found")
             }
           const sale = await SaleService.getSaleById(id);
       
@@ -236,10 +266,10 @@ export const SaleController={
             return sendResponse(res, false, 404, "Sale not found");
           }
       
-          const items = await CommonModel.getAllData({
-            table: 'sales_items',
-            conditions: { sale_id: id,is_returned:'no' }
-          });
+          const items = await CommonModel.rawQuery(
+            `SELECT * FROM sales_items WHERE sale_id = ? AND is_returned IN ('no', 'partial')`,
+            [id]
+          );
       
           return sendResponse(res, true, 200, "Sale details", {
             sale,
@@ -344,11 +374,11 @@ export const SaleController={
                 total,
                 payment_method: isSplitPayment ? 'split' : 'qr_code',
                 payment_status: "pending",
-                store_id: storeId,
                 cash_amount: isSplitPayment ? cash_amount : null,
                 online_amount: isSplitPayment ? online_amount : null,
                 online_method: isSplitPayment ? 'qr_code' : null
             };
+            if (storeId) saleData.store_id = storeId;
 
             const saleId = await SaleService.createSale(saleData, storeId);
 
@@ -370,26 +400,27 @@ export const SaleController={
                 await SaleService.createSaleItem(itemData);
             }
 
-            // Generate UPI Intent String for direct UPI payment
-            const upiId = process.env.UPI_ID || "merchant@upi";
-            const merchantName = process.env.MERCHANT_NAME || "POS Store";
             // For split payment, use online_amount; otherwise use total
             const paymentAmount = isSplitPayment ? online_amount : total;
             const amount = Number(paymentAmount).toFixed(2);
+
+            // Create Razorpay order for QR/UPI payment (enables automatic refunds)
+            const order = await razorpay.orders.create({
+                amount: Math.round(amount * 100),
+                currency: "INR",
+                receipt: `qr_${saleId}`,
+            });
+
+            // Also generate UPI Intent String for direct UPI scanning
+            const upiId = process.env.UPI_ID || "merchant@upi";
+            const merchantName = process.env.MERCHANT_NAME || "POS Store";
             const transactionNote = `Invoice ${invoice_no}`;
-
-            // UPI Intent URL - Opens directly in UPI apps
             const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&am=${amount}&tn=${encodeURIComponent(transactionNote)}&cu=INR`;
-
-            console.log("✅ Generated UPI String:", upiString);
-            console.log("UPI ID:", upiId);
-            console.log("Merchant Name:", merchantName);
-            console.log("Amount:", amount);
-            console.log("Is Split Payment:", isSplitPayment);
 
             return sendResponse(resp, true, 201, "QR Code created successfully", {
                 qrCodeId: saleId.toString(),
                 qrCodeUrl: upiString,
+                razorpayOrderId: order.id,
                 saleId,
                 invoice_no,
                 amount: Number(amount),
@@ -450,18 +481,40 @@ export const SaleController={
                 return sendResponse(resp, false, 400, "saleId is required");
             }
 
+            // Try to get the real Razorpay payment ID from the order
+            let realPaymentId = transactionId || `UPI_${Date.now()}`;
+            let razorpayOrderId = null;
+
+            // Try to find the Razorpay order and its captured payment
+            try {
+                const receipt = `qr_${saleId}`;
+                const orders = await razorpay.orders.all({ receipt });
+                if (orders.items && orders.items.length > 0) {
+                    const order = orders.items[0];
+                    razorpayOrderId = order.id;
+                    const payments = await razorpay.orders.fetchPayments(order.id);
+                    const capturedPayment = payments.items?.find(p => p.status === 'captured');
+                    if (capturedPayment) {
+                        realPaymentId = capturedPayment.id;
+                    }
+                }
+            } catch (err) {
+                // Razorpay lookup failed, use the provided transactionId
+                console.log('Razorpay order lookup skipped:', err.message);
+            }
+
             // Update sale status to paid
             await CommonModel.rawQuery(
                 `UPDATE sales SET payment_status='paid' WHERE id=?`,
                 [saleId]
             );
 
-            // Record payment
+            // Record payment with real Razorpay payment ID if found
             await CommonModel.rawQuery(
                 `INSERT INTO payments
-                 (sale_id, razorpay_payment_id, amount, status, payment_method)
-                 SELECT id, ?, total, 'paid', 'qr_code' FROM sales WHERE id = ?`,
-                [transactionId || `UPI_${Date.now()}`, saleId]
+                 (sale_id, razorpay_payment_id, razorpay_order_id, amount, status, payment_method)
+                 SELECT id, ?, ?, total, 'paid', 'qr_code' FROM sales WHERE id = ?`,
+                [realPaymentId, razorpayOrderId, saleId]
             );
 
             // Update stock

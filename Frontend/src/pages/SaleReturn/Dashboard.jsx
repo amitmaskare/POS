@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Typography,
@@ -39,7 +39,7 @@ import {scanInvoice,scanProduct,confirmReturn,confirmExchange,saleReturnById} fr
 
 export default function Dashboard() {
 
-   const { addToCart } = useOutletContext();
+   const { addToCart, setSaleReturnSaleId } = useOutletContext();
    const[data,setData]=useState([])
       const[success,setSuccess]=useState('')
       const[error,setError]=useState('')
@@ -49,34 +49,40 @@ const [openAddModal, setOpenAddModal] = useState(false);
 const [barcode, setBarcode] = useState("");
 const [product_name, setProduct_name] = useState("");
 const [selling_price, setSelling_price] = useState("");
- const [mode, setMode] = useState("refund");     
-      const [invoice, setInvoice] = useState("");
+ const [mode, setMode] = useState("refund");
+      const [invoiceInput, setInvoiceInput] = useState("");
+      const [invoice, setInvoice] = useState(null);
 const [saleItems, setSaleItems] = useState([]);
+const [allSaleItems, setAllSaleItems] = useState([]);
 const [exchangeItems, setExchangeItems] = useState([]);
 const [barcodeItem, setBarcodeItem] = useState(null);
 const [refundAmount, setRefundAmount] = useState(0);
 const [returnAmount, setReturnAmount] = useState(0);
 const [exchangeAmount, setExchangeAmount] = useState(0);
 const [difference, setDifference] = useState(0);
+const invoiceRef = useRef(null);
 
- 
-const handleInvoiceSearch = async (value) => {
+
+const handleInvoiceSearch = async () => {
+  const value = invoiceInput.trim();
   if (!value) return;
   try{
   const result = await scanInvoice({ invoice_no: value });
   if (result.status===true) {
-    setInvoice({ invoice_no: result.data.invoice_no });
+    setInvoice({ invoice_no: result.data.invoice_no, sale_id: result.data.sale_id });
+    setSaleReturnSaleId(result.data.sale_id);
 
-    // 🔥 RESET list with invoice items
-    setSaleItems(
-      result.data.saleData.map(item => ({
-        ...item,
-        returned_qty: item.returned_qty || 0
-      }))
-    );
+    const items = result.data.saleData.map(item => ({
+      ...item,
+      returned_qty: item.returned_qty || 0
+    }));
+    setSaleItems(items);
+    setAllSaleItems(items);
   } else {
     setInvoice(null);
+    setSaleReturnSaleId(null);
     setSaleItems([]);
+    setAllSaleItems([]);
   }
 }catch(error)
 {
@@ -97,15 +103,18 @@ const handleBarcodeSearch = async (value) => {
     const result = await scanProduct(payload);
 
     if (result.status===true && result.data) {
-      setSaleItems([
-        {
-          ...result.data,
-          returned_qty: 0
-        }
-      ]);
+      // Filter to show only the matched product from the loaded invoice items
+      const matched = allSaleItems.filter(
+        item => item.product_id === result.data.product_id
+      );
+      if (matched.length > 0) {
+        setSaleItems(matched);
+      } else {
+        setSaleItems([{ ...result.data, returned_qty: 0 }]);
+      }
     }
   } catch (err) {
-    alert("Something went wrong");
+    alert(err.response?.data?.message || "Product not found in this invoice");
   }
 };
 const BARCODE_LENGTH = 13;
@@ -199,11 +208,13 @@ const returnItem=async(item)=>{
     const result= await saleReturnById(item.sale_item_id);
     if(result.status===true)
     {  
-       const backendItem = result.data; 
+       const backendItem = result.data;
       addToCart({
         ...backendItem,
-        qty: item.returned_qty,  
-        return_qty: item.returned_qty, 
+        sale_item_id: item.sale_item_id,
+        sale_id: invoice?.sale_id,
+        qty: item.returned_qty,
+        return_qty: item.returned_qty,
         cart_type: "refund",
       });
       item._alreadyReturned = true;
@@ -262,19 +273,45 @@ const updateReturnedQty = (sale_item_id, type) => {
               <HistoryIcon />
              Sale Return
             </Box>
-    
+
           </DialogTitle>
-    
-           <SearchFilter
-      placeholder="Search Invoice No"
-      onSearchChange={(e) => handleInvoiceSearch(e.target.value)}
-    />
-    
+
+           <Box sx={{ p: 1, display: "flex", gap: 1, alignItems: "center" }}>
+        <TextField
+          variant="outlined"
+          size="small"
+          placeholder="Enter Invoice No"
+          value={invoiceInput}
+          inputRef={invoiceRef}
+          onChange={(e) => setInvoiceInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleInvoiceSearch();
+            }
+          }}
+          sx={{ flex: 1, bgcolor: "#fff" }}
+        />
+        <Button
+          variant="contained"
+          onClick={handleInvoiceSearch}
+          sx={{ bgcolor: "#5A8DEE", "&:hover": { bgcolor: "#4a7dd9" } }}
+        >
+          <SearchIcon />
+        </Button>
+      </Box>
+
     {invoice && (
       <Box mt={2}>
         <SearchFilter
           placeholder="Scan / Search Barcode"
-          onSearchChange={(e) => handleBarcodeSearch(e.target.value)}
+          onSearchChange={(e) => {
+            const val = e.target.value;
+            if (!val) {
+              setSaleItems(allSaleItems);
+              return;
+            }
+            handleBarcodeSearch(val);
+          }}
         />
       </Box>
     )}

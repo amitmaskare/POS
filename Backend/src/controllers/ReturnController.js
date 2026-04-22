@@ -14,25 +14,61 @@ export const ReturnController={
 
         if (!invoice_no)
           return sendResponse(res, false, 400, "invoice_no required");
-      
+
         const sale = await CommonModel.getSingle({
           table: "sales",
           conditions: { invoice_no },
           storeId
         });
-       
-        const saleData=await CommonModel.getAllData({
-          table: "sales_items", 
-          fields:["id as sale_item_id,qty,returned_qty,product_id,price,product_name,image,is_returned"],
-          conditions: { sale_id:sale.id },
-          storeId
-        });
-      
+
         if (!sale)
           return sendResponse(res, false, 404, "Invoice not found");
 
+        const saleData=await CommonModel.getAllData({
+          table: "sales_items",
+          fields:["id as sale_item_id,qty,returned_qty,product_id,price,product_name,image,is_returned,tax"],
+          conditions: { sale_id:sale.id },
+          storeId
+        });
+
+        // Fetch payment details from DB (stored at checkout time)
+        const paymentData = await CommonModel.rawQuery(
+          `SELECT razorpay_payment_id, razorpay_order_id, amount, status, payment_method,
+                  card_last4, card_network, card_type, card_issuer, vpa, bank, wallet, payer_email, payer_contact
+           FROM payments WHERE sale_id = ? ORDER BY id DESC LIMIT 1`,
+          [sale.id]
+        );
+
+         const pd = paymentData?.[0] || {};
+         const hasAccountDetails = pd.card_last4 || pd.vpa || pd.bank || pd.wallet;
+         const payment_account = hasAccountDetails ? {
+           method: pd.payment_method || null,
+           card_last4: pd.card_last4 || null,
+           card_network: pd.card_network || null,
+           card_type: pd.card_type || null,
+           card_issuer: pd.card_issuer || null,
+           vpa: pd.vpa || null,
+           bank: pd.bank || null,
+           wallet: pd.wallet || null,
+           email: pd.payer_email || null,
+           contact: pd.payer_contact || null,
+         } : null;
+
          const data={
           invoice_no: sale.invoice_no,
+          sale_id: sale.id,
+          total: sale.total,
+          subtotal: sale.subtotal,
+          tax: sale.tax,
+          payment_method: sale.payment_method,
+          payment_status: sale.payment_status,
+          cash_amount: sale.cash_amount || null,
+          online_amount: sale.online_amount || null,
+          online_method: sale.online_method || null,
+          status: sale.status,
+          created_at: sale.created_at,
+          razorpay_payment_id: pd.razorpay_payment_id || null,
+          payment_account,
           saleData
          }
         return sendResponse(res, true, 200, "Invoice valid", data);
@@ -74,76 +110,98 @@ scanProduct: async (req, res) => {
   confirmReturn: async (req, res) => {
     try {
       const storeId = getStoreIdFromRequest(req);
-      const { sale_id, items, return_type,manager_id } = req.body;
-  
+      const { sale_id, items, return_type, refund_method } = req.body;
+
       /* -------------------- VALIDATIONS -------------------- */
       if (!sale_id)
         return sendResponse(res, false, 400, "sale_id required");
-       if (!manager_id)
-      return sendResponse(res, false, 400, "manager_id required");
-    
-        if (!["refund", "exchange"].includes(return_type))
+      if (!["refund", "exchange"].includes(return_type))
         return sendResponse(res, false, 400, "Invalid return_type");
-  
       if (!Array.isArray(items) || items.length === 0)
         return sendResponse(res, false, 400, "items cannot be empty");
-  
+
       let refundAmount = 0;
-  
-      /* -------------------- CREATE RETURN ENTRY -------------------- */
-      const returnId = await CommonModel.insertData({
-        table: "returns",
-        data: {
-         sale_id,
-        return_type,
-        refund_amount: 0,
-        approved_by: manager_id,
-        approved_at: new Date()
-        },
-        storeId
-      });
-  
-      /* -------------------- PROCESS ITEMS -------------------- */
+      let refundBaseAmount = 0;
+      let refundTaxAmount = 0;
+
+      /* -------------------- FETCH SALE WITH PAYMENT INFO -------------------- */
+      const [saleInfo] = await CommonModel.rawQuery(
+        `SELECT s.*, p.razorpay_payment_id, p.razorpay_order_id
+         FROM sales s
+         LEFT JOIN payments p ON p.sale_id = s.id
+         WHERE s.id = ?
+         ORDER BY p.id DESC LIMIT 1`,
+        [sale_id]
+      );
+
+      if (!saleInfo)
+        return sendResponse(res, false, 404, "Sale not found");
+
+      /* -------------------- VALIDATE ITEMS FIRST -------------------- */
+      const validatedItems = [];
       for (const i of items) {
         if (!i.qty || i.qty <= 0) continue;
-  
-        // 🔍 Fetch sale item
+
         const [saleItem] = await CommonModel.rawQuery(
-          `SELECT qty, returned_qty, price,tax 
-           FROM sales_items 
+          `SELECT qty, returned_qty, price, tax
+           FROM sales_items
            WHERE id = ?`,
           [i.sale_item_id]
         );
-  
+
         if (!saleItem) continue;
-  
+
         const availableQty = saleItem.qty - saleItem.returned_qty;
-  
+
         if (i.qty > availableQty) {
           return sendResponse(
-            res,
-            false,
-            400,
+            res, false, 400,
             `Return qty exceeds available qty for sale_item_id ${i.sale_item_id}`
           );
         }
+
         const baseAmount = i.qty * saleItem.price;
         const taxPercent = saleItem.tax || 0;
         const taxAmount = (baseAmount * taxPercent) / 100;
         const amount = baseAmount + taxAmount;
         refundAmount += amount;
-        
+        refundBaseAmount += baseAmount;
+        refundTaxAmount += taxAmount;
+
+        validatedItems.push({ ...i, amount, saleItem });
+      }
+
+      if (validatedItems.length === 0) {
+        return sendResponse(res, false, 400, "No valid items to return");
+      }
+
+      /* -------------------- CREATE RETURN ENTRY -------------------- */
+      const returnId = await CommonModel.insertData({
+        table: "returns",
+        data: {
+          sale_id,
+          return_type,
+          refund_amount: 0,
+          refund_status: 'pending',
+          approved_by: req.user.userId,
+          approved_at: new Date()
+        },
+        storeId
+      });
+
+      /* -------------------- PROCESS VALIDATED ITEMS -------------------- */
+      for (const i of validatedItems) {
         await CommonModel.insertData({
           table: "stocks",
-         data: {
+          data: {
             product_id: i.product_id,
-            stock:  i.qty,
-            type:'credit',
-            note:'Refund Product',
+            stock: i.qty,
+            type: 'credit',
+            note: 'Refund Product',
           },
           storeId
         });
-        /* -------------------- INSERT RETURN ITEMS -------------------- */
+
         await CommonModel.insertData({
           table: "return_items",
           data: {
@@ -154,91 +212,404 @@ scanProduct: async (req, res) => {
             image: i.image,
             return_qty: i.qty,
             tax: i.tax,
-            refund_amount: amount
+            refund_amount: i.amount
           },
           storeId
         });
-  
-        /* -------------------- UPDATE SALES ITEMS -------------------- */
+
         await CommonModel.rawQuery(
-          `
-          UPDATE sales_items
-          SET 
-            returned_qty = returned_qty + ?,
-            is_returned = 
-              CASE 
-                WHEN returned_qty + ? >= qty THEN 'yes'
-                ELSE 'no'
-              END
-          WHERE id = ?
-          `,
-          [i.qty, i.qty, i.sale_item_id]
+          `UPDATE sales_items
+           SET
+             returned_qty = returned_qty + ?,
+             is_returned =
+               CASE
+                 WHEN (returned_qty + ?) >= qty THEN 'yes'
+                 WHEN (returned_qty + ?) > 0 THEN 'partial'
+                 ELSE 'no'
+               END
+           WHERE id = ?`,
+          [i.qty, i.qty, i.qty, i.sale_item_id]
         );
       }
-  
-      /* -------------------- UPDATE TOTAL REFUND -------------------- */
+
+      /* -------------------- UPDATE SALE TOTALS -------------------- */
       const [sale] = await CommonModel.rawQuery(
         `SELECT subtotal, tax, total FROM sales WHERE id = ?`,
         [sale_id]
       );
-      const returnSubtotal = refundAmount;
-      const returnTax = (returnSubtotal * sale.tax) / sale.subtotal;
-     
-await CommonModel.rawQuery(`
-UPDATE sales
-SET 
-  subtotal = subtotal - ?,
-  tax = tax - ?,
-  total = total - (? + ?),
-  status =
-    CASE
-      WHEN total - (? + ?) <= 0 THEN 'returned'
-      ELSE 'partially_returned'
-    END
-WHERE id = ?
-`, [
-returnSubtotal,
-returnTax,
-returnSubtotal,
-returnTax,
-returnSubtotal,
-returnTax,
-sale_id
-]);
-  
-await CommonModel.updateData({
-  table: "returns",
-  data: { refund_amount: refundAmount },
-  conditions: { id: returnId },
-  storeId
-});
 
-  await CommonModel.insertData({
-  table: "return_approvals",
-  data: {
-    return_id: returnId,
-    sale_id,
-    cashier_id: req.user.userId,
-    manager_id: manager_id,
-    action: 'refund'
-  },
-  storeId
-});
+      const newTotal = Number(sale.total) - refundAmount;
+      const newStatus = newTotal <= 0.01 ? 'returned' : 'partially_returned';
 
+      await CommonModel.rawQuery(`
+        UPDATE sales
+        SET
+          subtotal = subtotal - ?,
+          tax = tax - ?,
+          total = total - ?,
+          status = ?
+        WHERE id = ?
+      `, [refundBaseAmount, refundTaxAmount, refundAmount, newStatus, sale_id]);
+
+      /* -------------------- PROCESS REFUND TO ORIGINAL PAYMENT -------------------- */
+      let refundResult = { method: 'cash', status: 'completed', message: 'Return cash to customer' };
+      const refundAmountPaise = Math.round(refundAmount * 100);
+
+      // refund_method from frontend: 'cash' = always cash, 'online' = try Razorpay, 'auto' = based on original payment
+      const paymentMethod = refund_method === 'cash' ? 'cash' : saleInfo.payment_method;
+
+      // Check if a payment ID is a real Razorpay payment ID (starts with 'pay_')
+      const isRazorpayPaymentId = (id) => id && id.startsWith('pay_');
+
+      // Helper: fetch payment details from Razorpay
+      const fetchPaymentDetails = async (paymentId) => {
+        try {
+          const payment = await razorpay.payments.fetch(paymentId);
+          return {
+            payment_id: payment.id,
+            amount_paid: (payment.amount / 100).toFixed(2),
+            currency: payment.currency,
+            method: payment.method, // card, upi, netbanking, wallet
+            email: payment.email || null,
+            contact: payment.contact || null,
+            // Card details
+            card_last4: payment.card?.last4 || null,
+            card_network: payment.card?.network || null, // Visa, Mastercard
+            card_issuer: payment.card?.issuer || null,
+            card_type: payment.card?.type || null, // credit, debit
+            // UPI details
+            vpa: payment.vpa || null, // UPI ID like user@paytm
+            // Bank details
+            bank: payment.bank || null,
+            wallet: payment.wallet || null,
+            // Status
+            status: payment.status,
+            created_at: payment.created_at ? new Date(payment.created_at * 1000).toLocaleString() : null
+          };
+        } catch (err) {
+          return null;
+        }
+      };
+
+      // Helper: fetch refund details from Razorpay
+      const fetchRefundDetails = async (refund) => {
+        return {
+          refund_id: refund.id,
+          amount: (refund.amount / 100).toFixed(2),
+          currency: refund.currency,
+          status: refund.status, // processed, pending, failed
+          speed_processed: refund.speed_processed || null, // instant, normal
+          speed_requested: refund.speed_requested || null,
+          created_at: refund.created_at ? new Date(refund.created_at * 1000).toLocaleString() : null
+        };
+      };
+
+      // Helper: attempt Razorpay refund with proper error handling and cash fallback
+      const processRazorpayRefund = async (paymentId, amountPaise, notes) => {
+        try {
+          const paymentDetails = await fetchPaymentDetails(paymentId);
+          const refund = await razorpay.payments.refund(paymentId, {
+            amount: amountPaise,
+            notes
+          });
+          const refundDetails = await fetchRefundDetails(refund);
+          return { success: true, paymentDetails, refund, refundDetails };
+        } catch (err) {
+          const errorMsg = err?.error?.description || err?.message || (err?.statusCode ? `Razorpay error (${err.statusCode})` : 'Payment gateway error');
+          console.error('Razorpay refund error:', errorMsg, err);
+          return { success: false, error: errorMsg };
+        }
+      };
+
+      if (paymentMethod === 'cash') {
+        refundResult = {
+          method: 'cash',
+          status: 'completed',
+          message: `Return ₹${refundAmount.toFixed(2)} cash to customer`
+        };
+      }
+      else if (paymentMethod === 'credit' || paymentMethod === 'pos_card') {
+        if (isRazorpayPaymentId(saleInfo.razorpay_payment_id)) {
+          const result = await processRazorpayRefund(saleInfo.razorpay_payment_id, refundAmountPaise, {
+            reason: 'Product return',
+            return_id: returnId.toString(),
+            invoice_no: saleInfo.invoice_no
+          });
+          if (result.success) {
+            refundResult = {
+              method: paymentMethod === 'credit' ? 'card' : 'pos_card',
+              status: 'completed',
+              refund_id: result.refund.id,
+              payment_details: result.paymentDetails,
+              refund_details: result.refundDetails,
+              message: `₹${refundAmount.toFixed(2)} refunded to original ${result.paymentDetails?.card_network || ''} card ending ${result.paymentDetails?.card_last4 || '****'}`
+            };
+          } else {
+            // Razorpay refund failed — fallback to cash refund
+            refundResult = {
+              method: 'cash',
+              status: 'completed',
+              message: `Online refund could not be processed (${result.error}). Return ₹${refundAmount.toFixed(2)} cash to customer`,
+              original_payment_method: paymentMethod,
+              razorpay_error: result.error
+            };
+          }
+        } else {
+          refundResult = {
+            method: 'cash',
+            status: 'completed',
+            message: `No online payment ID found. Return ₹${refundAmount.toFixed(2)} cash to customer`,
+            original_payment_method: paymentMethod
+          };
+        }
+      }
+      else if (paymentMethod === 'qr_code') {
+        // If we have a real Razorpay payment ID, refund directly via payment ID
+        if (isRazorpayPaymentId(saleInfo.razorpay_payment_id)) {
+          const result = await processRazorpayRefund(saleInfo.razorpay_payment_id, refundAmountPaise, {
+            reason: 'Product return',
+            return_id: returnId.toString()
+          });
+          if (result.success) {
+            refundResult = {
+              method: 'upi',
+              status: 'completed',
+              refund_id: result.refund.id,
+              payment_details: result.paymentDetails,
+              refund_details: result.refundDetails,
+              message: `₹${refundAmount.toFixed(2)} refunded to UPI ID: ${result.paymentDetails?.vpa || 'customer account'}`
+            };
+          } else {
+            refundResult = {
+              method: 'cash',
+              status: 'completed',
+              message: `Online refund could not be processed (${result.error}). Return ₹${refundAmount.toFixed(2)} cash to customer`,
+              original_payment_method: 'qr_code',
+              razorpay_error: result.error
+            };
+          }
+        }
+        // If payment ID is not a real Razorpay one (TXN..., UPI_...), try refund via Razorpay order ID
+        else if (saleInfo.razorpay_order_id && saleInfo.razorpay_order_id.startsWith('order_')) {
+          try {
+            // Fetch payments for this order from Razorpay
+            const payments = await razorpay.orders.fetchPayments(saleInfo.razorpay_order_id);
+            const capturedPayment = payments.items?.find(p => p.status === 'captured');
+
+            if (capturedPayment) {
+              const result = await processRazorpayRefund(capturedPayment.id, refundAmountPaise, {
+                reason: 'Product return',
+                return_id: returnId.toString()
+              });
+              if (result.success) {
+                refundResult = {
+                  method: 'upi',
+                  status: 'completed',
+                  refund_id: result.refund.id,
+                  payment_details: result.paymentDetails,
+                  refund_details: result.refundDetails,
+                  message: `₹${refundAmount.toFixed(2)} refunded to UPI ID: ${result.paymentDetails?.vpa || 'customer account'}`
+                };
+              } else {
+                refundResult = {
+                  method: 'cash',
+                  status: 'completed',
+                  message: `Online refund could not be processed (${result.error}). Return ₹${refundAmount.toFixed(2)} cash to customer`,
+                  original_payment_method: 'qr_code',
+                  razorpay_error: result.error
+                };
+              }
+            } else {
+              refundResult = {
+                method: 'cash',
+                status: 'completed',
+                message: `No captured payment found on Razorpay for this order. Return ₹${refundAmount.toFixed(2)} cash to customer`,
+                original_payment_method: 'qr_code'
+              };
+            }
+          } catch (err) {
+            refundResult = {
+              method: 'cash',
+              status: 'completed',
+              message: `Could not fetch Razorpay order payments (${err.message}). Return ₹${refundAmount.toFixed(2)} cash to customer`,
+              original_payment_method: 'qr_code'
+            };
+          }
+        }
+        else {
+          // Last resort: try to find Razorpay order by receipt pattern qr_{saleId}
+          let foundViaReceipt = false;
+          try {
+            const orders = await razorpay.orders.all({ receipt: `qr_${sale_id}` });
+            const order = orders.items?.find(o => o.status === 'paid');
+            if (order) {
+              const payments = await razorpay.orders.fetchPayments(order.id);
+              const capturedPayment = payments.items?.find(p => p.status === 'captured');
+              if (capturedPayment) {
+                const result = await processRazorpayRefund(capturedPayment.id, refundAmountPaise, {
+                  reason: 'Product return',
+                  return_id: returnId.toString()
+                });
+                if (result.success) {
+                  foundViaReceipt = true;
+                  refundResult = {
+                    method: 'upi',
+                    status: 'completed',
+                    refund_id: result.refund.id,
+                    payment_details: result.paymentDetails,
+                    refund_details: result.refundDetails,
+                    message: `₹${refundAmount.toFixed(2)} refunded to UPI ID: ${result.paymentDetails?.vpa || 'customer account'}`
+                  };
+                }
+              }
+            }
+          } catch (err) {
+            // Receipt lookup failed
+          }
+
+          if (!foundViaReceipt) {
+            refundResult = {
+              method: 'cash',
+              status: 'completed',
+              message: `No online payment record found. Return ₹${refundAmount.toFixed(2)} cash to customer`
+            };
+          }
+        }
+      }
+      else if (paymentMethod === 'split') {
+        const onlineRefundAmount = Math.min(refundAmount, Number(saleInfo.online_amount) || 0);
+        const cashRefundAmount = refundAmount - onlineRefundAmount;
+
+        if (onlineRefundAmount > 0 && isRazorpayPaymentId(saleInfo.razorpay_payment_id)) {
+          const result = await processRazorpayRefund(saleInfo.razorpay_payment_id, Math.round(onlineRefundAmount * 100), {
+            reason: 'Product return - split payment',
+            return_id: returnId.toString()
+          });
+          if (result.success) {
+            refundResult = {
+              method: 'split',
+              status: 'completed',
+              refund_id: result.refund.id,
+              online_refund: onlineRefundAmount,
+              cash_refund: cashRefundAmount,
+              online_method: saleInfo.online_method,
+              payment_details: result.paymentDetails,
+              refund_details: result.refundDetails,
+              message: cashRefundAmount > 0
+                ? `₹${onlineRefundAmount.toFixed(2)} refunded to ${result.paymentDetails?.vpa || result.paymentDetails?.card_network || saleInfo.online_method || 'online'} account. Return ₹${cashRefundAmount.toFixed(2)} cash to customer`
+                : `₹${onlineRefundAmount.toFixed(2)} refunded to ${result.paymentDetails?.vpa || result.paymentDetails?.card_network || saleInfo.online_method || 'online'} account`
+            };
+          } else {
+            refundResult = {
+              method: 'cash',
+              status: 'completed',
+              message: `Online refund could not be processed (${result.error}). Return ₹${refundAmount.toFixed(2)} cash to customer`,
+              original_payment_method: 'split',
+              cash_refund: refundAmount,
+              razorpay_error: result.error
+            };
+          }
+        } else if (onlineRefundAmount > 0 && saleInfo.razorpay_order_id && saleInfo.razorpay_order_id.startsWith('order_')) {
+          // Try refund via Razorpay order ID
+          try {
+            const payments = await razorpay.orders.fetchPayments(saleInfo.razorpay_order_id);
+            const capturedPayment = payments.items?.find(p => p.status === 'captured');
+            if (capturedPayment) {
+              const result = await processRazorpayRefund(capturedPayment.id, Math.round(onlineRefundAmount * 100), {
+                reason: 'Product return - split payment',
+                return_id: returnId.toString()
+              });
+              if (result.success) {
+                refundResult = {
+                  method: 'split',
+                  status: 'completed',
+                  refund_id: result.refund.id,
+                  online_refund: onlineRefundAmount,
+                  cash_refund: cashRefundAmount,
+                  online_method: saleInfo.online_method,
+                  payment_details: result.paymentDetails,
+                  refund_details: result.refundDetails,
+                  message: cashRefundAmount > 0
+                    ? `₹${onlineRefundAmount.toFixed(2)} refunded online. Return ₹${cashRefundAmount.toFixed(2)} cash to customer`
+                    : `₹${onlineRefundAmount.toFixed(2)} refunded online`
+                };
+              } else {
+                refundResult = {
+                  method: 'cash',
+                  status: 'completed',
+                  message: `Online refund could not be processed (${result.error}). Return ₹${refundAmount.toFixed(2)} cash to customer`,
+                  original_payment_method: 'split',
+                  cash_refund: refundAmount,
+                  razorpay_error: result.error
+                };
+              }
+            } else {
+              refundResult = {
+                method: 'cash',
+                status: 'completed',
+                message: `No captured payment found. Return ₹${refundAmount.toFixed(2)} cash to customer`
+              };
+            }
+          } catch (err) {
+            refundResult = {
+              method: 'cash',
+              status: 'completed',
+              message: `Could not process online refund (${err.message}). Return ₹${refundAmount.toFixed(2)} cash to customer`
+            };
+          }
+        } else {
+          refundResult = {
+            method: 'cash',
+            status: 'completed',
+            message: `Return ₹${refundAmount.toFixed(2)} cash to customer`
+          };
+        }
+      }
+      else {
+        refundResult = {
+          method: 'cash',
+          status: 'completed',
+          message: `Return ₹${refundAmount.toFixed(2)} cash to customer`
+        };
+      }
+
+      /* -------------------- UPDATE RETURN RECORD -------------------- */
+      await CommonModel.updateData({
+        table: "returns",
+        data: {
+          refund_amount: refundAmount,
+          refund_status: refundResult.status,
+          refund_razorpay_id: refundResult.refund_id || null,
+          refund_method: refundResult.method
+        },
+        conditions: { id: returnId },
+        storeId
+      });
+
+      await CommonModel.insertData({
+        table: "return_approvals",
+        data: {
+          return_id: returnId,
+          sale_id,
+          cashier_id: req.user.userId,
+          manager_id: req.user.userId,
+          action: 'refund'
+        },
+        storeId
+      });
 
       /* -------------------- SUCCESS RESPONSE -------------------- */
       return sendResponse(res, true, 200, "Return processed successfully", {
         return_id: returnId,
-        invoice_no:sale,
+        invoice_no: saleInfo.invoice_no,
         refundAmount,
-        return_type
+        return_type,
+        refund: refundResult
       });
-  
+
     } catch (error) {
       return sendResponse(
-        res,
-        false,
-        500,
+        res, false, 500,
         error.message || "Return process failed"
       );
     }
@@ -333,13 +704,14 @@ await CommonModel.updateData({
           UPDATE sales_items
           SET returned_qty = returned_qty + ?,
               is_returned =
-                CASE 
-                  WHEN returned_qty + ? >= qty THEN 'yes'
+                CASE
+                  WHEN (returned_qty + ?) >= qty THEN 'yes'
+                  WHEN (returned_qty + ?) > 0 THEN 'partial'
                   ELSE 'no'
                 END
           WHERE id = ?
           `,
-          [r.qty, r.qty, r.sale_item_id]
+          [r.qty, r.qty, r.qty, r.sale_item_id]
         );
       }
       
