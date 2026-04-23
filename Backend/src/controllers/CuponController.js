@@ -4,6 +4,7 @@ import { getStoreIdFromRequest } from "../utils/storeHelper.js";
 
 
 export const CuponController={
+    
     list:async(req,resp)=>{
         try{
             const storeId = getStoreIdFromRequest(req);

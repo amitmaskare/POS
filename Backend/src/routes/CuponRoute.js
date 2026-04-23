@@ -6,10 +6,10 @@ const route=express.Router()
 
 route.use(AuthMiddleware)
 
-route.get("/cupon/list",CuponController.list)
-route.post("/cupon/add",CuponController.add)
-route.get("/cupon/getById/:id",CuponController.getById)
-route.post("/cupon/update",CuponController.update)
-route.delete("/cupon/delete/:id",CuponController.deleteData)
+route.get("/coupon/list",CuponController.list)
+route.post("/coupon/add",CuponController.add)
+route.get("/coupon/getById/:id",CuponController.getById)
+route.post("/coupon/update",CuponController.update)
+route.delete("/coupon/delete/:id",CuponController.deleteData)
 
 export default route
